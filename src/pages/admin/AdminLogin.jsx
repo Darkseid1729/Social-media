@@ -9,7 +9,7 @@ import {
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
-import { bgGradient } from "../../constants/color";
+import { GRADIENT_BG } from "../../constants/color";
 import { adminLogin, getAdmin } from "../../redux/thunks/admin";
 
 const AdminLogin = () => {
@@ -33,7 +33,7 @@ const AdminLogin = () => {
   return (
     <div
       style={{
-        backgroundImage: bgGradient,
+        backgroundImage: GRADIENT_BG,
       }}
     >
       <Container

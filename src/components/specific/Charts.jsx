@@ -11,12 +11,7 @@ import {
 } from "chart.js";
 import React from "react";
 import { Doughnut, Line } from "react-chartjs-2";
-import {
-  orange,
-  orangeLight,
-  purple,
-  purpleLight,
-} from "../../constants/color";
+import { useTheme } from "../../context/ThemeContext";
 import { getLast7Days } from "../../lib/features";
 
 ChartJS.register(
@@ -59,6 +54,7 @@ const lineChartOptions = {
 };
 
 const LineChart = ({ value = [] }) => {
+  const { theme } = useTheme();
   const data = {
     labels,
     datasets: [
@@ -66,12 +62,11 @@ const LineChart = ({ value = [] }) => {
         data: value,
         label: "Messages",
         fill: true,
-        backgroundColor: purpleLight,
-        borderColor: purple,
+        background: theme.CHART_ACCENT_LIGHT,
+        borderColor: theme.CHART_ACCENT,
       },
     ],
   };
-
   return <Line data={data} options={lineChartOptions} />;
 };
 
@@ -86,14 +81,15 @@ const doughnutChartOptions = {
 };
 
 const DoughnutChart = ({ value = [], labels = [] }) => {
+  const { theme } = useTheme();
   const data = {
     labels,
     datasets: [
       {
         data: value,
-        backgroundColor: [purpleLight, orangeLight],
-        hoverBackgroundColor: [purple, orange],
-        borderColor: [purple, orange],
+        backgroundColor: [theme.CHART_ACCENT_LIGHT, theme.BUTTON_ACCENT_LIGHT],
+        hoverBackgroundColor: [theme.CHART_ACCENT, theme.BUTTON_ACCENT],
+        borderColor: [theme.CHART_ACCENT, theme.BUTTON_ACCENT],
         offset: 40,
       },
     ],

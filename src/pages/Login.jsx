@@ -15,10 +15,10 @@ import React, { useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import { VisuallyHiddenInput } from "../components/styles/StyledComponents";
-import { bgGradient } from "../constants/color";
 import { server } from "../constants/config";
 import { userExists } from "../redux/reducers/auth";
 import { usernameValidator } from "../utils/validators";
+import { useTheme } from "../context/ThemeContext";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -34,6 +34,7 @@ const Login = () => {
   const avatar = useFileHandler("single");
 
   const dispatch = useDispatch();
+  const { theme } = useTheme();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -113,7 +114,7 @@ const Login = () => {
   return (
     <div
       style={{
-        backgroundImage: bgGradient,
+        background: theme.GRADIENT_BG,
       }}
     >
       <Container

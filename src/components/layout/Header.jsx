@@ -9,20 +9,28 @@ import {
   Typography,
 } from "@mui/material";
 import React, { Suspense, lazy, useState } from "react";
-import { orange } from "../../constants/color";
-import {
-  Add as AddIcon,
-  Menu as MenuIcon,
-  Search as SearchIcon,
-  Group as GroupIcon,
-  Logout as LogoutIcon,
-  Notifications as NotificationsIcon,
-} from "@mui/icons-material";
+
+
+import { useTheme } from "../../context/ThemeContext";
+import { themes } from "../../constants/themes";
+import AddIcon from "@mui/icons-material/Add";
+import MenuIcon from "@mui/icons-material/Menu";
+import SearchIcon from "@mui/icons-material/Search";
+import GroupIcon from "@mui/icons-material/Group";
+import LogoutIcon from "@mui/icons-material/Logout";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import { Menu, MenuItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { server } from "../../constants/config";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import CloseIcon from "@mui/icons-material/Close";
+import Profile from "../specific/Profile";
 import { userNotExists } from "../../redux/reducers/auth";
 import {
   setIsMobile,
@@ -32,11 +40,43 @@ import {
 } from "../../redux/reducers/misc";
 import { resetNotificationCount } from "../../redux/reducers/chat";
 
+
+
 const SearchDialog = lazy(() => import("../specific/Search"));
 const NotifcationDialog = lazy(() => import("../specific/Notifications"));
 const NewGroupDialog = lazy(() => import("../specific/NewGroup"));
 
+
+
 const Header = () => {
+  // Theme switcher state and handlers
+  const { themeName, changeTheme, theme } = useTheme();
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  // Prevent global scrollbars when theme menu is open
+  React.useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+
+  const handleThemeClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleThemeClose = () => {
+    setAnchorEl(null);
+  };
+  const handleThemeSelect = (name) => {
+    changeTheme(name);
+    setAnchorEl(null);
+  };
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -44,6 +84,8 @@ const Header = () => {
     (state) => state.misc
   );
   const { notificationCount } = useSelector((state) => state.chat);
+  const { user } = useSelector((state) => state.auth);
+  const [showProfile, setShowProfile] = useState(false);
 
   const handleMobile = () => dispatch(setIsMobile(true));
 
@@ -59,6 +101,8 @@ const Header = () => {
   };
 
   const navigateToGroup = () => navigate("/groups");
+  const openProfile = () => setShowProfile(true);
+  const closeProfile = () => setShowProfile(false);
 
   const logoutHandler = async () => {
     try {
@@ -72,13 +116,20 @@ const Header = () => {
     }
   };
 
+  // Avatar change handler for header profile dialog
+  const handleAvatarChange = async (file) => {
+    // You may want to dispatch an action or call an API here, similar to AppLayout
+    // For now, just alert for demonstration
+    alert('Avatar change triggered from header! Implement logic as needed.');
+  };
+
   return (
     <>
       <Box sx={{ flexGrow: 1 }} height={"4rem"}>
         <AppBar
           position="static"
           sx={{
-            bgcolor: orange,
+            background: theme.BUTTON_ACCENT,
           }}
         >
           <Toolbar>
@@ -88,7 +139,7 @@ const Header = () => {
                 display: { xs: "none", sm: "block" },
               }}
             >
-              Chattu
+              My Social Media
             </Typography>
 
             <Box
@@ -106,6 +157,11 @@ const Header = () => {
               }}
             />
             <Box>
+              <IconBtn
+                title={"Profile"}
+                icon={<AccountCircleIcon />}
+                onClick={openProfile}
+              />
               <IconBtn
                 title={"Search"}
                 icon={<SearchIcon />}
@@ -137,6 +193,23 @@ const Header = () => {
                 onClick={logoutHandler}
               />
             </Box>
+            {/* Theme switcher icon and menu */}
+            <Tooltip title="Change Theme">
+              <IconButton onClick={handleThemeClick} color="inherit">
+                <Brightness4Icon />
+              </IconButton>
+            </Tooltip>
+            <Menu anchorEl={anchorEl} open={open} onClose={handleThemeClose}>
+              {Object.keys(themes).map((name) => (
+                <MenuItem
+                  key={name}
+                  selected={themeName === name}
+                  onClick={() => handleThemeSelect(name)}
+                >
+                  {name.charAt(0).toUpperCase() + name.slice(1)}
+                </MenuItem>
+              ))}
+            </Menu>
           </Toolbar>
         </AppBar>
       </Box>
@@ -158,6 +231,34 @@ const Header = () => {
           <NewGroupDialog />
         </Suspense>
       )}
+      <Dialog open={showProfile} onClose={closeProfile} maxWidth="xs" fullWidth PaperProps={{
+        sx: {
+          borderRadius: 4,
+          overflow: 'visible',
+          boxShadow: 8,
+        }
+      }}>
+        <DialogContent sx={{
+          p: { xs: 1, sm: 3 },
+          bgcolor: '#111',
+          borderRadius: 3,
+          position: 'relative',
+          minWidth: { xs: 280, sm: 350 },
+          minHeight: 420,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}>
+          <IconButton
+            aria-label="close"
+            onClick={closeProfile}
+            sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500], zIndex: 2 }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <Profile user={user} onAvatarChange={handleAvatarChange} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

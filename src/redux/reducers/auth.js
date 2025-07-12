@@ -8,6 +8,9 @@ const initialState = {
   loader: true,
 };
 
+
+import { updateUserAvatar } from "./updateUserAvatar";
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -21,7 +24,6 @@ const authSlice = createSlice({
       state.loader = false;
     },
   },
-
   extraReducers: (builder) => {
     builder
       .addCase(adminLogin.fulfilled, (state, action) => {
@@ -49,6 +51,11 @@ const authSlice = createSlice({
       .addCase(adminLogout.rejected, (state, action) => {
         state.isAdmin = true;
         toast.error(action.error.message);
+      })
+      .addCase(updateUserAvatar, (state, action) => {
+        if (state.user && action.payload) {
+          state.user.avatar = { ...state.user.avatar, url: action.payload };
+        }
       });
   },
 });

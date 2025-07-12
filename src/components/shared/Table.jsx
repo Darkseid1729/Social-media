@@ -1,7 +1,7 @@
 import React from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Container, Paper, Typography } from "@mui/material";
-import { matBlack } from "../../constants/color";
+import { SURFACE_BG } from "../../constants/color";
 
 const Table = ({ rows, columns, heading, rowHeight = 52 }) => {
   return (
@@ -42,7 +42,7 @@ const Table = ({ rows, columns, heading, rowHeight = 52 }) => {
           sx={{
             border: "none",
             ".table-header": {
-              bgcolor: matBlack,
+              bgcolor: SURFACE_BG,
               color: "white",
             },
           }}

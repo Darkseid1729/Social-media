@@ -10,6 +10,7 @@ import { Toaster } from "react-hot-toast";
 import { SocketProvider } from "./socket";
 
 const Home = lazy(() => import("./pages/Home"));
+const Welcome = lazy(() => import("./pages/Welcome"));
 const Login = lazy(() => import("./pages/Login"));
 const Chat = lazy(() => import("./pages/Chat"));
 const Groups = lazy(() => import("./pages/Groups"));
@@ -48,7 +49,7 @@ const App = () => {
               </SocketProvider>
             }
           >
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Welcome />} />
             <Route path="/chat/:chatId" element={<Chat />} />
             <Route path="/groups" element={<Groups />} />
           </Route>

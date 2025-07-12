@@ -21,7 +21,7 @@ import UserItem from "../shared/UserItem";
 const Search = () => {
   const { isSearch } = useSelector((state) => state.misc);
 
-  const [searchUser] = useLazySearchUserQuery();
+  const [triggerSearch, { data, isFetching, isError }] = useLazySearchUserQuery();
 
   const [sendFriendRequest, isLoadingSendFriendRequest] = useAsyncMutation(
     useSendFriendRequestMutation
@@ -38,18 +38,28 @@ const Search = () => {
   };
 
   const searchCloseHandler = () => dispatch(setIsSearch(false));
+/*
+useEffect(() => {
+  const timeOutId = setTimeout(() => {
+    if (search.value.trim()) {
+      triggerSearch(search.value); // search.value is username now
+    } else {
+      setUsers([]);
+    }
+  
+  }))
+*/
+
 
   useEffect(() => {
-    const timeOutId = setTimeout(() => {
-      searchUser(search.value)
-        .then(({ data }) => setUsers(data.users))
-        .catch((e) => console.log(e));
-    }, 1000);
+    if (data && data.users) setUsers(data.users);
+  }, [data]);
 
-    return () => {
-      clearTimeout(timeOutId);
-    };
-  }, [search.value]);
+  const handleSearch = () => {
+    if (search.value.trim()) {
+      triggerSearch(search.value); // search.value is username now
+    }
+  };
 
   return (
     <Dialog open={isSearch} onClose={searchCloseHandler}>
@@ -59,12 +69,22 @@ const Search = () => {
           label=""
           value={search.value}
           onChange={search.changeHandler}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSearch();
+          }}
           variant="outlined"
           size="small"
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
                 <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end">
+                <button onClick={handleSearch} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                  <SearchIcon />
+                </button>
               </InputAdornment>
             ),
           }}

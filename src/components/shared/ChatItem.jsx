@@ -3,6 +3,7 @@ import { Link } from "../styles/StyledComponents";
 import { Box, Stack, Typography } from "@mui/material";
 import AvatarCard from "./AvatarCard";
 import { motion } from "framer-motion";
+import { useTheme } from "../../context/ThemeContext";
 
 const ChatItem = ({
   avatar = [],
@@ -15,6 +16,7 @@ const ChatItem = ({
   index = 0,
   handleDeleteChat,
 }) => {
+  const { theme } = useTheme();
   return (
     <Link
       sx={{
@@ -40,7 +42,7 @@ const ChatItem = ({
         <AvatarCard avatar={avatar} />
 
         <Stack>
-          <Typography>{name}</Typography>
+          <Typography sx={{ color: theme.FRIEND_NAME_COLOR, fontWeight: 600 }}>{name}</Typography>
           {newMessageAlert && (
             <Typography>{newMessageAlert.count} New Message</Typography>
           )}

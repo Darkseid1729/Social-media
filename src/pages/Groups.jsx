@@ -24,7 +24,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { LayoutLoader } from "../components/layout/Loaders";
 import AvatarCard from "../components/shared/AvatarCard";
 import { Link } from "../components/styles/StyledComponents";
-import { bgGradient, matBlack } from "../constants/color";
+import { useTheme } from "../context/ThemeContext";
 import { useDispatch, useSelector } from "react-redux";
 import UserItem from "../components/shared/UserItem";
 import { useAsyncMutation, useErrors } from "../hooks/hook";
@@ -45,6 +45,7 @@ const AddMemberDialog = lazy(() =>
 );
 
 const Groups = () => {
+  const { theme } = useTheme();
   const chatId = useSearchParams()[0].get("group");
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -185,10 +186,10 @@ const Groups = () => {
             position: "absolute",
             top: "2rem",
             left: "2rem",
-            bgcolor: matBlack,
+            bgcolor: theme.SURFACE_BG,
             color: "white",
             ":hover": {
-              bgcolor: "rgba(0,0,0,0.7)",
+              bgcolor: theme.MODAL_OVERLAY,
             },
           }}
           onClick={navigateBack}
@@ -381,15 +382,17 @@ const Groups = () => {
   );
 };
 
-const GroupsList = ({ w = "100%", myGroups = [], chatId }) => (
-  <Stack
-    width={w}
-    sx={{
-      backgroundImage: bgGradient,
-      height: "100vh",
-      overflow: "auto",
-    }}
-  >
+const GroupsList = ({ w = "100%", myGroups = [], chatId }) => {
+  const { theme } = useTheme();
+  return (
+    <Stack
+      width={w}
+      sx={{
+        backgroundImage: theme.GRADIENT_BG,
+        height: "100vh",
+        overflow: "auto",
+      }}
+    >
     {myGroups.length > 0 ? (
       myGroups.map((group) => (
         <GroupListItem group={group} chatId={chatId} key={group._id} />
@@ -400,7 +403,8 @@ const GroupsList = ({ w = "100%", myGroups = [], chatId }) => (
       </Typography>
     )}
   </Stack>
-);
+  );
+};
 
 const GroupListItem = memo(({ group, chatId }) => {
   const { name, avatar, _id } = group;

@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import AppLayout from "../components/layout/AppLayout";
 import { IconButton, Skeleton, Stack } from "@mui/material";
-import { grayColor, orange } from "../constants/color";
+import { useTheme } from "../context/ThemeContext";
 import {
   AttachFile as AttachFileIcon,
   Send as SendIcon,
@@ -34,6 +34,7 @@ import { TypingLoader } from "../components/layout/Loaders";
 import { useNavigate } from "react-router-dom";
 
 const Chat = ({ chatId, user }) => {
+  const { theme } = useTheme();
   const socket = getSocket();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -77,12 +78,12 @@ const Chat = ({ chatId, user }) => {
       setIamTyping(true);
     }
 
-    if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    if (typingTimeout.current) clearTimeout(typingTimeout.current);//clear the previous timeout
 
     typingTimeout.current = setTimeout(() => {
       socket.emit(STOP_TYPING, { members, chatId });
       setIamTyping(false);
-    }, [2000]);
+    }, [1000]);
   };
 
   const handleFileOpen = (e) => {
@@ -188,7 +189,7 @@ const Chat = ({ chatId, user }) => {
         boxSizing={"border-box"}
         padding={"1rem"}
         spacing={"1rem"}
-        bgcolor={grayColor}
+        bgcolor={theme.LIGHT_BG}
         height={"90%"}
         sx={{
           overflowX: "hidden",
@@ -238,7 +239,7 @@ const Chat = ({ chatId, user }) => {
             type="submit"
             sx={{
               rotate: "-30deg",
-              bgcolor: orange,
+              bgcolor: theme.BUTTON_ACCENT,
               color: "white",
               marginLeft: "1rem",
               padding: "0.5rem",

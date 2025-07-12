@@ -1,13 +1,15 @@
 import { Box, Typography } from "@mui/material";
 import React, { memo } from "react";
-import { lightBlue } from "../../constants/color";
+import { useTheme } from "../../context/ThemeContext";
 import moment from "moment";
 import { fileFormat } from "../../lib/features";
 import RenderAttachment from "./RenderAttachment";
 import { motion } from "framer-motion";
 
+
 const MessageComponent = ({ message, user }) => {
   const { sender, content, attachments = [], createdAt } = message;
+  const { theme } = useTheme();
 
   const sameSender = sender?._id === user?._id;
 
@@ -19,15 +21,15 @@ const MessageComponent = ({ message, user }) => {
       whileInView={{ opacity: 1, x: 0 }}
       style={{
         alignSelf: sameSender ? "flex-end" : "flex-start",
-        backgroundColor: "white",
-        color: "black",
+        background: theme.CHAT_COLOR_BG,
+        color: theme.CHAT_TEXT_COLOR,
         borderRadius: "5px",
         padding: "0.5rem",
         width: "fit-content",
       }}
     >
       {!sameSender && (
-        <Typography color={lightBlue} fontWeight={"600"} variant="caption">
+        <Typography style={{ color: theme.SENDER_NAME_COLOR }} fontWeight={"600"} variant="caption">
           {sender.name}
         </Typography>
       )}
@@ -46,7 +48,7 @@ const MessageComponent = ({ message, user }) => {
                 target="_blank"
                 download
                 style={{
-                  color: "black",
+                  color: theme.TEXT_PRIMARY,
                 }}
               >
                 {RenderAttachment(file, url)}
@@ -55,7 +57,7 @@ const MessageComponent = ({ message, user }) => {
           );
         })}
 
-      <Typography variant="caption" color={"text.secondary"}>
+      <Typography variant="caption" style={{ color: theme.TIMEAGO_COLOR }}>
         {timeAgo}
       </Typography>
     </motion.div>

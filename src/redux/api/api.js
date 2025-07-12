@@ -7,20 +7,46 @@ const api = createApi({
   tagTypes: ["Chat", "User", "Message"],
 
   endpoints: (builder) => ({
+    updateAvatar: builder.mutation({
+      query: (file) => {
+        const formData = new FormData();
+        formData.append("avatar", file);
+        return {
+          url: "user/avatar",
+          method: "PUT",
+          body: formData,
+          credentials: "include",
+        };
+      },
+      invalidatesTags: ["User"],
+    }),
+
     myChats: builder.query({
       query: () => ({
         url: "chat/my",
         credentials: "include",
       }),
-      providesTags: ["Chat"],
+      providesTags: ["Chat"],//cache data milega 
     }),
 
+    // Previous: Partial match by username (commented out)
+    // searchUser: builder.query({
+    //   query: (name) => ({
+    //     url: `user/search?name=${name}`,
+    //     credentials: "include",
+    //   }),
+    //   providesTags: ["User"],
+    // }),
+
+    // New: Exact match by username
+    
     searchUser: builder.query({
-      query: (name) => ({
-        url: `user/search?name=${name}`,
+      query: (username) => ({
+        url: `user/search?username=${username}`,
         credentials: "include",
       }),
       providesTags: ["User"],
+      
     }),
 
     sendFriendRequest: builder.mutation({
@@ -159,6 +185,15 @@ const api = createApi({
       }),
       invalidatesTags: ["Chat"],
     }),
+
+    // Get another user's public profile by ID
+    getUserProfile: builder.query({
+      query: (id) => ({
+        url: `user/${id}`,
+        credentials: "include",
+      }),
+      providesTags: ["User"],
+    }),
   }),
 });
 
@@ -180,4 +215,7 @@ export const {
   useAddGroupMembersMutation,
   useDeleteChatMutation,
   useLeaveGroupMutation,
+  useUpdateAvatarMutation,
+  useGetUserProfileQuery, // <-- add this line
 } = api;
+

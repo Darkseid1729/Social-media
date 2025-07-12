@@ -2,6 +2,7 @@ import { Add as AddIcon, Remove as RemoveIcon } from "@mui/icons-material";
 import { Avatar, IconButton, ListItem, Stack, Typography } from "@mui/material";
 import React, { memo } from "react";
 import { transformImage } from "../../lib/features";
+import { useTheme } from "../../context/ThemeContext";
 
 const UserItem = ({
   user,
@@ -12,6 +13,7 @@ const UserItem = ({
 }) => {
   const { name, _id, avatar } = user;
 
+  const { theme } = useTheme();
   return (
     <ListItem>
       <Stack
@@ -33,6 +35,8 @@ const UserItem = ({
             overflow: "hidden",
             textOverflow: "ellipsis",
             width: "100%",
+            color: theme.FRIEND_NAME_COLOR,
+            fontWeight: 600,
           }}
         >
           {name}
