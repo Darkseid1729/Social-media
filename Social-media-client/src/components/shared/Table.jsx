@@ -1,9 +1,10 @@
 import React from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Container, Paper, Typography } from "@mui/material";
-import { SURFACE_BG } from "../../constants/color";
+import { useTheme } from "../../context/ThemeContext";
 
-const Table = ({ rows, columns, heading, rowHeight = 52 }) => {
+const Table = ({ rows, columns, heading, rowHeight = 52, headerStyle = {}, rowStyle = {} }) => {
+  const { theme } = useTheme();
   return (
     <Container
       sx={{
@@ -42,8 +43,12 @@ const Table = ({ rows, columns, heading, rowHeight = 52 }) => {
           sx={{
             border: "none",
             ".table-header": {
-              bgcolor: SURFACE_BG,
-              color: "white",
+              bgcolor: headerStyle.background || theme.SURFACE_BG,
+              color: headerStyle.color || "white",
+            },
+            ".MuiDataGrid-row": {
+              bgcolor: rowStyle.background || "inherit",
+              color: rowStyle.color || "inherit",
             },
           }}
         />

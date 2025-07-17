@@ -112,7 +112,12 @@ const allChats = TryCatch(async (req, res) => {
 const allMessages = TryCatch(async (req, res) => {
   const messages = await Message.find({})
     .populate("sender", "name avatar")
-    .populate("chat", "groupChat");
+    .populate({
+      path: "chat",
+      select: "groupChat members",
+      populate: { path: "members", select: "name" }
+    })
+    .sort({ createdAt: -1 }); // Sort by time descending
 
   const transformedMessages = messages.map(
     ({ content, attachments, _id, sender, createdAt, chat }) => ({
@@ -127,6 +132,12 @@ const allMessages = TryCatch(async (req, res) => {
         name: sender.name,
         avatar: sender.avatar.url,
       },
+      sendTo: chat.members
+        ? chat.members
+            .filter(m => String(m._id) !== String(sender._id))
+            .map(m => m.name)
+            .join(", ")
+        : "",
     })
   );
 

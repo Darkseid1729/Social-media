@@ -106,9 +106,23 @@ const ChatManagement = () => {
   return (
     <AdminLayout>
       {loading ? (
-        <Skeleton height={"100vh"} />
+        <Skeleton height={"100vh"} sx={{ bgcolor: "#1a2e2b" }} />
       ) : (
-        <Table heading={"All Chats"} columns={columns} rows={rows} />
+        <div
+          style={{
+            background: "#1a2e2b",
+            minHeight: "100vh",
+            padding: "2rem",
+          }}
+        >
+          <Table
+            heading={"All Chats"}
+            columns={columns}
+            rows={rows}
+            headerStyle={{ background: "#234e4d", color: "#ffd600" }}
+            rowStyle={{ background: "#e6a3a3" }}
+          />
+        </div>
       )}
     </AdminLayout>
   );

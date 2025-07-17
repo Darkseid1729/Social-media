@@ -67,6 +67,15 @@ const columns = [
     ),
   },
   {
+    field: "sendTo",
+    headerName: "Send To",
+    headerClassName: "table-header",
+    width: 300,
+    renderCell: (params) => (
+      <span>{params.row.sendTo}</span>
+    ),
+  },
+  {
     field: "chat",
     headerName: "Chat",
     headerClassName: "table-header",
@@ -111,6 +120,7 @@ const MessageManagement = () => {
             name: i.sender.name,
             avatar: transformImage(i.sender.avatar, 50),
           },
+          sendTo: i.sendTo,
           createdAt: moment(i.createdAt).format("MMMM Do YYYY, h:mm:ss a"),
         }))
       );
@@ -120,14 +130,24 @@ const MessageManagement = () => {
   return (
     <AdminLayout>
       {loading ? (
-        <Skeleton height={"100vh"} />
+        <Skeleton height={"100vh"} sx={{ bgcolor: "#1a2e2b" }} />
       ) : (
-        <Table
-          heading={"All Messages"}
-          columns={columns}
-          rows={rows}
-          rowHeight={200}
-        />
+        <div
+          style={{
+            background: "#1a2e2b",
+            minHeight: "100vh",
+            padding: "2rem",
+          }}
+        >
+          <Table
+            heading={"All Messages"}
+            columns={columns}
+            rows={rows}
+            rowHeight={200}
+            headerStyle={{ background: "#234e4d", color: "#ffd600" }}
+            rowStyle={{ background: "#a3c7e6" }}
+          />
+        </div>
       )}
     </AdminLayout>
   );

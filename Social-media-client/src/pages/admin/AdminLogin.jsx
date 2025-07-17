@@ -9,7 +9,7 @@ import {
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
-import { GRADIENT_BG } from "../../constants/color";
+import { useTheme } from "../../context/ThemeContext";
 import { adminLogin, getAdmin } from "../../redux/thunks/admin";
 
 const AdminLogin = () => {
@@ -30,10 +30,11 @@ const AdminLogin = () => {
 
   if (isAdmin) return <Navigate to="/admin/dashboard" />;
 
+  const { theme } = useTheme();
   return (
     <div
       style={{
-        backgroundImage: GRADIENT_BG,
+        backgroundImage: theme.GRADIENT_BG,
       }}
     >
       <Container

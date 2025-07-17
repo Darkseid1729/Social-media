@@ -22,7 +22,7 @@ import {
   CurveButton,
   SearchField,
 } from "../../components/styles/StyledComponents";
-import { SURFACE_BG } from "../../constants/color";
+import { useTheme } from "../../context/ThemeContext";
 import { server } from "../../constants/config";
 import { useErrors } from "../../hooks/hook";
 
@@ -31,6 +31,7 @@ const Dashboard = () => {
     `${server}/api/v1/admin/stats`,
     "dashboard-stats"
   );
+  const { theme } = useTheme();
 
   const { stats } = data || {};
 
@@ -69,6 +70,53 @@ const Dashboard = () => {
     </Paper>
   );
 
+  const widgetColors = [
+    { bg: "#e6a3a3", color: "#123456" }, // Soft red
+    { bg: "#a3c7e6", color: "#123456" }, // Soft blue
+    { bg: "#a3e6b3", color: "#123456" }, // Soft green
+  ];
+
+  const Widget = ({ title, value, Icon, index = 0 }) => {
+    const { theme } = useTheme();
+    const { bg, color } = widgetColors[index % widgetColors.length];
+    return (
+      <Paper
+        elevation={3}
+        sx={{
+          padding: "2rem",
+          margin: "2rem 0",
+          borderRadius: "1.5rem",
+          width: "20rem",
+          bgcolor: bg,
+          color: color,
+        }}
+      >
+        <Stack alignItems={"center"} spacing={"1rem"}>
+          <Typography
+            sx={{
+              color: "#000000ff",
+              borderRadius: "50%",
+              border: "4px solid #000000ff", // yellow outline for contrast
+              width: "5rem",
+              height: "5rem",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              fontWeight: 700,
+              fontSize: "2rem",
+            }}
+          >
+            {value}
+          </Typography>
+          <Stack direction={"row"} spacing={"1rem"} alignItems={"center"}>
+            {Icon}
+            <Typography color="#000000ff">{title}</Typography>
+          </Stack>
+        </Stack>
+      </Paper>
+    );
+  };
+
   const Widgets = (
     <Stack
       direction={{
@@ -80,26 +128,25 @@ const Dashboard = () => {
       alignItems={"center"}
       margin={"2rem 0"}
     >
-      <Widget title={"Users"} value={stats?.usersCount} Icon={<PersonIcon />} />
-      <Widget
-        title={"Chats"}
-        value={stats?.totalChatsCount}
-        Icon={<GroupIcon />}
-      />
-      <Widget
-        title={"Messages"}
-        value={stats?.messagesCount}
-        Icon={<MessageIcon />}
-      />
+      <Widget title={"Users"} value={stats?.usersCount} Icon={<PersonIcon />} index={0} />
+      <Widget title={"Chats"} value={stats?.totalChatsCount} Icon={<GroupIcon />} index={1} />
+      <Widget title={"Messages"} value={stats?.messagesCount} Icon={<MessageIcon />} index={2} />
     </Stack>
   );
 
   return (
     <AdminLayout>
       {loading ? (
-        <Skeleton height={"100vh"} />
+        <Skeleton height={"100vh"} sx={{ bgcolor: theme.APP_BG }} />
       ) : (
-        <Container component={"main"}>
+        <Container
+          component={"main"}
+          sx={{
+            bgcolor: "#1a2e2b",
+            minHeight: "100vh",
+            color: "#fff",
+          }}
+        >
           {Appbar}
 
           <Stack
@@ -122,13 +169,21 @@ const Dashboard = () => {
                 borderRadius: "1rem",
                 width: "100%",
                 maxWidth: "45rem",
+                bgcolor: "#1a2e2b",
+                color: "#87d485ff",
               }}
             >
-              <Typography margin={"2rem 0"} variant="h4">
+              <Typography
+                margin={"2rem 0"}
+                variant="h4"
+                color="#ffd600"
+              >
                 Last Messages
               </Typography>
 
-              <LineChart value={stats?.messagesChart || []} />
+              <Paper elevation={2} sx={{ bgcolor: "#ffffffff", p: 2, borderRadius: "1rem" }}>
+                <LineChart value={stats?.messagesChart || []} />
+              </Paper>
             </Paper>
 
             <Paper
@@ -142,6 +197,8 @@ const Dashboard = () => {
                 width: { xs: "100%", sm: "50%" },
                 position: "relative",
                 maxWidth: "25rem",
+                bgcolor: "#ffffffff",
+                // color: "#12345",
               }}
             >
               <DoughnutChart
@@ -161,7 +218,7 @@ const Dashboard = () => {
                 width={"100%"}
                 height={"100%"}
               >
-                <GroupIcon /> <Typography>Vs </Typography>
+                <GroupIcon /> <Typography color="#ffd600">Vs </Typography>
                 <PersonIcon />
               </Stack>
             </Paper>
@@ -173,38 +230,5 @@ const Dashboard = () => {
     </AdminLayout>
   );
 };
-
-const Widget = ({ title, value, Icon }) => (
-  <Paper
-    elevation={3}
-    sx={{
-      padding: "2rem",
-      margin: "2rem 0",
-      borderRadius: "1.5rem",
-      width: "20rem",
-    }}
-  >
-    <Stack alignItems={"center"} spacing={"1rem"}>
-      <Typography
-        sx={{
-          color: "rgba(0,0,0,0.7)",
-          borderRadius: "50%",
-          border: `5px solid ${SURFACE_BG}`,
-          width: "5rem",
-          height: "5rem",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        {value}
-      </Typography>
-      <Stack direction={"row"} spacing={"1rem"} alignItems={"center"}>
-        {Icon}
-        <Typography>{title}</Typography>
-      </Stack>
-    </Stack>
-  </Paper>
-);
 
 export default Dashboard;
