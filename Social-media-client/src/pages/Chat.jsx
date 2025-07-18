@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import AppLayout from "../components/layout/AppLayout";
+import GifPicker from "../components/dialogs/GifPicker";
 import { IconButton, Skeleton, Stack } from "@mui/material";
 import { useTheme } from "../context/ThemeContext";
 import {
@@ -55,6 +56,12 @@ const Chat = ({ chatId, user }) => {
   const [messages, setMessages] = useState([]);
   const [page, setPage] = useState(1);
   const [fileMenuAnchor, setFileMenuAnchor] = useState(null);
+  const [gifPickerOpen, setGifPickerOpen] = useState(false);
+  // Send GIF as message
+  const handleGifSelect = (gifUrl) => {
+    // Send GIF URL as message content
+    socket.emit(NEW_MESSAGE, { chatId, members, message: gifUrl });
+  };
 
   const [IamTyping, setIamTyping] = useState(false);
   const [userTyping, setUserTyping] = useState(false);
@@ -279,7 +286,8 @@ const Chat = ({ chatId, user }) => {
         </Stack>
       </form>
 
-      <FileMenu anchorE1={fileMenuAnchor} chatId={chatId} />
+      <FileMenu anchorE1={fileMenuAnchor} chatId={chatId} onGifClick={() => setGifPickerOpen(true)} />
+      <GifPicker open={gifPickerOpen} onClose={() => setGifPickerOpen(false)} onSelect={handleGifSelect} />
     </Fragment>
   );
 };

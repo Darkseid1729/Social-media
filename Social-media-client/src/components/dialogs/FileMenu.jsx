@@ -8,10 +8,12 @@ import {
   UploadFile as UploadFileIcon,
   VideoFile as VideoFileIcon,
 } from "@mui/icons-material";
+import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import toast from "react-hot-toast";
 import { useSendAttachmentsMutation } from "../../redux/api/api";
 
-const FileMenu = ({ anchorE1, chatId }) => {
+const FileMenu = (props) => {
+  const { anchorE1, chatId, onGifClick } = props;
   const { isFileMenu } = useSelector((state) => state.misc);
 
   const dispatch = useDispatch();
@@ -62,13 +64,10 @@ const FileMenu = ({ anchorE1, chatId }) => {
     }
   };
 
+
   return (
     <Menu anchorEl={anchorE1} open={isFileMenu} onClose={closeFileMenu}>
-      <div
-        style={{
-          width: "10rem",
-        }}
-      >
+      <div style={{ width: "10rem" }}>
         <MenuList>
           <MenuItem onClick={selectImage}>
             <Tooltip title="Image">
@@ -83,6 +82,14 @@ const FileMenu = ({ anchorE1, chatId }) => {
               onChange={(e) => fileChangeHandler(e, "Images")}
               ref={imageRef}
             />
+          </MenuItem>
+
+          {/* GIF Option */}
+          <MenuItem onClick={() => { closeFileMenu(); if (onGifClick) onGifClick(); }}>
+            <Tooltip title="GIF">
+              <PhotoLibraryIcon />
+            </Tooltip>
+            <ListItemText style={{ marginLeft: "0.5rem" }}>GIF</ListItemText>
           </MenuItem>
 
           <MenuItem onClick={selectAudio}>
