@@ -3,6 +3,7 @@ import { Dialog, DialogTitle, Input, Grid, IconButton } from "@mui/material";
 import { useTheme } from "../../context/ThemeContext";
 
 const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY; // Giphy API key from .env
+const TENOR_API_KEY = import.meta.env.VITE_TENOR_API_KEY; // Tenor API key from .env
 
 const GifPicker = ({ open, onClose, onSelect }) => {
   const { theme } = useTheme();
@@ -15,11 +16,37 @@ const GifPicker = ({ open, onClose, onSelect }) => {
       setGifs([]);
       return;
     }
-    const res = await fetch(
-      `https://api.giphy.com/v1/gifs/search?q=${encodeURIComponent(query)}&api_key=${GIPHY_API_KEY}&limit=20`
-    );
-    const data = await res.json();
-    setGifs(data.data);
+    try {
+      const res = await fetch(
+        `https://api.giphy.com/v1/gifs/search?q=${encodeURIComponent(query)}&api_key=${GIPHY_API_KEY}&limit=20`
+      );
+      if (!res.ok) throw new Error('Giphy error');
+      const data = await res.json();
+      // Giphy rate limit returns 429 or error
+      if (!Array.isArray(data.data)) throw new Error('Giphy error');
+      setGifs(data.data.map(gif => ({
+        id: gif.id,
+        url: gif.images.fixed_height.url,
+        title: gif.title
+      })));
+    } catch (err) {
+      // Fallback to Tenor
+      try {
+        const res = await fetch(
+          `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${TENOR_API_KEY}&limit=20`
+        );
+        if (!res.ok) throw new Error('Tenor error');
+        const data = await res.json();
+        if (!Array.isArray(data.results)) throw new Error('Tenor error');
+        setGifs(data.results.map(gif => ({
+          id: gif.id,
+          url: gif.media_formats.gif.url,
+          title: gif.content_description || 'GIF'
+        })));
+      } catch (err2) {
+        setGifs([]);
+      }
+    }
   };
 
   const handleSearch = (e) => {
@@ -67,13 +94,13 @@ const GifPicker = ({ open, onClose, onSelect }) => {
             <Grid item xs={6} sm={4} key={gif.id}>
               <IconButton
                 onClick={() => {
-                  onSelect(gif.images.fixed_height.url);
+                  onSelect(gif.url);
                   onClose();
                 }}
                 sx={{ padding: 0 }}
               >
                 <img
-                  src={gif.images.fixed_height.url}
+                  src={gif.url}
                   alt={gif.title}
                   style={{
                     width: '100%',
