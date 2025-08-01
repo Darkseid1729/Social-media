@@ -4,14 +4,20 @@ import { themes } from "../constants/themes";
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  // Default to dark theme, or use localStorage if you want persistence
-  const [themeName, setThemeName] = useState("dark");
+  // Persist theme in localStorage
+  const getInitialTheme = () => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem("theme") : null;
+    return saved && themes[saved] ? saved : "dark";
+  };
+  const [themeName, setThemeName] = useState(getInitialTheme);
 
   const theme = useMemo(() => themes[themeName], [themeName]);
 
   const changeTheme = (name) => {
     setThemeName(name);
-    // Optionally: localStorage.setItem("theme", name);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("theme", name);
+    }
   };
 
   return (

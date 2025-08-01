@@ -1,3 +1,7 @@
+// Export a version with Header and Chat for direct use in routing
+import { useParams } from "react-router-dom";
+import Header from "../components/layout/Header";
+import StickerPicker from "../components/dialogs/StickerPicker";
 import React, {
   Fragment,
   useCallback,
@@ -12,6 +16,7 @@ import { useTheme } from "../context/ThemeContext";
 import {
   AttachFile as AttachFileIcon,
   Send as SendIcon,
+  EmojiEmotions as EmojiEmotionsIcon,
 } from "@mui/icons-material";
 
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
@@ -31,6 +36,8 @@ import {
 import { useChatDetailsQuery, useGetMessagesQuery } from "../redux/api/api";
 import { useErrors, useSocketEvents } from "../hooks/hook";
 import { useInfiniteScrollTop } from "6pp";
+import moment from "moment";
+import "moment-timezone";
 import { useDispatch } from "react-redux";
 import { setIsFileMenu } from "../redux/reducers/misc";
 import { removeNewMessagesAlert } from "../redux/reducers/chat";
@@ -39,6 +46,9 @@ import { useNavigate } from "react-router-dom";
 import { useSetWallpaperMutation } from "../redux/api/api";
 
 const Chat = ({ chatId, user }) => {
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [page, setPage] = useState(1);
   const [wallpaperFile, setWallpaperFile] = useState(null);
   const [isWallpaperUploading, setIsWallpaperUploading] = useState(false);
   const [showWallpaperInput, setShowWallpaperInput] = useState(false);
@@ -52,11 +62,14 @@ const Chat = ({ chatId, user }) => {
   const containerRef = useRef(null);
   const bottomRef = useRef(null);
 
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [page, setPage] = useState(1);
+  // ...existing code...
   const [fileMenuAnchor, setFileMenuAnchor] = useState(null);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
+  const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
+  // Send sticker as message
+  const handleStickerSelect = (stickerUrl) => {
+    socket.emit(NEW_MESSAGE, { chatId, members, message: stickerUrl });
+  };
   // Send GIF as message
   const handleGifSelect = (gifUrl) => {
     // Send GIF URL as message content
@@ -99,9 +112,8 @@ const Chat = ({ chatId, user }) => {
     typingTimeout.current = setTimeout(() => {
       socket.emit(STOP_TYPING, { members, chatId });
       setIamTyping(false);
-    }, [1000]);
+    }, 1000);
   };
-
   const handleFileOpen = (e) => {
     dispatch(setIsFileMenu(true));
     setFileMenuAnchor(e.currentTarget);
@@ -109,13 +121,17 @@ const Chat = ({ chatId, user }) => {
 
   const submitHandler = (e) => {
     e.preventDefault();
-
     if (!message.trim()) return;
 
     // Emitting the message to the server
     socket.emit(NEW_MESSAGE, { chatId, members, message });
     setMessage("");
   };
+
+  // Reset messages when chatId changes
+  useEffect(() => {
+    setMessages([]);
+  }, [chatId]);
 
   useEffect(() => {
     socket.emit(CHAT_JOINED, { userId: user._id, members });
@@ -196,6 +212,12 @@ const Chat = ({ chatId, user }) => {
 
   const allMessages = [...oldMessages, ...messages];
 
+  // Get the date of the first message (if any)
+  let floatingDate = "";
+  if (allMessages.length > 0 && allMessages[0].createdAt) {
+    floatingDate = moment(allMessages[0].createdAt).tz("Asia/Kolkata").format("DD MMM YYYY");
+  }
+
   return chatDetails.isLoading ? (
     <Skeleton />
   ) : (
@@ -214,8 +236,29 @@ const Chat = ({ chatId, user }) => {
           background: chatDetails?.data?.chat?.wallpaper
             ? `url(${chatDetails.data.chat.wallpaper}) center/cover no-repeat`
             : theme.LIGHT_BG,
+          position: 'relative',
         }}
       >
+        {/* Floating date at the top */}
+        {floatingDate && (
+          <div style={{
+            position: 'sticky',
+            top: 0,
+            left: 0,
+            right: 0,
+            margin: '0 auto 1.2rem auto',
+            width: 'fit-content',
+            background: theme.LIGHT_BG,
+            color: theme.TIMEAGO_COLOR,
+            borderRadius: 8,
+            padding: '0.25rem 1rem',
+            fontSize: '0.85rem',
+            boxShadow: '0 1px 4px 0 rgba(0,0,0,0.07)',
+            zIndex: 2,
+          }}>
+            {floatingDate}
+          </div>
+        )}
         {allMessages.map((i) => (
           <MessageComponent key={i._id} message={i} user={user} />
         ))}
@@ -249,6 +292,18 @@ const Chat = ({ chatId, user }) => {
             <AttachFileIcon />
           </IconButton>
 
+          {/* Emoji Icon for stickers */}
+          <IconButton
+            sx={{
+              position: "absolute",
+              left: "4.5rem",
+              rotate: "0deg",
+            }}
+            onClick={() => setStickerPickerOpen(true)}
+          >
+            <EmojiEmotionsIcon />
+          </IconButton>
+
           <InputBox
             placeholder="Type Message Here..."
             value={message}
@@ -256,7 +311,7 @@ const Chat = ({ chatId, user }) => {
             style={{
               height: '3.2rem',
               fontSize: '1.15rem',
-              padding: '0 3.5rem',
+              padding: '0 5.5rem 0 7rem', // more left padding to avoid overlap
               borderRadius: '1.5rem',
               border: `1.5px solid ${theme.SUBTLE_BG_20}`,
               background: theme.LIGHT_BG,
@@ -287,6 +342,8 @@ const Chat = ({ chatId, user }) => {
       </form>
 
       <FileMenu anchorE1={fileMenuAnchor} chatId={chatId} onGifClick={() => setGifPickerOpen(true)} />
+      {/* Sticker Picker Dialog */}
+      <StickerPicker open={stickerPickerOpen} onClose={() => setStickerPickerOpen(false)} onSelect={handleStickerSelect} />
       <GifPicker open={gifPickerOpen} onClose={() => setGifPickerOpen(false)} onSelect={handleGifSelect} />
     </Fragment>
   );
@@ -294,8 +351,6 @@ const Chat = ({ chatId, user }) => {
 
 export default AppLayout()(Chat);
 
-// Export a version with Header and Chat for direct use in routing
-import { useParams } from "react-router-dom";
 
 export const ChatWithHeader = (props) => {
   const { chatId } = useParams();

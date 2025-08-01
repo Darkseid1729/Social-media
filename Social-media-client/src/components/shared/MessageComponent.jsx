@@ -2,6 +2,7 @@ import { Box, Typography } from "@mui/material";
 import React, { memo } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import moment from "moment";
+import "moment-timezone";
 import { fileFormat } from "../../lib/features";
 import RenderAttachment from "./RenderAttachment";
 import { motion } from "framer-motion";
@@ -12,7 +13,8 @@ const MessageComponent = ({ message, user }) => {
   const { theme } = useTheme();
 
   const sameSender = sender?._id === user?._id;
-  const timeAgo = moment(createdAt).fromNow();
+  // Format time in Indian timezone
+  const indianTime = moment(createdAt).tz("Asia/Kolkata").format("hh:mm A");
 
   return (
     <motion.div
@@ -24,9 +26,9 @@ const MessageComponent = ({ message, user }) => {
         alignSelf: sameSender ? "flex-end" : "flex-start",
         background:
           sameSender
-            ? "linear-gradient(135deg, #1b4020 0%, #5f5e5e 100%)"
+            ? theme.CHAT_COLOR_BG
             : theme.LIGHT_BG,
-        color: sameSender ? "#fff" : theme.TEXT_PRIMARY,
+        color: sameSender ? theme.CHAT_TEXT_COLOR : theme.TEXT_PRIMARY,
         borderRadius: 12,
         padding: "0.85rem 1.1rem 0.6rem 1.1rem",
         width: "fit-content",
@@ -90,8 +92,9 @@ const MessageComponent = ({ message, user }) => {
           );
         })}
 
+      {/* Actual Indian time at the bottom */}
       <Typography variant="caption" style={{ color: theme.TIMEAGO_COLOR, marginTop: 8, display: 'block', textAlign: sameSender ? 'right' : 'left' }}>
-        {timeAgo}
+        {indianTime}
       </Typography>
     </motion.div>
   );
