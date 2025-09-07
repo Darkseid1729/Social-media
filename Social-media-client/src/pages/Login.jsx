@@ -63,7 +63,12 @@ const Login = () => {
         id: toastId,
       });
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Something Went Wrong", {
+      const attemptsLeft = error?.response?.data?.attemptsLeft;
+      let errorMsg = error?.response?.data?.message || "Something Went Wrong";
+      if (typeof attemptsLeft === "number" && attemptsLeft >= 0) {
+        errorMsg += ` (${attemptsLeft} attempt${attemptsLeft === 1 ? '' : 's'} left)`;
+      }
+      toast.error(errorMsg, {
         id: toastId,
       });
     } finally {

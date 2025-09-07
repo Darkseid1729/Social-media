@@ -24,6 +24,7 @@ import {
   uploadFilesToCloudinary,
 } from "../utils/features.js";
 import { ErrorHandler } from "../utils/utility.js";
+import { userLoginAttempts } from "../utils/userLoginAttempts.js";
 
 // Create a new user and save it to the database and save token in cookie
 const newUser = TryCatch(async (req, res, next) => {
@@ -52,17 +53,74 @@ const newUser = TryCatch(async (req, res, next) => {
 });
 
 // Login user and save token in cookie
+const MAX_ATTEMPTS = 5;
+const LOCK_TIME = 15 * 60 * 1000; // 15 minutes
+
 const login = TryCatch(async (req, res, next) => {
   const { username, password } = req.body;
+  const now = Date.now();
+
+  if (!userLoginAttempts[username]) {
+    userLoginAttempts[username] = { count: 0, lastAttempt: now, lockedUntil: null };
+  }
+  const attempt = userLoginAttempts[username];
+
+  // Check lockout
+  if (attempt.lockedUntil && now < attempt.lockedUntil) {
+    return res.status(429).json({
+      success: false,
+      message: `Too many failed attempts. Try again after ${Math.ceil((attempt.lockedUntil - now)/60000)} minutes.`,
+      attemptsLeft: 0
+    });
+  }
 
   const user = await User.findOne({ username }).select("+password");
 
-  if (!user) return next(new ErrorHandler("Invalid Username or Password", 404));
+  if (!user) {
+    attempt.count += 1;
+    attempt.lastAttempt = now;
+    console.warn(`[ALERT] Failed user login for username: ${username} at ${new Date().toISOString()} (Attempt ${attempt.count})`);
+    if (attempt.count >= MAX_ATTEMPTS) {
+      attempt.lockedUntil = now + LOCK_TIME;
+      console.error(`[ALERT] User login locked for username: ${username} until ${new Date(attempt.lockedUntil).toISOString()}`);
+      return res.status(429).json({
+        success: false,
+        message: "Too many failed attempts. Login locked for 15 minutes.",
+        attemptsLeft: 0
+      });
+    }
+    return res.status(401).json({
+      success: false,
+      message: "Invalid Username or Password",
+      attemptsLeft: Math.max(0, MAX_ATTEMPTS - attempt.count)
+    });
+  }
 
   const isMatch = await compare(password, user.password);
 
-  if (!isMatch)
-    return next(new ErrorHandler("Invalid Username or Password", 404));
+  if (!isMatch) {
+    attempt.count += 1;
+    attempt.lastAttempt = now;
+    console.warn(`[ALERT] Failed user login for username: ${username} at ${new Date().toISOString()} (Attempt ${attempt.count})`);
+    if (attempt.count >= MAX_ATTEMPTS) {
+      attempt.lockedUntil = now + LOCK_TIME;
+      console.error(`[ALERT] User login locked for username: ${username} until ${new Date(attempt.lockedUntil).toISOString()}`);
+      return res.status(429).json({
+        success: false,
+        message: "Too many failed attempts. Login locked for 15 minutes.",
+        attemptsLeft: 0
+      });
+    }
+    return res.status(401).json({
+      success: false,
+      message: "Invalid Username or Password",
+      attemptsLeft: Math.max(0, MAX_ATTEMPTS - attempt.count)
+    });
+  }
+
+  // Reset on successful login
+  attempt.count = 0;
+  attempt.lockedUntil = null;
 
   sendToken(res, user, 200, `Welcome Back, ${user.name}`);
 });

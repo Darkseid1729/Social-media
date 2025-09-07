@@ -6,13 +6,48 @@ import { User } from "../models/user.js";
 import { ErrorHandler } from "../utils/utility.js";
 import { cookieOptions } from "../utils/features.js";
 import { adminSecretKey } from "../app.js";
+import { adminLoginAttempts } from "../utils/adminLoginAttempts.js";
+import os from "os";
+
+const MAX_ATTEMPTS = 5;
+const LOCK_TIME = 15 * 60 * 1000; // 15 minutes
 
 const adminLogin = TryCatch(async (req, res, next) => {
   const { secretKey } = req.body;
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.connection.remoteAddress || req.ip || "unknown";
+  const now = Date.now();
+
+  if (!adminLoginAttempts[ip]) {
+    adminLoginAttempts[ip] = { count: 0, lastAttempt: now, lockedUntil: null };
+  }
+  const attempt = adminLoginAttempts[ip];
+
+  // Check lockout
+  if (attempt.lockedUntil && now < attempt.lockedUntil) {
+    return next(new ErrorHandler(`Too many failed attempts. Try again after ${Math.ceil((attempt.lockedUntil - now)/60000)} minutes.`, 429));
+  }
 
   const isMatched = secretKey === adminSecretKey;
 
-  if (!isMatched) return next(new ErrorHandler("Invalid Admin Key", 401));
+  if (!isMatched) {
+    attempt.count += 1;
+    attempt.lastAttempt = now;
+    // Log failed attempt (could be replaced with DB or external logging)
+    console.warn(`[ALERT] Failed admin login from IP: ${ip} at ${new Date().toISOString()} (Attempt ${attempt.count})`);
+
+    // Alert if max attempts reached
+    if (attempt.count >= MAX_ATTEMPTS) {
+      attempt.lockedUntil = now + LOCK_TIME;
+      // Here you could send an email or alert to admin (implement as needed)
+      console.error(`[ALERT] Admin login locked for IP: ${ip} until ${new Date(attempt.lockedUntil).toISOString()}`);
+      return next(new ErrorHandler("Too many failed attempts. Admin login locked for 15 minutes.", 429));
+    }
+    return next(new ErrorHandler("Invalid Admin Key", 401));
+  }
+
+  // Reset on successful login
+  attempt.count = 0;
+  attempt.lockedUntil = null;
 
   const token = jwt.sign(secretKey, process.env.JWT_SECRET);
 
