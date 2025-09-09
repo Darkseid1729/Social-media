@@ -109,7 +109,7 @@ const StickerPicker = ({ open, onClose, onSelect }) => {
                 }}
               >
                 <IconButton
-                  onClick={() => { onSelect(`/StickersGenshin/${char}/${file}`); onClose(); }}
+                  onClick={() => { onSelect(file); onClose(); }}
                   sx={{
                     padding: 0.5,
                     '@media (max-width: 600px)': {
@@ -118,7 +118,7 @@ const StickerPicker = ({ open, onClose, onSelect }) => {
                   }}
                 >
                   <img
-                    src={`/StickersGenshin/${char}/${file}`}
+                    src={file}
                     alt={file}
                     loading="lazy"
                     style={{

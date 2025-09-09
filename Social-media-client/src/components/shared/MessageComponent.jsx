@@ -51,7 +51,8 @@ const MessageComponent = ({ message, user }) => {
       )}
       {/* Render sticker or GIF/image if content is a sticker path or image URL */}
       {content &&
-        (/^\/StickersGenshin\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content)) ? (
+        ((/^\/StickersGenshin\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content)) ||
+         /^https?:\/\/res\.cloudinary\.com\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content)) ? (
           <Box sx={{ display: 'flex', justifyContent: sameSender ? 'flex-end' : 'flex-start', mb: 1 }}>
             <img
               src={content}
