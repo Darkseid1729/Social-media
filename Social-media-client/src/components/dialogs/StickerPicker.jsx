@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Dialog, DialogTitle, Grid, IconButton, Tabs, Tab, Box } from "@mui/material";
 import SwipeableViews from 'react-swipeable-views';
 
-const manifestUrl = "/src/assets/stickerManifest.json";
+const manifestUrl = "/assets/stickerManifest.json";
 
 const StickerPicker = ({ open, onClose, onSelect }) => {
   const [manifest, setManifest] = useState({});
