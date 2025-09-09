@@ -49,26 +49,43 @@ const MessageComponent = ({ message, user }) => {
           {sender?.name}
         </Typography>
       )}
-      {/* Render GIF if content is a GIF URL */}
-      {content && content.endsWith('.gif') ? (
-        <Box sx={{ display: 'flex', justifyContent: sameSender ? 'flex-end' : 'flex-start', mb: 1 }}>
-          <img
-            src={content}
-            alt="GIF"
-            style={{
-              width: '100%',
-              maxWidth: '320px',
-              maxHeight: '220px',
-              borderRadius: 8,
-              objectFit: 'cover',
-              boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
-              display: 'block',
-            }}
-          />
-        </Box>
-      ) : content && (
-        <Typography style={{ marginBottom: 6, wordBreak: 'break-word' }}>{content}</Typography>
-      )}
+      {/* Render sticker or GIF/image if content is a sticker path or image URL */}
+      {content &&
+        (/^\/StickersGenshin\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content)) ? (
+          <Box sx={{ display: 'flex', justifyContent: sameSender ? 'flex-end' : 'flex-start', mb: 1 }}>
+            <img
+              src={content}
+              alt="Sticker"
+              style={{
+                width: '100%',
+                maxWidth: '320px',
+                maxHeight: '220px',
+                borderRadius: 8,
+                objectFit: 'cover',
+                boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
+                display: 'block',
+              }}
+            />
+          </Box>
+        ) : content && content.endsWith('.gif') ? (
+          <Box sx={{ display: 'flex', justifyContent: sameSender ? 'flex-end' : 'flex-start', mb: 1 }}>
+            <img
+              src={content}
+              alt="GIF"
+              style={{
+                width: '100%',
+                maxWidth: '320px',
+                maxHeight: '220px',
+                borderRadius: 8,
+                objectFit: 'cover',
+                boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
+                display: 'block',
+              }}
+            />
+          </Box>
+        ) : content && (
+          <Typography style={{ marginBottom: 6, wordBreak: 'break-word' }}>{content}</Typography>
+        )}
 
       {attachments.length > 0 &&
         attachments.map((attachment, index) => {

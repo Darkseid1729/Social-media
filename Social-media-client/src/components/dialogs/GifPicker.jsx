@@ -10,25 +10,28 @@ const GifPicker = ({ open, onClose, onSelect }) => {
   const [search, setSearch] = useState("");
   const [gifs, setGifs] = useState([]);
   const [debounceTimeout, setDebounceTimeout] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const fetchGifs = async (query) => {
     if (query.trim().length === 0) {
       setGifs([]);
+      setLoading(false);
       return;
     }
+    setLoading(true);
     try {
       const res = await fetch(
         `https://api.giphy.com/v1/gifs/search?q=${encodeURIComponent(query)}&api_key=${GIPHY_API_KEY}&limit=20`
       );
       if (!res.ok) throw new Error('Giphy error');
       const data = await res.json();
-      // Giphy rate limit returns 429 or error
       if (!Array.isArray(data.data)) throw new Error('Giphy error');
       setGifs(data.data.map(gif => ({
         id: gif.id,
         url: gif.images.fixed_height.url,
         title: gif.title
       })));
+      setLoading(false);
     } catch (err) {
       // Fallback to Tenor
       try {
@@ -43,8 +46,10 @@ const GifPicker = ({ open, onClose, onSelect }) => {
           url: gif.media_formats.gif.url,
           title: gif.content_description || 'GIF'
         })));
+        setLoading(false);
       } catch (err2) {
         setGifs([]);
+        setLoading(false);
       }
     }
   };
@@ -56,7 +61,7 @@ const GifPicker = ({ open, onClose, onSelect }) => {
     setDebounceTimeout(
       setTimeout(() => {
         fetchGifs(value);
-      }, 1000)
+      }, 400)
     );
   };
 
@@ -89,32 +94,42 @@ const GifPicker = ({ open, onClose, onSelect }) => {
         sx={{ margin: "0.5rem 1rem 0.5rem 1rem", color: theme?.TEXT_PRIMARY }}
       />
       <div style={{ overflowY: 'auto', maxHeight: 340, padding: '0 1rem 1rem 1rem' }}>
-        <Grid container spacing={2}>
-          {gifs.map((gif) => (
-            <Grid item xs={6} sm={4} key={gif.id}>
-              <IconButton
-                onClick={() => {
-                  onSelect(gif.url);
-                  onClose();
-                }}
-                sx={{ padding: 0 }}
-              >
-                <img
-                  src={gif.url}
-                  alt={gif.title}
-                  style={{
-                    width: '100%',
-                    maxWidth: '100%',
-                    borderRadius: 8,
-                    maxHeight: 120,
-                    objectFit: 'cover',
-                    display: 'block',
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '2rem 0', color: theme?.TEXT_SECONDARY }}>
+            Loading GIFs...
+          </div>
+        ) : gifs.length === 0 && search.trim().length > 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem 0', color: theme?.TEXT_SECONDARY }}>
+            No GIFs found. Please check your API keys or network.
+          </div>
+        ) : (
+          <Grid container spacing={2}>
+            {gifs.map((gif) => (
+              <Grid item xs={6} sm={4} key={gif.id}>
+                <IconButton
+                  onClick={() => {
+                    onSelect(gif.url);
+                    onClose();
                   }}
-                />
-              </IconButton>
-            </Grid>
-          ))}
-        </Grid>
+                  sx={{ padding: 0 }}
+                >
+                  <img
+                    src={gif.url}
+                    alt={gif.title}
+                    style={{
+                      width: '100%',
+                      maxWidth: '100%',
+                      borderRadius: 8,
+                      maxHeight: 120,
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+                </IconButton>
+              </Grid>
+            ))}
+          </Grid>
+        )}
       </div>
     </Dialog>
   );
