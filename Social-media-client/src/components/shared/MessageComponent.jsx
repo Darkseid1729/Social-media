@@ -65,6 +65,11 @@ const MessageComponent = ({ message, user }) => {
                 objectFit: 'cover',
                 boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
                 display: 'block',
+                // Mobile responsive
+                '@media (max-width: 600px)': {
+                  maxWidth: '160px',
+                  maxHeight: '110px',
+                },
               }}
             />
           </Box>

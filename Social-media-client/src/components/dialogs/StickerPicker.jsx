@@ -38,18 +38,41 @@ const StickerPicker = ({ open, onClose, onSelect }) => {
   const stickers = character ? manifest[character] : [];
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Select a Sticker</DialogTitle>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          maxWidth: 600,
+          width: '95vw',
+          '@media (max-width: 600px)': {
+            maxWidth: '90vw',
+            minWidth: 0,
+            width: '90vw',
+          },
+        }
+      }}
+    >
+      <DialogTitle
+        sx={{
+          fontSize: { xs: 14, sm: 16 },
+          padding: { xs: '8px 10px', sm: '12px 16px' },
+        }}
+      >
+        Select a Sticker
+      </DialogTitle>
       <Box
         sx={{
           borderBottom: 1,
           borderColor: 'divider',
           overflowX: 'auto',
           whiteSpace: 'nowrap',
-          maxWidth: '100vw',
-          '@media (max-width: 600px)': {
-            padding: 0,
-          },
+          width: '100%',
+          px: { xs: 1, sm: 1 },
+          py: { xs: 0.5, sm: 0.5 },
         }}
       >
         <Tabs
@@ -58,16 +81,16 @@ const StickerPicker = ({ open, onClose, onSelect }) => {
           variant="scrollable"
           scrollButtons="auto"
           aria-label="character tabs"
-          TabIndicatorProps={{ style: { height: 3 } }}
+          TabIndicatorProps={{ style: { height: 2 } }}
           sx={{
             minHeight: 36,
             height: 36,
             '& .MuiTab-root': {
-              minWidth: 80,
+              minWidth: 60,
               padding: '6px 8px',
-              fontSize: 13,
+              fontSize: 12,
               '@media (max-width: 600px)': {
-                minWidth: 60,
+                minWidth: 50,
                 fontSize: 11,
                 padding: '4px 6px',
               },
@@ -83,25 +106,33 @@ const StickerPicker = ({ open, onClose, onSelect }) => {
         index={tabIndex}
         onChangeIndex={handleSwipeIndexChange}
         enableMouseEvents
-        style={{ minHeight: 200 }}
+        style={{ 
+          minHeight: 'auto'
+        }}
       >
         {chars.map((char, tabIdx) => (
-          <Grid
-            container
+          <div
             key={char}
-            spacing={1.5}
-            padding={1.5}
-            sx={{
-              '@media (max-width: 600px)': {
-                padding: '4px',
-              },
+            style={{
+              maxHeight: 250,
+              overflow: 'auto',
+              padding: '8px'
             }}
           >
+            <Grid
+              container
+              spacing={{ xs: 1, sm: 1.5 }}
+              sx={{
+                '@media (max-width: 600px)': {
+                  padding: 0,
+                },
+              }}
+            >
             {manifest[char] && manifest[char].map((file, idx) => (
               <Grid
                 item
                 key={idx}
-                xs={3} sm={2} md={2} lg={1}
+                xs={4} sm={3} md={2} lg={2}
                 sx={{
                   display: 'flex',
                   justifyContent: 'center',
@@ -111,9 +142,9 @@ const StickerPicker = ({ open, onClose, onSelect }) => {
                 <IconButton
                   onClick={() => { onSelect(file); onClose(); }}
                   sx={{
-                    padding: 0.5,
+                    padding: 1,
                     '@media (max-width: 600px)': {
-                      padding: 0.25,
+                      padding: 0.5,
                     },
                   }}
                 >
@@ -122,20 +153,17 @@ const StickerPicker = ({ open, onClose, onSelect }) => {
                     alt={file}
                     loading="lazy"
                     style={{
-                      width: 48,
-                      height: 48,
+                      width: window.innerWidth <= 600 ? 70 : 100,
+                      height: window.innerWidth <= 600 ? 70 : 100,
                       objectFit: 'contain',
                       borderRadius: 6,
-                      '@media (max-width: 600px)': {
-                        width: 36,
-                        height: 36,
-                      },
                     }}
                   />
                 </IconButton>
               </Grid>
             ))}
-          </Grid>
+            </Grid>
+          </div>
         ))}
       </SwipeableViews>
     </Dialog>
