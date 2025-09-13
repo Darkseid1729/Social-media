@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Dialog, DialogTitle, Input, Grid, IconButton } from "@mui/material";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -11,39 +11,46 @@ const GifPicker = ({ open, onClose, onSelect }) => {
   const [gifs, setGifs] = useState([]);
   const [debounceTimeout, setDebounceTimeout] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadedImages, setLoadedImages] = useState(new Set());
 
-  const fetchGifs = async (query) => {
-    if (query.trim().length === 0) {
-      setGifs([]);
-      setLoading(false);
-      return;
+  // Load trending GIFs when dialog opens
+  useEffect(() => {
+    if (open && gifs.length === 0 && search.trim().length === 0) {
+      fetchTrendingGifs();
     }
+  }, [open]);
+
+  const fetchTrendingGifs = useCallback(async () => {
     setLoading(true);
+    setLoadedImages(new Set());
+    
     try {
       const res = await fetch(
-        `https://api.giphy.com/v1/gifs/search?q=${encodeURIComponent(query)}&api_key=${GIPHY_API_KEY}&limit=20`
+        `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=12&rating=g`
       );
       if (!res.ok) throw new Error('Giphy error');
       const data = await res.json();
       if (!Array.isArray(data.data)) throw new Error('Giphy error');
       setGifs(data.data.map(gif => ({
         id: gif.id,
-        url: gif.images.fixed_height.url,
+        previewUrl: gif.images.fixed_height_small_still.url,
+        fullUrl: gif.images.fixed_height.url,
         title: gif.title
       })));
       setLoading(false);
     } catch (err) {
-      // Fallback to Tenor
+      // Fallback to Tenor trending
       try {
         const res = await fetch(
-          `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${TENOR_API_KEY}&limit=20`
+          `https://tenor.googleapis.com/v2/featured?key=${TENOR_API_KEY}&limit=12&contentfilter=high`
         );
         if (!res.ok) throw new Error('Tenor error');
         const data = await res.json();
         if (!Array.isArray(data.results)) throw new Error('Tenor error');
         setGifs(data.results.map(gif => ({
           id: gif.id,
-          url: gif.media_formats.gif.url,
+          previewUrl: gif.media_formats.tinygif?.url || gif.media_formats.gif.url,
+          fullUrl: gif.media_formats.gif.url,
           title: gif.content_description || 'GIF'
         })));
         setLoading(false);
@@ -52,18 +59,83 @@ const GifPicker = ({ open, onClose, onSelect }) => {
         setLoading(false);
       }
     }
-  };
+  }, [GIPHY_API_KEY, TENOR_API_KEY]);
 
-  const handleSearch = (e) => {
+  const fetchGifs = useCallback(async (query) => {
+    if (query.trim().length === 0) {
+      setGifs([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setLoadedImages(new Set()); // Reset loaded images when searching
+    
+    try {
+      const res = await fetch(
+        `https://api.giphy.com/v1/gifs/search?q=${encodeURIComponent(query)}&api_key=${GIPHY_API_KEY}&limit=16&rating=g`
+      );
+      if (!res.ok) throw new Error('Giphy error');
+      const data = await res.json();
+      if (!Array.isArray(data.data)) throw new Error('Giphy error');
+      setGifs(data.data.map(gif => ({
+        id: gif.id,
+        // Use smaller preview image for faster loading, full GIF for selection
+        previewUrl: gif.images.fixed_height_small_still.url,
+        fullUrl: gif.images.fixed_height.url,
+        title: gif.title
+      })));
+      setLoading(false);
+    } catch (err) {
+      // Fallback to Tenor
+      try {
+        const res = await fetch(
+          `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${TENOR_API_KEY}&limit=16&contentfilter=high`
+        );
+        if (!res.ok) throw new Error('Tenor error');
+        const data = await res.json();
+        if (!Array.isArray(data.results)) throw new Error('Tenor error');
+        setGifs(data.results.map(gif => ({
+          id: gif.id,
+          // Use smaller preview image for faster loading
+          previewUrl: gif.media_formats.tinygif?.url || gif.media_formats.gif.url,
+          fullUrl: gif.media_formats.gif.url,
+          title: gif.content_description || 'GIF'
+        })));
+        setLoading(false);
+      } catch (err2) {
+        setGifs([]);
+        setLoading(false);
+      }
+    }
+  }, [GIPHY_API_KEY, TENOR_API_KEY]);
+
+  const handleSearch = useCallback((e) => {
     const value = e.target.value;
     setSearch(value);
     if (debounceTimeout) clearTimeout(debounceTimeout);
-    setDebounceTimeout(
-      setTimeout(() => {
-        fetchGifs(value);
-      }, 400)
-    );
-  };
+    
+    // Only search if user has typed at least 2 characters
+    if (value.trim().length >= 2) {
+      setDebounceTimeout(
+        setTimeout(() => {
+          fetchGifs(value);
+        }, 800) // Increased debounce time to save API calls
+      );
+    } else if (value.trim().length === 0) {
+      // Show trending GIFs when search is cleared
+      fetchTrendingGifs();
+    } else {
+      // Clear results if less than 2 characters
+      setGifs([]);
+      setLoading(false);
+    }
+  }, [debounceTimeout, fetchGifs, fetchTrendingGifs]);
+
+  const handleImageLoad = useCallback((gifId) => {
+    setLoadedImages(prev => new Set([...prev, gifId]));
+  }, []);
+
+  const memoizedGifs = useMemo(() => gifs, [gifs]);
 
   return (
     <Dialog
@@ -84,7 +156,9 @@ const GifPicker = ({ open, onClose, onSelect }) => {
         },
       }}
     >
-      <DialogTitle sx={{ pb: 1, color: theme?.TEXT_PRIMARY }}>Search GIFs</DialogTitle>
+      <DialogTitle sx={{ pb: 1, color: theme?.TEXT_PRIMARY }}>
+        {search.trim().length === 0 ? 'Trending GIFs' : 'Search GIFs'}
+      </DialogTitle>
       <Input
         autoFocus
         fullWidth
@@ -96,33 +170,54 @@ const GifPicker = ({ open, onClose, onSelect }) => {
       <div style={{ overflowY: 'auto', maxHeight: 340, padding: '0 1rem 1rem 1rem' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '2rem 0', color: theme?.TEXT_SECONDARY }}>
-            Loading GIFs...
+            {search.trim().length === 0 ? 'Loading trending GIFs...' : 'Searching GIFs...'}
           </div>
         ) : gifs.length === 0 && search.trim().length > 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem 0', color: theme?.TEXT_SECONDARY }}>
-            No GIFs found. Please check your API keys or network.
+            No GIFs found. Try a different search term.
           </div>
         ) : (
           <Grid container spacing={2}>
-            {gifs.map((gif) => (
+            {memoizedGifs.map((gif) => (
               <Grid item xs={6} sm={4} key={gif.id}>
                 <IconButton
                   onClick={() => {
-                    onSelect(gif.url);
+                    onSelect(gif.fullUrl); // Send full GIF URL
                     onClose();
                   }}
-                  sx={{ padding: 0 }}
+                  sx={{ 
+                    padding: 0,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    borderRadius: 2,
+                    '&:hover': {
+                      transform: 'scale(1.02)',
+                      transition: 'transform 0.2s ease-in-out'
+                    }
+                  }}
                 >
                   <img
-                    src={gif.url}
+                    src={gif.previewUrl} // Show static preview first
                     alt={gif.title}
+                    loading="lazy"
+                    onLoad={() => handleImageLoad(gif.id)}
+                    onMouseEnter={(e) => {
+                      // Show animated GIF on hover
+                      e.target.src = gif.fullUrl;
+                    }}
+                    onMouseLeave={(e) => {
+                      // Return to static preview when not hovering
+                      e.target.src = gif.previewUrl;
+                    }}
                     style={{
                       width: '100%',
                       maxWidth: '100%',
                       borderRadius: 8,
-                      maxHeight: 120,
+                      maxHeight: 100, // Reduced height for faster loading
                       objectFit: 'cover',
                       display: 'block',
+                      transition: 'opacity 0.3s ease-in-out',
+                      opacity: loadedImages.has(gif.id) ? 1 : 0.7,
                     }}
                   />
                 </IconButton>

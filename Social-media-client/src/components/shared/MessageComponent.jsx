@@ -1,20 +1,56 @@
 import { Box, Typography } from "@mui/material";
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import moment from "moment";
 import "moment-timezone";
 import { fileFormat } from "../../lib/features";
 import RenderAttachment from "./RenderAttachment";
+import TextWithLinks from "./TextWithLinks";
+import ReactionPicker from "./ReactionPicker";
+import ReactionsDisplay from "./ReactionsDisplay";
+import { useAddMessageReactionMutation, useRemoveMessageReactionMutation } from "../../redux/api/api";
 import { motion } from "framer-motion";
 
 const MessageComponent = ({ message, user }) => {
   // console.log('MessageComponent message:', message); // Debug line
-  const { sender, content, attachments = [], createdAt } = message;
+  const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId } = message;
   const { theme } = useTheme();
+  const [reactionPickerAnchor, setReactionPickerAnchor] = useState(null);
+  const [addReaction] = useAddMessageReactionMutation();
+  const [removeReaction] = useRemoveMessageReactionMutation();
 
   const sameSender = sender?._id === user?._id;
   // Format time in Indian timezone
   const indianTime = moment(createdAt).tz("Asia/Kolkata").format("hh:mm A");
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    setReactionPickerAnchor(e.currentTarget);
+  };
+
+  const handleReactionSelect = async (emoji) => {
+    try {
+      await addReaction({ messageId, emoji }).unwrap();
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+    }
+  };
+
+  const handleReactionClick = async (emoji, hasCurrentUser) => {
+    try {
+      if (hasCurrentUser) {
+        await removeReaction({ messageId, emoji }).unwrap();
+      } else {
+        await addReaction({ messageId, emoji }).unwrap();
+      }
+    } catch (error) {
+      console.error('Error toggling reaction:', error);
+    }
+  };
+
+  const closeReactionPicker = () => {
+    setReactionPickerAnchor(null);
+  };
 
   return (
     <motion.div
@@ -37,7 +73,9 @@ const MessageComponent = ({ message, user }) => {
         marginBottom: "0.7rem",
         opacity: 1,
         transform: "translateX(0%) translateZ(0px)",
+        cursor: 'pointer',
       }}
+      onContextMenu={handleContextMenu}
     >
       {/* Sender Name (only for other users) */}
       {!sameSender && (
@@ -90,7 +128,7 @@ const MessageComponent = ({ message, user }) => {
             />
           </Box>
         ) : content && (
-          <Typography style={{ marginBottom: 6, wordBreak: 'break-word' }}>{content}</Typography>
+          <TextWithLinks text={content} showPreviews={true} />
         )}
 
       {attachments.length > 0 &&
@@ -115,10 +153,25 @@ const MessageComponent = ({ message, user }) => {
           );
         })}
 
+      {/* Reactions Display */}
+      <ReactionsDisplay 
+        reactions={reactions}
+        onReactionClick={handleReactionClick}
+        currentUserId={user?._id}
+      />
+
       {/* Actual Indian time at the bottom */}
       <Typography variant="caption" style={{ color: theme.TIMEAGO_COLOR, marginTop: 8, display: 'block', textAlign: sameSender ? 'right' : 'left' }}>
         {indianTime}
       </Typography>
+
+      {/* Reaction Picker */}
+      <ReactionPicker
+        open={Boolean(reactionPickerAnchor)}
+        anchorEl={reactionPickerAnchor}
+        onClose={closeReactionPicker}
+        onReactionSelect={handleReactionSelect}
+      />
     </motion.div>
   );
 };

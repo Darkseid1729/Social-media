@@ -12,6 +12,8 @@ import {
   NEW_MESSAGE,
   NEW_MESSAGE_ALERT,
   REFETCH_CHATS,
+  MESSAGE_REACTION_ADDED,
+  MESSAGE_REACTION_REMOVED,
 } from "../constants/events.js";
 import { getOtherMember } from "../lib/helper.js";
 import { User } from "../models/user.js";
@@ -457,6 +459,99 @@ const setWallpaper = TryCatch(async (req, res, next) => {
   return res.status(200).json({ success: true, wallpaper: chat.wallpaper });
 });
 
+// Add reaction to a message
+const addMessageReaction = TryCatch(async (req, res, next) => {
+  const { messageId, emoji } = req.body;
+  
+  // Validate emoji
+  const allowedEmojis = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+  if (!allowedEmojis.includes(emoji)) {
+    return next(new ErrorHandler("Invalid emoji", 400));
+  }
+
+  const message = await Message.findById(messageId).populate("chat", "members");
+  if (!message) return next(new ErrorHandler("Message not found", 404));
+
+  // Check if user is a member of the chat
+  if (!message.chat.members.includes(req.user.toString())) {
+    return next(new ErrorHandler("You are not allowed to react to this message", 403));
+  }
+
+  // Check if user already reacted with this emoji
+  const existingReaction = message.reactions.find(
+    (reaction) => reaction.user.toString() === req.user.toString() && reaction.emoji === emoji
+  );
+
+  if (existingReaction) {
+    return next(new ErrorHandler("You have already reacted with this emoji", 400));
+  }
+
+  // Add the reaction
+  message.reactions.push({
+    user: req.user,
+    emoji: emoji,
+  });
+
+  await message.save();
+
+  // Emit real-time event
+  const user = await User.findById(req.user, "name avatar");
+  emitEvent(req, MESSAGE_REACTION_ADDED, message.chat.members, {
+    messageId,
+    reaction: {
+      user: {
+        _id: req.user,
+        name: user.name,
+        avatar: user.avatar
+      },
+      emoji,
+      createdAt: new Date()
+    }
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Reaction added successfully"
+  });
+});
+
+// Remove reaction from a message
+const removeMessageReaction = TryCatch(async (req, res, next) => {
+  const { messageId, emoji } = req.body;
+
+  const message = await Message.findById(messageId).populate("chat", "members");
+  if (!message) return next(new ErrorHandler("Message not found", 404));
+
+  // Check if user is a member of the chat
+  if (!message.chat.members.includes(req.user.toString())) {
+    return next(new ErrorHandler("You are not allowed to remove reactions from this message", 403));
+  }
+
+  // Find and remove the reaction
+  const reactionIndex = message.reactions.findIndex(
+    (reaction) => reaction.user.toString() === req.user.toString() && reaction.emoji === emoji
+  );
+
+  if (reactionIndex === -1) {
+    return next(new ErrorHandler("Reaction not found", 404));
+  }
+
+  message.reactions.splice(reactionIndex, 1);
+  await message.save();
+
+  // Emit real-time event
+  emitEvent(req, MESSAGE_REACTION_REMOVED, message.chat.members, {
+    messageId,
+    userId: req.user,
+    emoji
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Reaction removed successfully"
+  });
+});
+
 export {
   newGroupChat,
   getMyChats,
@@ -470,5 +565,6 @@ export {
   deleteChat,
   getMessages,
   setWallpaper,
-
+  addMessageReaction,
+  removeMessageReaction,
 };

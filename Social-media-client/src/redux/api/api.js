@@ -122,6 +122,24 @@ const api = createApi({
       }),
     }),
 
+    addMessageReaction: builder.mutation({
+      query: ({ messageId, emoji }) => ({
+        url: "chat/reaction/add",
+        method: "POST",
+        credentials: "include",
+        body: { messageId, emoji },
+      }),
+    }),
+
+    removeMessageReaction: builder.mutation({
+      query: ({ messageId, emoji }) => ({
+        url: "chat/reaction/remove",
+        method: "POST",
+        credentials: "include",
+        body: { messageId, emoji },
+      }),
+    }),
+
     myGroups: builder.query({
       query: () => ({
         url: "chat/my/groups",
@@ -222,6 +240,8 @@ export const {
   useChatDetailsQuery,
   useGetMessagesQuery,
   useSendAttachmentsMutation,
+  useAddMessageReactionMutation,
+  useRemoveMessageReactionMutation,
   useMyGroupsQuery,
   useAvailableFriendsQuery,
   useNewGroupMutation,

@@ -32,6 +32,8 @@ import {
   NEW_MESSAGE,
   START_TYPING,
   STOP_TYPING,
+  MESSAGE_REACTION_ADDED,
+  MESSAGE_REACTION_REMOVED,
 } from "../constants/events";
 import { useChatDetailsQuery, useGetMessagesQuery } from "../redux/api/api";
 import { useErrors, useSocketEvents } from "../hooks/hook";
@@ -199,11 +201,62 @@ const Chat = ({ chatId, user }) => {
     [chatId]
   );
 
+  const reactionAddedListener = useCallback(
+    (data) => {
+      if (data.messageId) {
+        setMessages((prev) => 
+          prev.map((msg) => {
+            if (msg._id === data.messageId) {
+              const reactions = msg.reactions || [];
+              // Check if user already has this reaction
+              const existingIndex = reactions.findIndex(
+                r => r.user._id === data.reaction.user._id && r.emoji === data.reaction.emoji
+              );
+              
+              if (existingIndex === -1) {
+                return {
+                  ...msg,
+                  reactions: [...reactions, data.reaction]
+                };
+              }
+            }
+            return msg;
+          })
+        );
+      }
+    },
+    []
+  );
+
+  const reactionRemovedListener = useCallback(
+    (data) => {
+      if (data.messageId) {
+        setMessages((prev) => 
+          prev.map((msg) => {
+            if (msg._id === data.messageId) {
+              const reactions = msg.reactions || [];
+              return {
+                ...msg,
+                reactions: reactions.filter(
+                  r => !(r.user._id === data.userId && r.emoji === data.emoji)
+                )
+              };
+            }
+            return msg;
+          })
+        );
+      }
+    },
+    []
+  );
+
   const eventHandler = {
     [ALERT]: alertListener,
     [NEW_MESSAGE]: newMessagesListener,
     [START_TYPING]: startTypingListener,
     [STOP_TYPING]: stopTypingListener,
+    [MESSAGE_REACTION_ADDED]: reactionAddedListener,
+    [MESSAGE_REACTION_REMOVED]: reactionRemovedListener,
   };
 
   useSocketEvents(socket, eventHandler);

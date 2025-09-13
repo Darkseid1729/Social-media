@@ -16,6 +16,8 @@ import {
   renameGroup,
   sendAttachments,
   setWallpaper,
+  addMessageReaction,
+  removeMessageReaction,
 } from "../controllers/chat.js";
 import { singleAvatar } from "../middlewares/multer.js";
 import {
@@ -71,5 +73,9 @@ app
   .get(chatIdValidator(), validateHandler, getChatDetails)
   .put(renameValidator(), validateHandler, renameGroup)
   .delete(chatIdValidator(), validateHandler, deleteChat);
+
+// Message reactions
+app.post("/reaction/add", isAuthenticated, addMessageReaction);
+app.post("/reaction/remove", isAuthenticated, removeMessageReaction);
 
 export default app;

@@ -27,6 +27,25 @@ const schema = new Schema(
       ref: "Chat",
       required: true,
     },
+
+    reactions: [
+      {
+        user: {
+          type: Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        emoji: {
+          type: String,
+          required: true,
+          enum: ["👍", "❤️", "😂", "😮", "😢", "😡"]
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
