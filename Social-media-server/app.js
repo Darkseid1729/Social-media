@@ -78,22 +78,48 @@ io.on("connection", (socket) => {
   const user = socket.user;
   userSocketIDs.set(user._id.toString(), socket.id);
 
-  socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
+  socket.on(NEW_MESSAGE, async ({ chatId, members, message, replyTo }) => {
+    // If there's a replyTo, fetch the referenced message and populate sender
+    let replyToMessage = null;
+    if (replyTo) {
+      try {
+        replyToMessage = await Message.findById(replyTo)
+          .populate({
+            path: "sender",
+            select: "name avatar"
+          })
+          .lean();
+        // Optionally, only send minimal fields for replyTo
+        if (replyToMessage && replyToMessage.sender && replyToMessage.sender.avatar && replyToMessage.sender.avatar.url) {
+          replyToMessage.sender = {
+            _id: replyToMessage.sender._id,
+            name: replyToMessage.sender.name,
+            avatar: replyToMessage.sender.avatar.url
+          };
+        }
+      } catch (error) {
+        console.error("Error fetching reply message:", error);
+      }
+    }
+
     const messageForRealTime = {
       content: message,
       _id: uuid(),
       sender: {
         _id: user._id,
         name: user.name,
+        avatar: user.avatar?.url || null,
       },
       chat: chatId,
       createdAt: new Date().toISOString(),
+      replyTo: replyToMessage,
     };
 
     const messageForDB = {
       content: message,
       sender: user._id,
       chat: chatId,
+      replyTo: replyTo || null,
     };
 
     const membersSocket = getSockets(members);

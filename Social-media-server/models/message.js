@@ -46,6 +46,13 @@ const schema = new Schema(
         },
       },
     ],
+
+    // Reply to another message
+    replyTo: {
+      type: Types.ObjectId,
+      ref: "Message",
+      default: null,
+    },
   },
   {
     timestamps: true,

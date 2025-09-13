@@ -1,4 +1,4 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material";
 import React, { memo, useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import moment from "moment";
@@ -8,13 +8,16 @@ import RenderAttachment from "./RenderAttachment";
 import TextWithLinks from "./TextWithLinks";
 import ReactionPicker from "./ReactionPicker";
 import ReactionsDisplay from "./ReactionsDisplay";
+import ReplyDisplay from "./ReplyDisplay";
+import { Reply as ReplyIcon, EmojiEmotions as EmojiIcon } from "@mui/icons-material";
 import { useAddMessageReactionMutation, useRemoveMessageReactionMutation } from "../../redux/api/api";
 import { motion } from "framer-motion";
 
-const MessageComponent = ({ message, user }) => {
+const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
   // console.log('MessageComponent message:', message); // Debug line
-  const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId } = message;
+  const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId, replyTo } = message;
   const { theme } = useTheme();
+  const [contextMenu, setContextMenu] = useState(null);
   const [reactionPickerAnchor, setReactionPickerAnchor] = useState(null);
   const [addReaction] = useAddMessageReactionMutation();
   const [removeReaction] = useRemoveMessageReactionMutation();
@@ -25,7 +28,27 @@ const MessageComponent = ({ message, user }) => {
 
   const handleContextMenu = (e) => {
     e.preventDefault();
-    setReactionPickerAnchor(e.currentTarget);
+    setContextMenu({ mouseX: e.clientX - 2, mouseY: e.clientY - 4 });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu(null);
+  };
+
+  const handleReply = () => {
+    onReply?.(message);
+    handleCloseContextMenu();
+  };
+
+  const handleShowReactions = () => {
+    setReactionPickerAnchor(document.getElementById(`message-${messageId}`));
+    handleCloseContextMenu();
+  };
+
+  const handleReplyClick = () => {
+    if (replyTo && onScrollToMessage) {
+      onScrollToMessage(replyTo._id);
+    }
   };
 
   const handleReactionSelect = async (emoji) => {
@@ -54,6 +77,7 @@ const MessageComponent = ({ message, user }) => {
 
   return (
     <motion.div
+      id={`message-${messageId}`}
       initial={{ opacity: 0, x: "-100%" }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: "-100%" }}
@@ -77,6 +101,13 @@ const MessageComponent = ({ message, user }) => {
       }}
       onContextMenu={handleContextMenu}
     >
+      {/* Reply Display */}
+      {replyTo && (
+        <ReplyDisplay 
+          replyTo={replyTo} 
+          onClick={handleReplyClick}
+        />
+      )}
       {/* Sender Name (only for other users) */}
       {!sameSender && (
         <Typography
@@ -164,6 +195,39 @@ const MessageComponent = ({ message, user }) => {
       <Typography variant="caption" style={{ color: theme.TIMEAGO_COLOR, marginTop: 8, display: 'block', textAlign: sameSender ? 'right' : 'left' }}>
         {indianTime}
       </Typography>
+
+      {/* Context Menu */}
+      <Menu
+        open={contextMenu !== null}
+        onClose={handleCloseContextMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }
+        PaperProps={{
+          sx: {
+            backgroundColor: theme.LIGHT_BG,
+            border: `1px solid ${theme.SUBTLE_BG_20}`,
+            borderRadius: 2,
+            minWidth: 150,
+          }
+        }}
+      >
+        <MenuItem onClick={handleReply}>
+          <ListItemIcon>
+            <ReplyIcon fontSize="small" sx={{ color: theme.TEXT_SECONDARY }} />
+          </ListItemIcon>
+          <ListItemText primary="Reply" />
+        </MenuItem>
+        <MenuItem onClick={handleShowReactions}>
+          <ListItemIcon>
+            <EmojiIcon fontSize="small" sx={{ color: theme.TEXT_SECONDARY }} />
+          </ListItemIcon>
+          <ListItemText primary="Add Reaction" />
+        </MenuItem>
+      </Menu>
 
       {/* Reaction Picker */}
       <ReactionPicker

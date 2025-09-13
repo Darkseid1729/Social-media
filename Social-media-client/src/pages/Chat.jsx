@@ -24,6 +24,7 @@ import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import { InputBox } from "../components/styles/StyledComponents";
 import FileMenu from "../components/dialogs/FileMenu";
 import MessageComponent from "../components/shared/MessageComponent";
+import ReplyInputPreview from "../components/shared/ReplyInputPreview";
 import { getSocket } from "../socket";
 import {
   ALERT,
@@ -34,6 +35,7 @@ import {
   STOP_TYPING,
   MESSAGE_REACTION_ADDED,
   MESSAGE_REACTION_REMOVED,
+  MESSAGE_REPLY,
 } from "../constants/events";
 import { useChatDetailsQuery, useGetMessagesQuery } from "../redux/api/api";
 import { useErrors, useSocketEvents } from "../hooks/hook";
@@ -68,6 +70,7 @@ const Chat = ({ chatId, user }) => {
   const [fileMenuAnchor, setFileMenuAnchor] = useState(null);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
+  const [replyToMessage, setReplyToMessage] = useState(null);
   // Send sticker as message
   const handleStickerSelect = (stickerUrl) => {
     socket.emit(NEW_MESSAGE, { chatId, members, message: stickerUrl });
@@ -76,6 +79,27 @@ const Chat = ({ chatId, user }) => {
   const handleGifSelect = (gifUrl) => {
     // Send GIF URL as message content
     socket.emit(NEW_MESSAGE, { chatId, members, message: gifUrl });
+  };
+
+  // Reply handlers
+  const handleReply = (message) => {
+    setReplyToMessage(message);
+  };
+
+  const handleCancelReply = () => {
+    setReplyToMessage(null);
+  };
+
+  const handleScrollToMessage = (messageId) => {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Add a highlight effect
+      messageElement.style.backgroundColor = theme.PRIMARY_COLOR + '20';
+      setTimeout(() => {
+        messageElement.style.backgroundColor = '';
+      }, 2000);
+    }
   };
 
   const [IamTyping, setIamTyping] = useState(false);
@@ -125,9 +149,18 @@ const Chat = ({ chatId, user }) => {
     e.preventDefault();
     if (!message.trim()) return;
 
+    // Prepare message data
+    const messageData = { 
+      chatId, 
+      members, 
+      message,
+      replyTo: replyToMessage?._id || null
+    };
+
     // Emitting the message to the server
-    socket.emit(NEW_MESSAGE, { chatId, members, message });
+    socket.emit(NEW_MESSAGE, messageData);
     setMessage("");
+    setReplyToMessage(null); // Clear reply after sending
   };
 
   // Reset messages when chatId changes
@@ -313,13 +346,25 @@ const Chat = ({ chatId, user }) => {
           </div>
         )}
         {allMessages.map((i) => (
-          <MessageComponent key={i._id} message={i} user={user} />
+          <MessageComponent 
+            key={i._id} 
+            message={i} 
+            user={user} 
+            onReply={handleReply}
+            onScrollToMessage={handleScrollToMessage}
+          />
         ))}
 
         {userTyping && <TypingLoader />}
 
         <div ref={bottomRef} />
       </Stack>
+
+      {/* Reply Input Preview */}
+      <ReplyInputPreview 
+        replyTo={replyToMessage} 
+        onClose={handleCancelReply}
+      />
 
       <form
         style={{
