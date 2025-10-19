@@ -1,0 +1,117 @@
+body {
+  overflow-y:hidden;
+  background:black;
+  height:100vh;
+  display:flex;
+}     
+.circles {
+  width:300px;
+  height:300px;
+  position:relative;
+  margin:auto;
+}
+.circles > * {
+  background-color:transparent;
+  box-sizing:border-box;
+  border:5px solid powderblue;
+  border-top: 0 solid transparent;
+  border-left: 0 solid transparent;
+  border-radius: 50%;
+  position:absolute;
+  animation: spin 4s infinite linear alternate;
+}
+      
+.circle1 {
+  width: 300px; height: 300px;
+  animation-delay:-5s;    
+  border-color:rgba(163,207,213, 1);
+}
+.circle2 {
+  width: 280px; height: 280px;
+  top:10px;left:10px;
+  animation-delay:-4.9s;
+  border-color:rgba(163,207,213, .95);
+}
+.circle3 {
+  width: 260px; height: 260px;
+  top:20px;left:20px;
+  animation-delay:-4.8s;
+  border-color:rgba(163,207,213, .9);
+}
+.circle4 {
+  width: 240px; height: 240px;
+  top:30px;left:30px;
+  animation-delay:-4.7s;
+  border-color:rgba(163,207,213, .85);
+}
+.circle5 {
+  width: 220px; height: 220px;
+  top:40px;left:40px;
+  animation-delay:-4.6s;
+  border-color:rgba(163,207,213, .8);
+}
+.circle6 {
+  width: 200px; height: 200px;
+  top:50px;left:50px;
+  animation-delay:-4.5s;
+  border-color:rgba(163,207,213, .75);
+}
+.circle7 {
+  width: 180px; height: 180px;
+  top:60px;left:60px;
+  animation-delay:-4.4s;
+  border-color:rgba(163,207,213, .7);
+}
+.circle8 {
+  width: 160px; height: 160px;
+  top:70px;left:70px;
+  animation-delay:-4.3s;
+  border-color:rgba(163,207,213, .65);
+}
+.circle9 {
+  width: 140px; height: 140px;
+  top:80px;left:80px;
+  animation-delay:-4.2s;
+  border-color:rgba(163,207,213, .6);
+}
+.circle10 {
+  width: 120px; height: 120px;
+  top:90px;left:90px;
+  animation-delay:-4.1s;
+  border-color:rgba(163,207,213, .55);
+}
+.circle11 {
+  width: 100px; height: 100px;
+  top:100px;left:100px;
+  animation-delay:-4s;
+  border-color:rgba(163,207,213, .5);
+}
+.circle12 {
+  width: 80px; height: 80px;
+  top:110px;left:110px;
+  animation-delay:-3.9s;
+  border-color:rgba(163,207,213, .45);
+}
+.circle13 {
+  width: 60px; height: 60px;
+  top:120px;left:120px;
+  animation-delay:-3.8s;
+  border-color:rgba(163,207,213, .4);
+}
+.circle14 {
+  width: 40px; height: 40px;
+  top:130px;left:130px;
+  animation-delay:-3.7s;
+  border-color:rgba(163,207,213, .35);
+}
+.circle15 {
+  width: 20px; height: 20px;
+  top:140px;left:140px;
+  animation-delay:-3.6s;
+  border-color:rgba(163,207,213, .3);
+}
+      
+@keyframes spin {
+    0% {transform: rotate(0deg);}
+    100% {transform: rotate(360deg);};
+}

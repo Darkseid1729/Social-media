@@ -1,1 +1,12 @@
 node_modules
+
+# Migration reports (runtime artifacts)
+Social-media-server/migrations/
+
+# Test and helper scripts (local dev only)
+Social-media-server/scripts/socket-reply-test.js
+Social-media-server/scripts/find-message-by-clientid.js
+Social-media-server/scripts/find-reply-by-content.js
+Social-media-server/scripts/list-replies.js
+Social-media-server/scripts/migrate-reply-clientid-to-objectid.js
+

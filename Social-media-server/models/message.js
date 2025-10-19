@@ -47,10 +47,17 @@ const schema = new Schema(
       },
     ],
 
-    // Reply to another message
+    // Optional client-generated ID (e.g. UUID) to support client-side message IDs
+    clientId: {
+      type: String,
+      index: true,
+      sparse: true,
+      default: null,
+    },
+
+    // Reply to another message: may be an ObjectId or a client-generated ID (string)
     replyTo: {
-      type: Types.ObjectId,
-      ref: "Message",
+      type: mongoose.Schema.Types.Mixed,
       default: null,
     },
   },

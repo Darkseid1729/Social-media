@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import { v4 as uuid } from "uuid";
 import cors from "cors";
+import mongoose from "mongoose";
 import { v2 as cloudinary } from "cloudinary";
 import {
   CHAT_JOINED,
@@ -36,6 +37,11 @@ const envMode = (process.env.NODE_ENV?.trim() || "PRODUCTION");
 const adminSecretKey = process.env.ADMIN_SECRET_KEY || "admin123";
 const userSocketIDs = new Map();
 const onlineUsers = new Set();
+
+// Helper function to validate ObjectId
+const isValidObjectId = (id) => {
+  return id && mongoose.Types.ObjectId.isValid(id);
+};
 
 connectDB(mongoURI);
 
@@ -78,61 +84,112 @@ io.on("connection", (socket) => {
   const user = socket.user;
   userSocketIDs.set(user._id.toString(), socket.id);
 
-  socket.on(NEW_MESSAGE, async ({ chatId, members, message, replyTo }) => {
-    // If there's a replyTo, fetch the referenced message and populate sender
-    let replyToMessage = null;
-    if (replyTo) {
-      try {
-        replyToMessage = await Message.findById(replyTo)
-          .populate({
-            path: "sender",
-            select: "name avatar"
-          })
-          .lean();
-        // Optionally, only send minimal fields for replyTo
-        if (replyToMessage && replyToMessage.sender && replyToMessage.sender.avatar && replyToMessage.sender.avatar.url) {
-          replyToMessage.sender = {
-            _id: replyToMessage.sender._id,
-            name: replyToMessage.sender.name,
-            avatar: replyToMessage.sender.avatar.url
-          };
-        }
-      } catch (error) {
-        console.error("Error fetching reply message:", error);
-      }
-    }
-
-    const messageForRealTime = {
-      content: message,
-      _id: uuid(),
-      sender: {
-        _id: user._id,
-        name: user.name,
-        avatar: user.avatar?.url || null,
-      },
-      chat: chatId,
-      createdAt: new Date().toISOString(),
-      replyTo: replyToMessage,
-    };
-
-    const messageForDB = {
-      content: message,
-      sender: user._id,
-      chat: chatId,
-      replyTo: replyTo || null,
-    };
-
-    const membersSocket = getSockets(members);
-    io.to(membersSocket).emit(NEW_MESSAGE, {
-      chatId,
-      message: messageForRealTime,
-    });
-    io.to(membersSocket).emit(NEW_MESSAGE_ALERT, { chatId });
-
+  socket.on(NEW_MESSAGE, async (payload) => {
     try {
-      await Message.create(messageForDB);
-    } catch (error) {
-      throw new Error(error);
+      let { chatId, members, message, replyTo, replyClientId, clientId } = payload || {};
+
+      // Normalize replyTo in case client sends a quoted string or non-string
+      if (typeof replyTo === 'string') {
+        replyTo = replyTo.trim();
+        if (replyTo.startsWith('"') && replyTo.endsWith('"')) {
+          // strip surrounding quotes if present
+          replyTo = replyTo.slice(1, -1);
+        }
+      }
+
+      // Validate replyTo ID if present
+      let replyToMessage = null;
+      // If the client provided a client-side reply ID, prefer it for lookup
+      if (replyClientId) {
+        try {
+          replyToMessage = await Message.findOne({ clientId: replyClientId }).populate({ path: "sender", select: "name avatar" }).lean();
+          if (!replyToMessage) {
+            console.error("Reply message not found by clientId:", replyClientId);
+            try { socket.emit("MESSAGE_ERROR", { error: "Reply message not found" }); } catch (e) {}
+            return;
+          }
+          // normalize to the referenced message _id so replyTo is stored as ObjectId
+          replyTo = replyToMessage._id;
+        } catch (error) {
+          console.error("Error fetching reply message by clientId:", error.stack || error);
+          try { socket.emit("MESSAGE_ERROR", { error: "Failed to fetch reply message" }); } catch (e) {}
+          return;
+        }
+      } else if (replyTo) {
+        // If replyTo looks like an ObjectId, use it
+        if (isValidObjectId(replyTo)) {
+          try {
+            replyToMessage = await Message.findById(replyTo).populate({ path: "sender", select: "name avatar" }).lean();
+            if (!replyToMessage) {
+              console.error("Reply message not found:", replyTo);
+              try { socket.emit("MESSAGE_ERROR", { error: "Reply message not found" }); } catch (e) {}
+              return;
+            }
+          } catch (error) {
+            console.error("Error fetching reply message by id:", error.stack || error);
+            try { socket.emit("MESSAGE_ERROR", { error: "Failed to fetch reply message" }); } catch (e) {}
+            return;
+          }
+        } else {
+          // replyTo is not a valid ObjectId and no replyClientId provided; treat as clientId
+          try {
+            replyToMessage = await Message.findOne({ clientId: replyTo }).populate({ path: "sender", select: "name avatar" }).lean();
+            if (!replyToMessage) {
+              console.error("Reply message not found (clientId):", replyTo);
+              try { socket.emit("MESSAGE_ERROR", { error: "Reply message not found" }); } catch (e) {}
+              return;
+            }
+            // Keep replyTo as the clientId string if that's how it was referenced
+            replyTo = replyToMessage._id; // normalize to saved _id for storage
+          } catch (error) {
+            console.error("Error fetching reply message by clientId:", error.stack || error);
+            try { socket.emit("MESSAGE_ERROR", { error: "Failed to fetch reply message" }); } catch (e) {}
+            return;
+          }
+        }
+      }
+
+      const messageForDB = {
+        content: message,
+        sender: user._id,
+        chat: chatId,
+        replyTo: replyTo ? replyTo : null,
+        clientId: clientId || null,
+      };
+
+      try {
+        // First save to database to get the actual ObjectId
+        const savedMessage = await Message.create(messageForDB);
+
+        // Then create the real-time message with the actual ObjectId
+        const messageForRealTime = {
+          content: message,
+          _id: savedMessage._id, // Use actual MongoDB ObjectId instead of UUID
+          sender: {
+            _id: user._id,
+            name: user.name,
+            avatar: user.avatar?.url || null,
+          },
+          chat: chatId,
+          createdAt: savedMessage.createdAt,
+          replyTo: replyToMessage,
+        };
+
+        const membersSocket = getSockets(members);
+        io.to(membersSocket).emit(NEW_MESSAGE, {
+          chatId,
+          message: messageForRealTime,
+        });
+        io.to(membersSocket).emit(NEW_MESSAGE_ALERT, { chatId });
+
+      } catch (error) {
+        console.error("Error creating message in database:", error.stack || error);
+        try { socket.emit("MESSAGE_ERROR", { error: "Failed to save message" }); } catch (e) {}
+        return;
+      }
+    } catch (outerErr) {
+      console.error('Unhandled error in NEW_MESSAGE handler:', outerErr.stack || outerErr);
+      try { socket.emit("MESSAGE_ERROR", { error: "Internal server error" }); } catch (e) {}
     }
   });
 

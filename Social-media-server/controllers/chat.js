@@ -18,6 +18,7 @@ import {
 import { getOtherMember } from "../lib/helper.js";
 import { User } from "../models/user.js";
 import { Message } from "../models/message.js";
+import mongoose from "mongoose";
 
 const newGroupChat = TryCatch(async (req, res, next) => {
   const { name, members } = req.body;
@@ -235,7 +236,7 @@ const leaveGroup = TryCatch(async (req, res, next) => {
 });
 
 const sendAttachments = TryCatch(async (req, res, next) => {
-  const { chatId } = req.body;
+  const { chatId, replyToId } = req.body;
 
   const files = req.files || [];
 
@@ -255,6 +256,22 @@ const sendAttachments = TryCatch(async (req, res, next) => {
   if (files.length < 1)
     return next(new ErrorHandler("Please provide attachments", 400));
 
+  // Validate replyToId if provided
+  if (replyToId && !mongoose.Types.ObjectId.isValid(replyToId)) {
+    return next(new ErrorHandler("Invalid reply message ID format", 400));
+  }
+
+  // Check if reply message exists and belongs to the same chat
+  if (replyToId) {
+    const replyMessage = await Message.findById(replyToId);
+    if (!replyMessage) {
+      return next(new ErrorHandler("Reply message not found", 404));
+    }
+    if (replyMessage.chat.toString() !== chatId) {
+      return next(new ErrorHandler("Cannot reply to message from different chat", 400));
+    }
+  }
+
   //   Upload files here
   const attachments = await uploadFilesToCloudinary(files);
 
@@ -263,6 +280,7 @@ const sendAttachments = TryCatch(async (req, res, next) => {
     attachments,
     sender: me._id,
     chat: chatId,
+    replyTo: replyToId || null,
   };
 
   const messageForRealTime = {

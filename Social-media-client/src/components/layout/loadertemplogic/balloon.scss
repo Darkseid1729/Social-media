@@ -1,0 +1,99 @@
+:root {
+  // COLOR CSS VARIABLES
+  --c_01: #ff1ead; // Pink
+  --c_02: #000; // Black
+  --c_03: #fff; // White
+
+  // SIZE VARIABLES
+  --size: 12vmin; // Resize loader by only editing this variable. With vmin unit, loader is automatically responsive.
+  --loader_w: calc(var(--size) * 6);
+  --loader_h: calc(var(--size) * 2.3);
+  --bubble: calc(var(--size) * 1.5);
+  --shine: calc(var(--size) / 5);
+}
+
+// MIXINS
+@mixin size($w, $h: $w) {
+  width: $w;
+  height: $h;
+}
+
+// LAYOUT
+body {
+  background-color: var(--c_02);
+}
+
+.loader {
+  @include size(var(--loader_w), var(--loader_h));
+  display: flex;
+  justify-content: center;
+  position: relative;
+  margin: calc(50vh - var(--loader_h)) auto 0;
+}
+
+.bubble {
+  @include size(var(--bubble));
+  animation: blow 1.6s linear alternate infinite;
+  background-color: var(--c_01);
+  border-radius: 50%;
+  position: absolute;
+  bottom: calc(var(--size) / 1.5);
+  left: 50%;
+  transform: scale(0.5) translateY(50%);
+  outline: 1px solid transparent; // Fixes Chrome jagged edges
+
+  &__shine {
+    background-color: var(--c_03);
+    position: absolute;
+
+    &--lg {
+      @include size(var(--shine), calc(var(--shine) * 2.5));
+      border-radius: 100% 50% 40% 100% / 50% 30% 30% 100%;
+      top: 2%;
+      left: 26%;
+      transform: rotateZ(60deg);
+    }
+
+    &--sm {
+      @include size(calc(var(--shine) / 2));
+      border-radius: 50% 50% 40% 100% / 50% 50% 50% 100%;
+      top: 32%;
+      left: 9%;
+    }
+  }
+}
+
+.text {
+  align-self: flex-end;
+  color: var(--c_01);
+  font-family: "Major Mono Display", monospace;
+  font-size: var(--size);
+  margin: 0;
+  text-transform: uppercase;
+
+  &__highlight {
+    color: var(--c_03);
+  }
+}
+
+// ANIMATION
+@keyframes blow {
+  0% {
+    transform: scale(0.5) translateY(50%);
+  }
+  20% {
+    transform: scale(0.6) translateY(33%);
+  }
+  40% {
+    transform: scale(0.7) translateY(21%);
+  }
+  60% {
+    transform: scale(0.8) translateY(12%);
+  }
+  80% {
+    transform: scale(0.9) translateY(5%);
+  }
+  93%, 100% {
+    transform: scale(1) translateY(0) translateZ(0);
+  }
+}

@@ -128,17 +128,12 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
               alt="Sticker"
               style={{
                 width: '100%',
-                maxWidth: '320px',
-                maxHeight: '220px',
+                maxWidth: { xs: '160px', sm: '320px' },
+                maxHeight: { xs: '110px', sm: '220px' },
                 borderRadius: 8,
                 objectFit: 'cover',
                 boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
                 display: 'block',
-                // Mobile responsive
-                '@media (max-width: 600px)': {
-                  maxWidth: '160px',
-                  maxHeight: '110px',
-                },
               }}
             />
           </Box>

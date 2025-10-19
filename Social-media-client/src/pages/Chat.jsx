@@ -83,7 +83,16 @@ const Chat = ({ chatId, user }) => {
 
   // Reply handlers
   const handleReply = (message) => {
-    setReplyToMessage(message);
+    // Only allow replies to messages with valid MongoDB ObjectIds
+    const isValidObjectId = (id) => {
+      return id && /^[0-9a-fA-F]{24}$/.test(id);
+    };
+
+    if (isValidObjectId(message._id)) {
+      setReplyToMessage(message);
+    } else {
+      console.warn("Cannot reply to message with invalid ObjectId:", message._id);
+    }
   };
 
   const handleCancelReply = () => {
@@ -149,12 +158,20 @@ const Chat = ({ chatId, user }) => {
     e.preventDefault();
     if (!message.trim()) return;
 
+    // Only send replyTo if it's a valid MongoDB ObjectId (24 char hex string)
+    const isValidObjectId = (id) => {
+      return id && /^[0-9a-fA-F]{24}$/.test(id);
+    };
+
+    const replyToId = replyToMessage?._id;
+    const validReplyTo = isValidObjectId(replyToId) ? replyToId : null;
+
     // Prepare message data
     const messageData = { 
       chatId, 
       members, 
       message,
-      replyTo: replyToMessage?._id || null
+      replyTo: validReplyTo
     };
 
     // Emitting the message to the server

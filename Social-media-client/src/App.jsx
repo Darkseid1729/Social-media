@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectRoute from "./components/auth/ProtectRoute";
-import { LayoutLoader } from "./components/layout/Loaders";
+import { RandomLoader } from "./components/layout/Loaders";
 import axios from "axios";
 import { server } from "./constants/config";
 import { useDispatch, useSelector } from "react-redux";
@@ -37,10 +37,10 @@ const App = () => {
   }, [dispatch]);
 
   return loader ? (
-    <LayoutLoader />
+    <RandomLoader />
   ) : (
     <BrowserRouter>
-      <Suspense fallback={<LayoutLoader />}>
+      <Suspense fallback={<RandomLoader />}>
         <Routes>
           <Route
             element={
