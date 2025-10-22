@@ -123,15 +123,17 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
         ((/^\/StickersGenshin\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content)) ||
          /^https?:\/\/res\.cloudinary\.com\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content)) ? (
           <Box sx={{ display: 'flex', justifyContent: sameSender ? 'flex-end' : 'flex-start', mb: 1 }}>
-            <img
+            {/* Use MUI responsive sx for consistent sizing (mobile vs desktop) */}
+            <Box
+              component="img"
               src={content}
               alt="Sticker"
-              style={{
-                width: '100%',
-                maxWidth: { xs: '160px', sm: '320px' },
-                maxHeight: { xs: '110px', sm: '220px' },
-                borderRadius: 8,
-                objectFit: 'cover',
+              sx={{
+                width: 'auto',
+                height: { xs: 120, sm: 220 }, // smaller on phones, fixed taller on desktop
+                maxWidth: { xs: 160, sm: 260 },
+                objectFit: 'contain',
+                borderRadius: 1,
                 boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
                 display: 'block',
               }}
@@ -139,14 +141,15 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
           </Box>
         ) : content && content.endsWith('.gif') ? (
           <Box sx={{ display: 'flex', justifyContent: sameSender ? 'flex-end' : 'flex-start', mb: 1 }}>
-            <img
+            <Box
+              component="img"
               src={content}
               alt="GIF"
-              style={{
+              sx={{
                 width: '100%',
-                maxWidth: '320px',
-                maxHeight: '220px',
-                borderRadius: 8,
+                maxWidth: { xs: 240, sm: 360 },
+                maxHeight: { xs: 180, sm: 260 },
+                borderRadius: 1,
                 objectFit: 'cover',
                 boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
                 display: 'block',
