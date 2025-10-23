@@ -66,4 +66,9 @@ const schema = new Schema(
   }
 );
 
+// Helpful indexes for efficient queries and sorting
+schema.index({ chat: 1, createdAt: -1 });
+schema.index({ createdAt: -1 });
+schema.index({ sender: 1, createdAt: -1 });
+
 export const Message = mongoose.models.Message || model("Message", schema);

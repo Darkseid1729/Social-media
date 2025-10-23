@@ -1,7 +1,6 @@
-import { useFetchData } from "6pp";
 import { Avatar, Box, Stack, Skeleton } from "@mui/material";
 import moment from "moment";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import RenderAttachment from "../../components/shared/RenderAttachment";
 import Table from "../../components/shared/Table";
@@ -96,36 +95,53 @@ const columns = [
 ];
 
 const MessageManagement = () => {
-  const { loading, data, error } = useFetchData(
-    `${server}/api/v1/admin/messages`,
-    "dashboard-messages"
-  );
+  const [rows, setRows] = useState([]);
+  const [rowCount, setRowCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 50 });
 
   useErrors([
     {
-      isError: error,
+      isError: !!error,
       error: error,
     },
   ]);
 
-  const [rows, setRows] = useState([]);
-
-  useEffect(() => {
-    if (data) {
+  const fetchPage = useCallback(async (page, pageSize) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const url = `${server}/api/v1/admin/messages?page=${page + 1}&limit=${pageSize}`;
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(err?.message || "Failed to load messages");
+      }
+      const data = await res.json();
+      setRowCount(data.totalMessages || 0);
       setRows(
-        data.messages.map((i) => ({
+        (data.messages || []).map((i) => ({
           ...i,
           id: i._id,
           sender: {
-            name: i.sender.name,
-            avatar: transformImage(i.sender.avatar, 50),
+            name: i.sender?.name,
+            avatar: transformImage(i.sender?.avatar, 50),
           },
           sendTo: i.sendTo,
           createdAt: moment(i.createdAt).format("MMMM Do YYYY, h:mm:ss a"),
         }))
       );
+    } catch (e) {
+      setError(e);
+    } finally {
+      setLoading(false);
     }
-  }, [data]);
+  }, []);
+
+  useEffect(() => {
+    fetchPage(paginationModel.page, paginationModel.pageSize);
+  }, [fetchPage, paginationModel.page, paginationModel.pageSize]);
 
   return (
     <AdminLayout>
@@ -146,6 +162,12 @@ const MessageManagement = () => {
             rowHeight={200}
             headerStyle={{ background: "#234e4d", color: "#ffd600" }}
             rowStyle={{ background: "#a3c7e6" }}
+            serverPagination
+            loading={loading}
+            rowCount={rowCount}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            pageSizeOptions={[25, 50, 100, 200]}
           />
         </div>
       )}

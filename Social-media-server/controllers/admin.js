@@ -145,14 +145,27 @@ const allChats = TryCatch(async (req, res) => {
 });
 
 const allMessages = TryCatch(async (req, res) => {
-  const messages = await Message.find({})
-    .populate("sender", "name avatar")
-    .populate({
-      path: "chat",
-      select: "groupChat members",
-      populate: { path: "members", select: "name" }
-    })
-    .sort({ createdAt: -1 }); // Sort by time descending
+  // Pagination params with sane defaults and caps
+  const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+  const limitInput = parseInt(req.query.limit || "50", 10);
+  const limit = Math.min(Math.max(limitInput, 1), 200); // 1..200
+  const skip = (page - 1) * limit;
+
+  // Fetch total count in parallel with page slice
+  const [messages, totalMessages] = await Promise.all([
+    Message.find({})
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("sender", "name avatar")
+      .populate({
+        path: "chat",
+        select: "groupChat members",
+        populate: { path: "members", select: "name" },
+      })
+      .lean(),
+    Message.countDocuments({}),
+  ]);
 
   const transformedMessages = messages.map(
     ({ content, attachments, _id, sender, createdAt, chat }) => ({
@@ -160,25 +173,31 @@ const allMessages = TryCatch(async (req, res) => {
       attachments,
       content,
       createdAt,
-      chat: chat._id,
-      groupChat: chat.groupChat,
+      chat: chat?._id,
+      groupChat: !!chat?.groupChat,
       sender: {
-        _id: sender._id,
-        name: sender.name,
-        avatar: sender.avatar.url,
+        _id: sender?._id,
+        name: sender?.name,
+        avatar: sender?.avatar?.url,
       },
-      sendTo: chat.members
+      sendTo: chat?.members
         ? chat.members
-            .filter(m => String(m._id) !== String(sender._id))
-            .map(m => m.name)
+            .filter((m) => String(m._id) !== String(sender?._id))
+            .map((m) => m.name)
             .join(", ")
         : "",
     })
   );
 
+  const totalPages = Math.ceil(totalMessages / limit) || 0;
+
   return res.status(200).json({
     success: true,
     messages: transformedMessages,
+    page,
+    totalPages,
+    totalMessages,
+    pageSize: limit,
   });
 });
 

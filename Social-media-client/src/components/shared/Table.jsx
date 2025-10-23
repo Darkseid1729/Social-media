@@ -3,7 +3,21 @@ import { DataGrid } from "@mui/x-data-grid";
 import { Container, Paper, Typography } from "@mui/material";
 import { useTheme } from "../../context/ThemeContext";
 
-const Table = ({ rows, columns, heading, rowHeight = 52, headerStyle = {}, rowStyle = {} }) => {
+const Table = ({
+  rows,
+  columns,
+  heading,
+  rowHeight = 52,
+  headerStyle = {},
+  rowStyle = {},
+  // Optional server-side pagination props
+  serverPagination = false,
+  rowCount,
+  paginationModel,
+  onPaginationModelChange,
+  pageSizeOptions = [10, 25, 50, 100],
+  loading = false,
+}) => {
   const { theme } = useTheme();
   return (
     <Container
@@ -40,6 +54,12 @@ const Table = ({ rows, columns, heading, rowHeight = 52, headerStyle = {}, rowSt
           style={{
             height: "80%",
           }}
+          loading={loading}
+          paginationMode={serverPagination ? "server" : "client"}
+          rowCount={serverPagination ? rowCount : undefined}
+          paginationModel={serverPagination ? paginationModel : undefined}
+          onPaginationModelChange={serverPagination ? onPaginationModelChange : undefined}
+          pageSizeOptions={pageSizeOptions}
           sx={{
             border: "none",
             ".table-header": {
