@@ -5,6 +5,7 @@ import moment from "moment";
 import "moment-timezone";
 import { fileFormat } from "../../lib/features";
 import RenderAttachment from "./RenderAttachment";
+import ImageGrid from "./ImageGrid";
 import TextWithLinks from "./TextWithLinks";
 import ReactionPicker from "./ReactionPicker";
 import ReactionsDisplay from "./ReactionsDisplay";
@@ -160,27 +161,37 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
           <TextWithLinks text={content} showPreviews={true} />
         )}
 
-      {attachments.length > 0 &&
-        attachments.map((attachment, index) => {
-          const url = attachment.url;
-          const file = fileFormat(url);
+      {attachments.length > 0 && (() => {
+        const imageAttachments = attachments.filter(a => fileFormat(a.url) === 'image');
+        const otherAttachments = attachments.filter(a => fileFormat(a.url) !== 'image');
 
-          return (
-            <Box key={index} sx={{ mt: 0.5 }}>
-              <a
-                href={url}
-                target="_blank"
-                download
-                style={{
-                  color: theme.TEXT_PRIMARY,
-                  textDecoration: 'none',
-                }}
-              >
-                {RenderAttachment(file, url)}
-              </a>
-            </Box>
-          );
-        })}
+        return (
+          <>
+            {imageAttachments.length > 0 && (
+              <Box sx={{ mt: 0.5 }}>
+                <ImageGrid images={imageAttachments} />
+              </Box>
+            )}
+
+            {otherAttachments.length > 0 && otherAttachments.map((attachment, index) => {
+              const url = attachment.url;
+              const file = fileFormat(url);
+              return (
+                <Box key={`file-${index}`} sx={{ mt: 0.5 }}>
+                  <a
+                    href={url}
+                    target="_blank"
+                    download
+                    style={{ color: theme.TEXT_PRIMARY, textDecoration: 'none' }}
+                  >
+                    {RenderAttachment(file, url)}
+                  </a>
+                </Box>
+              );
+            })}
+          </>
+        );
+      })()}
 
       {/* Reactions Display */}
       <ReactionsDisplay 

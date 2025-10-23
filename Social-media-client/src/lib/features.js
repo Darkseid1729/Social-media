@@ -20,11 +20,53 @@ const fileFormat = (url = "") => {
 
 // https://res.cloudinary.com/dj5q966nb/image/upload/dpr_auto/w_200/v1710344436/fafceddc-2845-4ae7-a25a-632f01922b4d.png
 
-// /dpr_auto/w_200
+// Safe Cloudinary transformer:
+// - Only transforms Cloudinary URLs
+// - Skips GIFs to preserve animation
+// - Replaces existing first transform segment instead of stacking
+// - Uses f_auto,q_auto,dpr_auto with requested width
 const transformImage = (url = "", width = 100) => {
-  const newUrl = url.replace("upload/", `upload/dpr_4.0/w_${width}/`);
+  try {
+    if (!url || typeof url !== "string") return url;
+    const lower = url.toLowerCase();
+    if (!lower.includes("res.cloudinary.com")) return url;
+    if (lower.endsWith(".gif")) return url; // don't transform GIFs
 
-  return newUrl;
+    const marker = "upload/";
+    const idx = url.indexOf(marker);
+    if (idx === -1) return url;
+
+    const start = idx + marker.length;
+    const slash = url.indexOf("/", start);
+    if (slash === -1) {
+      // No further segments; just append transforms after upload/
+      return url.replace(
+        marker,
+        `${marker}f_auto,q_auto,dpr_auto,w_${width}/`
+      );
+    }
+
+    const firstSeg = url.slice(start, slash);
+    const hasVersionFirst = /^v\d+$/.test(firstSeg);
+
+    if (hasVersionFirst) {
+      // No existing transforms
+      return url.replace(
+        marker,
+        `${marker}f_auto,q_auto,dpr_auto,w_${width}/`
+      );
+    }
+
+    // Replace existing first transform segment
+    const toReplace = `${marker}${firstSeg}/`;
+    return url.replace(
+      toReplace,
+      `${marker}f_auto,q_auto,dpr_auto,w_${width}/`
+    );
+  } catch (e) {
+    // On any unexpected format, return original URL
+    return url;
+  }
 };
 
 const getLast7Days = () => {
