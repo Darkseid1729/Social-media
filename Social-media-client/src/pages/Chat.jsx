@@ -71,6 +71,8 @@ const Chat = ({ chatId, user }) => {
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState(null);
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  
   // Send sticker as message
   const handleStickerSelect = (stickerUrl) => {
     socket.emit(NEW_MESSAGE, { chatId, members, message: stickerUrl });
@@ -183,6 +185,7 @@ const Chat = ({ chatId, user }) => {
   // Reset messages when chatId changes
   useEffect(() => {
     setMessages([]);
+    setHasScrolledToBottom(false);
   }, [chatId]);
 
   useEffect(() => {
@@ -194,6 +197,7 @@ const Chat = ({ chatId, user }) => {
       setMessage("");
       setOldMessages([]);
       setPage(1);
+      setHasScrolledToBottom(false);
       socket.emit(CHAT_LEAVED, { userId: user._id, members });
     };
   }, [chatId]);
@@ -202,6 +206,21 @@ const Chat = ({ chatId, user }) => {
     if (bottomRef.current)
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Scroll to bottom when old messages first load (when switching chats)
+  useEffect(() => {
+    if (!hasScrolledToBottom && !oldMessagesChunk.isLoading && oldMessages.length > 0 && page === 1 && bottomRef.current) {
+      // Use requestAnimationFrame for better timing
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: "auto" });
+            setHasScrolledToBottom(true);
+          }
+        });
+      });
+    }
+  }, [oldMessages, page, oldMessagesChunk.isLoading, hasScrolledToBottom]);
 
   useEffect(() => {
     if (chatDetails.isError) return navigate("/");
@@ -315,6 +334,17 @@ const Chat = ({ chatId, user }) => {
 
   const allMessages = [...oldMessages, ...messages];
 
+  // Additional scroll logic: directly scroll container when messages load
+  useEffect(() => {
+    if (!hasScrolledToBottom && !oldMessagesChunk.isLoading && allMessages.length > 0 && page === 1 && containerRef.current) {
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        }
+      });
+    }
+  }, [allMessages.length, page, oldMessagesChunk.isLoading, hasScrolledToBottom]);
+
   // Get the date of the first message (if any)
   let floatingDate = "";
   if (allMessages.length > 0 && allMessages[0].createdAt) {
@@ -325,6 +355,23 @@ const Chat = ({ chatId, user }) => {
     <Skeleton />
   ) : (
     <Fragment>
+      {/* Custom scrollbar styles */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+      `}</style>
+
       {/* ...existing code... */}
 
       <Stack
@@ -332,7 +379,7 @@ const Chat = ({ chatId, user }) => {
         boxSizing={"border-box"}
         padding={"1rem"}
         spacing={"1rem"}
-        height={"90%"}
+        height={"80%"}
         sx={{
           overflowX: "hidden",
           overflowY: "auto",
@@ -385,7 +432,8 @@ const Chat = ({ chatId, user }) => {
 
       <form
         style={{
-          height: "10%",
+          height: "20%",
+          minHeight: "80px",
         }}
         onSubmit={submitHandler}
       >
@@ -393,13 +441,17 @@ const Chat = ({ chatId, user }) => {
           direction={"row"}
           height={"100%"}
           padding={"1rem"}
-          alignItems={"center"}
+          alignItems={"flex-end"}
           position={"relative"}
+          gap={"0.8rem"}
         >
+          {/* Left side - File attachment icon */}
           <IconButton
             sx={{
               position: "absolute",
-              left: "1.5rem",
+              left: "1rem",
+              top: "50%",
+              transform: "translateY(-50%)",
               rotate: "30deg",
             }}
             onClick={handleFileOpen}
@@ -407,52 +459,87 @@ const Chat = ({ chatId, user }) => {
             <AttachFileIcon />
           </IconButton>
 
-          {/* Emoji Icon for stickers */}
-          <IconButton
-            sx={{
-              position: "absolute",
-              left: "4.5rem",
-              rotate: "0deg",
-            }}
-            onClick={() => setStickerPickerOpen(true)}
-          >
-            <EmojiEmotionsIcon />
-          </IconButton>
+          {/* Input Container with scrollable input and sticker icon stacked on right */}
+          <div style={{ flex: 1, display: 'flex', gap: '0.8rem', alignItems: 'flex-end' }}>
+            <textarea
+              placeholder="Type Message Here..."
+              value={message}
+              onChange={messageOnChange}
+              rows={2}
+              className="custom-scrollbar"
+              style={{
+                flex: 1,
+                maxHeight: '8rem',
+                minHeight: '5rem',
+                fontSize: '1.15rem',
+                padding: '0.8rem 1rem',
+                paddingLeft: '3rem',
+                borderRadius: '1.5rem',
+                border: `1.5px solid ${theme.SUBTLE_BG_20}`,
+                background: theme.LIGHT_BG,
+                color: theme.TEXT_PRIMARY,
+                boxShadow: '0 2px 8px 0 rgba(0,0,0,0.04)',
+                transition: 'all 0.2s ease-in-out',
+                overflowY: 'auto',
+                resize: 'none',
+                outline: 'none',
+                fontFamily: 'inherit',
+                lineHeight: '1.5',
+                scrollbarWidth: 'thin',
+                scrollbarColor: `${theme.SUBTLE_BG_30} transparent`,
+              }}
+              onFocus={e => {
+                e.target.style.border = `2px solid ${theme.PRIMARY_COLOR}`;
+                e.target.style.minHeight = '6rem';
+                e.target.style.maxHeight = '10rem';
+              }}
+              onBlur={e => {
+                e.target.style.border = `1.5px solid ${theme.SUBTLE_BG_20}`;
+                e.target.style.minHeight = '5rem';
+                e.target.style.maxHeight = '8rem';
+              }}
+            />
 
-          <InputBox
-            placeholder="Type Message Here..."
-            value={message}
-            onChange={messageOnChange}
-            style={{
-              height: '3.2rem',
-              fontSize: '1.15rem',
-              padding: '0 5.5rem 0 7rem', // more left padding to avoid overlap
-              borderRadius: '1.5rem',
-              border: `1.5px solid ${theme.SUBTLE_BG_20}`,
-              background: theme.LIGHT_BG,
-              color: theme.TEXT_PRIMARY,
-              boxShadow: '0 2px 8px 0 rgba(0,0,0,0.04)',
-              transition: 'border 0.2s, box-shadow 0.2s',
-            }}
-            onFocus={e => e.target.style.border = `2px solid ${theme.PRIMARY_COLOR}`}
-            onBlur={e => e.target.style.border = `1.5px solid ${theme.SUBTLE_BG_20}`}
-          />
+            {/* Right side - Sticker and Send buttons stacked vertically */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <IconButton
+                sx={{
+                  rotate: "0deg",
+                  width: '2.5rem',
+                  height: '2.5rem',
+                  color: 'white',
+                  "&:hover": {
+                    backgroundColor: '#ff5252',
+                    color: 'white',
+                  },
+                  "&:active": {
+                    backgroundColor: '#d32f2f',
+                    color: 'white',
+                  },
+                }}
+                onClick={() => setStickerPickerOpen(true)}
+              >
+                <EmojiEmotionsIcon />
+              </IconButton>
 
-          <IconButton
-            type="submit"
-            sx={{
-              rotate: "-30deg",
-              bgcolor: theme.BUTTON_ACCENT,
-              color: "white",
-              marginLeft: "1rem",
-              padding: "0.5rem",
-              "&:hover": {
-                bgcolor: "error.dark",
-              },
-            }}
-          >
-            <SendIcon />
-          </IconButton>
+              <IconButton
+                type="submit"
+                sx={{
+                  rotate: "-30deg",
+                  bgcolor: theme.BUTTON_ACCENT,
+                  color: "white",
+                  width: '2.5rem',
+                  height: '2.5rem',
+                  padding: "0.5rem",
+                  "&:hover": {
+                    bgcolor: "error.dark",
+                  },
+                }}
+              >
+                <SendIcon />
+              </IconButton>
+            </div>
+          </div>
         </Stack>
       </form>
 

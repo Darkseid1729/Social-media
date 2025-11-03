@@ -33,7 +33,7 @@ const ImageGrid = ({ images = [] }) => {
           gridTemplateColumns,
           gap: 0.5,
           width: "100%",
-          maxWidth: { xs: 260, sm: 420 },
+          maxWidth: count === 1 ? { xs: 220, sm: 320 } : { xs: 260, sm: 420 },
           // Set base row height; items can span to create layout variants
           gridAutoRows: { xs: 90, sm: 120 },
         }}
@@ -53,11 +53,12 @@ const ImageGrid = ({ images = [] }) => {
           };
 
           if (count === 1) {
-            // Big single preview
+            // Big single preview - constrained to fit in message
             sx = {
               ...sx,
               gridColumn: "1 / -1",
-              height: { xs: 180, sm: 260 },
+              height: { xs: 160, sm: 220 },
+              maxHeight: { xs: 200, sm: 280 },
             };
           } else if (count === 3 && idx === 2) {
             // Last spans full width

@@ -93,7 +93,7 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
         borderRadius: 12,
         padding: "0.85rem 1.1rem 0.6rem 1.1rem",
         width: "fit-content",
-        maxWidth: "80vw",
+        maxWidth: window.innerWidth > 768 ? "80%" : "80vw",
         boxShadow: "0 2px 12px 0 rgba(0,0,0,0.10)",
         marginBottom: "0.7rem",
         opacity: 1,
@@ -168,7 +168,7 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
         return (
           <>
             {imageAttachments.length > 0 && (
-              <Box sx={{ mt: 0.5 }}>
+              <Box sx={{ mt: 0.5, maxWidth: '100%', overflow: 'hidden' }}>
                 <ImageGrid images={imageAttachments} />
               </Box>
             )}
