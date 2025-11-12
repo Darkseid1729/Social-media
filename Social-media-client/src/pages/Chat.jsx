@@ -18,6 +18,7 @@ import {
   Send as SendIcon,
   EmojiEmotions as EmojiEmotionsIcon,
 } from "@mui/icons-material";
+import { isOnlyEmoji, createEmojiExplosion, injectEmojiAnimationStyles } from "../utils/emojiEffect";
 
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 
@@ -36,6 +37,7 @@ import {
   MESSAGE_REACTION_ADDED,
   MESSAGE_REACTION_REMOVED,
   MESSAGE_REPLY,
+  EMOJI_EFFECT,
 } from "../constants/events";
 import { useChatDetailsQuery, useGetMessagesQuery } from "../redux/api/api";
 import { useErrors, useSocketEvents } from "../hooks/hook";
@@ -65,6 +67,11 @@ const Chat = ({ chatId, user }) => {
 
   const containerRef = useRef(null);
   const bottomRef = useRef(null);
+
+  // Inject emoji animation styles on mount
+  useEffect(() => {
+    injectEmojiAnimationStyles();
+  }, []);
 
   // ...existing code...
   const [fileMenuAnchor, setFileMenuAnchor] = useState(null);
@@ -159,6 +166,12 @@ const Chat = ({ chatId, user }) => {
   const submitHandler = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
+
+    // Check if message is a single emoji and trigger effect for all users
+    if (isOnlyEmoji(message.trim())) {
+      // Emit to all users in the chat (including self)
+      socket.emit(EMOJI_EFFECT, { chatId, members, emoji: message.trim() });
+    }
 
     // Only send replyTo if it's a valid MongoDB ObjectId (24 char hex string)
     const isValidObjectId = (id) => {
@@ -319,6 +332,15 @@ const Chat = ({ chatId, user }) => {
     []
   );
 
+  const emojiEffectListener = useCallback(
+    (data) => {
+      if (data.chatId !== chatId) return;
+      // Trigger the emoji explosion for all users
+      createEmojiExplosion(data.emoji, theme);
+    },
+    [chatId, theme]
+  );
+
   const eventHandler = {
     [ALERT]: alertListener,
     [NEW_MESSAGE]: newMessagesListener,
@@ -326,6 +348,7 @@ const Chat = ({ chatId, user }) => {
     [STOP_TYPING]: stopTypingListener,
     [MESSAGE_REACTION_ADDED]: reactionAddedListener,
     [MESSAGE_REACTION_REMOVED]: reactionRemovedListener,
+    [EMOJI_EFFECT]: emojiEffectListener,
   };
 
   useSocketEvents(socket, eventHandler);

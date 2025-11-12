@@ -10,3 +10,12 @@ Social-media-server/scripts/find-reply-by-content.js
 Social-media-server/scripts/list-replies.js
 Social-media-server/scripts/migrate-reply-clientid-to-objectid.js
 
+# Documentation and demo files (generated for reference)
+EMOJI_EFFECT_README.md
+IMPLEMENTATION_SUMMARY.md
+VISUAL_GUIDE.md
+MULTIPLAYER_EMOJI_EFFECT.md
+TESTING_GUIDE.md
+ARCHITECTURE.md
+emoji-effect-demo.html
+

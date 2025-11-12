@@ -33,7 +33,7 @@ const GifPicker = ({ open, onClose, onSelect }) => {
       if (!Array.isArray(data.data)) throw new Error('Giphy error');
       setGifs(data.data.map(gif => ({
         id: gif.id,
-        previewUrl: gif.images.fixed_height_small_still.url,
+        previewUrl: gif.images.fixed_height_small.url, // Use animated preview
         fullUrl: gif.images.fixed_height.url,
         title: gif.title
       })));
@@ -79,8 +79,8 @@ const GifPicker = ({ open, onClose, onSelect }) => {
       if (!Array.isArray(data.data)) throw new Error('Giphy error');
       setGifs(data.data.map(gif => ({
         id: gif.id,
-        // Use smaller preview image for faster loading, full GIF for selection
-        previewUrl: gif.images.fixed_height_small_still.url,
+        // Use animated small preview for better UX
+        previewUrl: gif.images.fixed_height_small.url,
         fullUrl: gif.images.fixed_height.url,
         title: gif.title
       })));
@@ -191,33 +191,27 @@ const GifPicker = ({ open, onClose, onSelect }) => {
                     overflow: 'hidden',
                     borderRadius: 2,
                     '&:hover': {
-                      transform: 'scale(1.02)',
-                      transition: 'transform 0.2s ease-in-out'
+                      transform: 'scale(1.05)',
+                      transition: 'transform 0.2s ease-in-out',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                     }
                   }}
                 >
                   <img
-                    src={gif.previewUrl} // Show static preview first
+                    src={gif.previewUrl} // Shows animated GIF preview
                     alt={gif.title}
                     loading="lazy"
                     onLoad={() => handleImageLoad(gif.id)}
-                    onMouseEnter={(e) => {
-                      // Show animated GIF on hover
-                      e.target.src = gif.fullUrl;
-                    }}
-                    onMouseLeave={(e) => {
-                      // Return to static preview when not hovering
-                      e.target.src = gif.previewUrl;
-                    }}
                     style={{
                       width: '100%',
                       maxWidth: '100%',
                       borderRadius: 8,
-                      maxHeight: 100, // Reduced height for faster loading
+                      height: 120,
                       objectFit: 'cover',
                       display: 'block',
                       transition: 'opacity 0.3s ease-in-out',
-                      opacity: loadedImages.has(gif.id) ? 1 : 0.7,
+                      opacity: loadedImages.has(gif.id) ? 1 : 0.5,
+                      cursor: 'pointer'
                     }}
                   />
                 </IconButton>
