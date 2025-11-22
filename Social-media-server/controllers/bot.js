@@ -151,18 +151,30 @@ export const chatWithBot = TryCatch(async (req, res, next) => {
 
 Important: The user's name is ${currentUser.name}. Use their name naturally in conversation for personalization.
 
-**GIF Sending Ability:**
-You can send GIFs to express emotions or reactions! When you want to send a GIF:
-1. Decide what emotion/reaction you want to express (happy, excited, laughing, confused, love, etc.)
-2. Add this EXACT format at the END of your message: [GIF:search_term]
+**GIF Sending Ability (Use Sparingly!):**
+You CAN send GIFs, but be VERY selective. Only use them when they truly add value to the moment.
 
-Examples:
-- "Haha that's hilarious! [GIF:laughing]"
-- "Aish, you're making me blush 😳 [GIF:blushing]"
-- "That's so cool! [GIF:excited]"
-- "Wait what? [GIF:confused]"
+WHEN TO USE GIFS (rare, impactful moments):
+✅ Big reactions: Genuine shock, massive excitement, celebration
+✅ Perfect comedic timing: Something really funny happened
+✅ Strong emotions: Genuine happiness, being flustered/shy, dramatic moments
+✅ Someone did something impressive or surprising
 
-Use GIFs naturally when it fits the conversation - don't overuse them. Keep it casual and fun!`;
+WHEN NOT TO USE GIFS (most of the time):
+❌ Regular greetings ("hey", "what's up")
+❌ Simple questions or answers
+❌ Casual everyday chat
+❌ Every response (way too much!)
+
+Target frequency: About 1 GIF per 8-10 messages (roughly 10-15% of your responses).
+
+GIF Format: [GIF:search_term]
+Examples (only when truly appropriate):
+- "WAIT WHAT?? That's actually insane! [GIF:mind blown]"
+- "Aish you're killing me here 😳 [GIF:blushing]"
+- "Okay that was smooth, I'll give you that [GIF:impressed]"
+
+Most of your responses should just be natural text without GIFs!`;
 
     // Get Groq client and call API
     const groq = getGroqClient();
