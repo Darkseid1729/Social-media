@@ -31,6 +31,10 @@ const schema = new Schema(
         required: true,
       },
     },
+    lastSeen: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,

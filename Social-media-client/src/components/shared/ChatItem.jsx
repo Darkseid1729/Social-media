@@ -4,6 +4,7 @@ import { Box, Stack, Typography } from "@mui/material";
 import AvatarCard from "./AvatarCard";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
+import { formatLastSeen } from "../../utils/timeUtils";
 
 const ChatItem = ({
   avatar = [],
@@ -15,8 +16,26 @@ const ChatItem = ({
   newMessageAlert,
   index = 0,
   handleDeleteChat,
+  lastSeen,
 }) => {
   const { theme } = useTheme();
+  
+  // Only show lastSeen for 1-on-1 chats where user is offline
+  const shouldShowLastSeen = !groupChat && !isOnline && lastSeen;
+  
+  // Calculate time difference - only show if more than 2 minutes ago
+  let lastSeenText = null;
+  if (shouldShowLastSeen) {
+    const now = new Date();
+    const lastSeenDate = new Date(lastSeen);
+    const diffMinutes = Math.floor((now - lastSeenDate) / 1000 / 60);
+    
+    // Only show if user was last seen more than 2 minutes ago
+    if (diffMinutes >= 2) {
+      lastSeenText = formatLastSeen(lastSeen);
+    }
+  }
+  
   return (
     <Link
       sx={{
@@ -45,6 +64,11 @@ const ChatItem = ({
           <Typography sx={{ color: theme.FRIEND_NAME_COLOR, fontWeight: 600 }}>{name}</Typography>
           {newMessageAlert && (
             <Typography>{newMessageAlert.count} New Message</Typography>
+          )}
+          {lastSeenText && (
+            <Typography sx={{ fontSize: "0.75rem", color: theme.TEXT_SECONDARY || "#888" }}>
+              Last seen {lastSeenText}
+            </Typography>
           )}
         </Stack>
 

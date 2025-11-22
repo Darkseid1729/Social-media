@@ -21,6 +21,7 @@ import {
 } from "./constants/events.js";
 import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
+import { User } from "./models/user.js";
 import { corsOptions } from "./constants/config.js";
 import { socketAuthenticator } from "./middlewares/auth.js";
 
@@ -226,6 +227,12 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     userSocketIDs.delete(user._id.toString());
     onlineUsers.delete(user._id.toString());
+    
+    // Update lastSeen timestamp on disconnect
+    User.findByIdAndUpdate(user._id, { lastSeen: new Date() }).catch(err => 
+      console.error("Error updating lastSeen:", err)
+    );
+    
     socket.broadcast.emit(ONLINE_USERS, Array.from(onlineUsers));
   });
 });

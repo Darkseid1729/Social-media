@@ -44,7 +44,7 @@ const newGroupChat = TryCatch(async (req, res, next) => {
 const getMyChats = TryCatch(async (req, res, next) => {
   const chats = await Chat.find({ members: req.user }).populate(
     "members",
-    "name avatar"
+    "name avatar lastSeen"
   );
 
   const transformedChats = chats.map(({ _id, name, members, groupChat }) => {
@@ -75,6 +75,8 @@ const getMyChats = TryCatch(async (req, res, next) => {
         }
         return prev;
       }, []),
+      // Only include lastSeen for 1-on-1 chats, explicitly set undefined for groups
+      lastSeen: !groupChat && otherMember ? otherMember.lastSeen : undefined,
     };
   });
 
