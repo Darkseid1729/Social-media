@@ -50,6 +50,7 @@ import { removeNewMessagesAlert } from "../redux/reducers/chat";
 import { TypingLoader } from "../components/layout/Loaders";
 import { useNavigate } from "react-router-dom";
 import { useSetWallpaperMutation } from "../redux/api/api";
+import { server } from "../constants/config";
 
 const Chat = ({ chatId, user }) => {
   const [message, setMessage] = useState("");
@@ -147,6 +148,7 @@ const Chat = ({ chatId, user }) => {
     setMessage(e.target.value);
 
     if (!IamTyping) {
+      //console.log("🔤 Emitting START_TYPING:", { members, chatId });
       socket.emit(START_TYPING, { members, chatId });
       setIamTyping(true);
     }
@@ -154,6 +156,7 @@ const Chat = ({ chatId, user }) => {
     if (typingTimeout.current) clearTimeout(typingTimeout.current);//clear the previous timeout
 
     typingTimeout.current = setTimeout(() => {
+     // console.log("🔤 Emitting STOP_TYPING:", { members, chatId });
       socket.emit(STOP_TYPING, { members, chatId });
       setIamTyping(false);
     }, 1000);
@@ -163,7 +166,7 @@ const Chat = ({ chatId, user }) => {
     setFileMenuAnchor(e.currentTarget);
   };
 
-  const submitHandler = (e) => {
+  const submitHandler = async (e) => {
     e.preventDefault();
     if (!message.trim()) return;
 
@@ -181,16 +184,70 @@ const Chat = ({ chatId, user }) => {
     const replyToId = replyToMessage?._id;
     const validReplyTo = isValidObjectId(replyToId) ? replyToId : null;
 
-    // Prepare message data
-    const messageData = { 
-      chatId, 
-      members, 
-      message,
-      replyTo: validReplyTo
-    };
+    // Check if this is a bot chat (chat name contains "Joon")
+    const chatName = chatDetails?.data?.chat?.name || "";
+    const isBotChat = chatName.toLowerCase().includes('joon');
 
-    // Emitting the message to the server
-    socket.emit(NEW_MESSAGE, messageData);
+    // console.log("🔍 Bot check:", { 
+    //   isBotChat, 
+    //   chatName,
+    //   chatId 
+    // });
+
+    if (isBotChat) {
+      // Call bot API endpoint instead of socket emit
+      // console.log("🤖 Calling bot API...");
+      
+      // First, send the user's message normally via socket
+      const messageData = { 
+        chatId, 
+        members, 
+        message,
+        replyTo: validReplyTo
+      };
+      //console.log("📤 Emitting NEW_MESSAGE:", messageData);
+      socket.emit(NEW_MESSAGE, messageData);
+      
+      // Then call bot API to get response
+      try {
+        const response = await fetch(`${server}/api/v1/bot/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            chatId,
+            message: message.trim(),
+            replyTo: validReplyTo
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('❌ Bot API error:', errorData);
+          // Show error to user (you can add a toast notification here)
+        } else {
+          // console.log("✅ Bot API call successful");
+        }
+        // Response will come via socket NEW_MESSAGE event
+      } catch (error) {
+        console.error('❌ Error calling bot API:', error);
+        // Show error to user (you can add a toast notification here)
+      }
+    } else {
+      //console.log("📤 Regular chat - using socket emit");
+      // Regular chat - use socket emit
+      const messageData = { 
+        chatId, 
+        members, 
+        message,
+        replyTo: validReplyTo
+      };
+      //console.log("📤 Emitting NEW_MESSAGE:", messageData);
+      socket.emit(NEW_MESSAGE, messageData);
+    }
+
     setMessage("");
     setReplyToMessage(null); // Clear reply after sending
   };
@@ -241,6 +298,7 @@ const Chat = ({ chatId, user }) => {
 
   const newMessagesListener = useCallback(
     (data) => {
+      // console.log("📩 NEW_MESSAGE event received:", data);
       if (data.chatId !== chatId) return;
 
       setMessages((prev) => [...prev, data.message]);

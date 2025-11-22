@@ -25,13 +25,17 @@ import { User } from "./models/user.js";
 import { corsOptions } from "./constants/config.js";
 import { socketAuthenticator } from "./middlewares/auth.js";
 
-import userRoute from "./routes/user.js";
-import chatRoute from "./routes/chat.js";
-import adminRoute from "./routes/admin.js";
-
+// Load environment variables FIRST before importing routes
 dotenv.config({
   path: "./.env",
 });
+
+// Import routes AFTER dotenv is configured
+import userRoute from "./routes/user.js";
+import chatRoute from "./routes/chat.js";
+import adminRoute from "./routes/admin.js";
+import botRoute from "./routes/bot.js";
+import { createBotUser } from "./seeders/bot.js";
 
 const mongoURI = process.env.MONGO_URI;
 const port = process.env.PORT || 3000;
@@ -69,6 +73,7 @@ app.use(cors(corsOptions));
 app.use("/api/v1/user", userRoute);
 app.use("/api/v1/chat", chatRoute);
 app.use("/api/v1/admin", adminRoute);
+app.use("/api/v1/bot", botRoute);
 
 app.get("/", (req, res) => {
   res.send("Hello World");
@@ -239,8 +244,15 @@ io.on("connection", (socket) => {
 
 app.use(errorMiddleware);
 
-server.listen(port, () => {
+server.listen(port, async () => {
   console.log(`Server is running on port ${port} in ${envMode} Mode`);
+  
+  // Initialize bot user on server start
+  try {
+    await createBotUser();
+  } catch (error) {
+    console.error("Failed to initialize bot user:", error);
+  }
 });
 
 export { envMode, adminSecretKey, userSocketIDs };

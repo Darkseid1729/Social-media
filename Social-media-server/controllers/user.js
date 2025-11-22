@@ -195,6 +195,27 @@ const sendFriendRequest = TryCatch(async (req, res, next) => {
 
   if (request) return next(new ErrorHandler("Request already sent", 400));
 
+  // Check if receiver is the bot (Joon)
+  const receiver = await User.findById(userId);
+  if (receiver && receiver.username === "joon") {
+    // Auto-accept friend request for bot
+    const sender = await User.findById(req.user, "name");
+    const members = [req.user, userId];
+
+    await Chat.create({
+      members,
+      name: `${sender.name}-${receiver.name}`,
+    });
+
+    emitEvent(req, REFETCH_CHATS, members);
+
+    return res.status(200).json({
+      success: true,
+      message: "Chat with Joon created",
+      autoAccepted: true,
+    });
+  }
+
   await Request.create({
     sender: req.user,
     receiver: userId,

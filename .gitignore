@@ -1,21 +1,42 @@
-node_modules
+# Dependencies
+node_modules/
+package-lock.json
 
-# Migration reports (runtime artifacts)
-Social-media-server/migrations/
+# Environment variables
+.env
+.env.local
+.env.*.local
 
-# Test and helper scripts (local dev only)
-Social-media-server/scripts/socket-reply-test.js
-Social-media-server/scripts/find-message-by-clientid.js
-Social-media-server/scripts/find-reply-by-content.js
-Social-media-server/scripts/list-replies.js
-Social-media-server/scripts/migrate-reply-clientid-to-objectid.js
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+server.log
 
-# Documentation and demo files (generated for reference)
-EMOJI_EFFECT_README.md
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Documentation (keep in repo but ignore temp files)
+*.md~
+*.tmp
+
+BOT_SETUP.md
+FRONTEND_INTEGRATION.md
 IMPLEMENTATION_SUMMARY.md
-VISUAL_GUIDE.md
-MULTIPLAYER_EMOJI_EFFECT.md
-TESTING_GUIDE.md
-ARCHITECTURE.md
-emoji-effect-demo.html
-
+DEPLOYMENT_SUCCESS.md
+SETUP_CHECKLIST.md
+LINK_SHARING_GUIDE.md
