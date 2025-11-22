@@ -83,7 +83,19 @@ const getAdminData = TryCatch(async (req, res, next) => {
 });
 
 const allUsers = TryCatch(async (req, res) => {
-  const users = await User.find({});
+  const { search } = req.query;
+  
+  // Build search query
+  const query = search
+    ? {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { username: { $regex: search, $options: "i" } },
+        ],
+      }
+    : {};
+  
+  const users = await User.find(query);
 
   const transformedUsers = await Promise.all(
     users.map(async ({ name, username, avatar, _id }) => {
@@ -110,7 +122,14 @@ const allUsers = TryCatch(async (req, res) => {
 });
 
 const allChats = TryCatch(async (req, res) => {
-  const chats = await Chat.find({})
+  const { search } = req.query;
+  
+  // Build search query
+  const query = search
+    ? { name: { $regex: search, $options: "i" } }
+    : {};
+  
+  const chats = await Chat.find(query)
     .populate("members", "name avatar")
     .populate("creator", "name avatar");
 
@@ -145,15 +164,30 @@ const allChats = TryCatch(async (req, res) => {
 });
 
 const allMessages = TryCatch(async (req, res) => {
+  const { search, chatId } = req.query;
+  
   // Pagination params with sane defaults and caps
   const page = Math.max(parseInt(req.query.page || "1", 10), 1);
   const limitInput = parseInt(req.query.limit || "50", 10);
   const limit = Math.min(Math.max(limitInput, 1), 200); // 1..200
   const skip = (page - 1) * limit;
 
+  // Build search query
+  const query = {};
+  
+  // Search by content
+  if (search) {
+    query.content = { $regex: search, $options: "i" };
+  }
+  
+  // Filter by chat ID
+  if (chatId) {
+    query.chat = chatId;
+  }
+
   // Fetch total count in parallel with page slice
   const [messages, totalMessages] = await Promise.all([
-    Message.find({})
+    Message.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -164,7 +198,7 @@ const allMessages = TryCatch(async (req, res) => {
         populate: { path: "members", select: "name" },
       })
       .lean(),
-    Message.countDocuments({}),
+    Message.countDocuments(query),
   ]);
 
   const transformedMessages = messages.map(

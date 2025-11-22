@@ -1,4 +1,5 @@
-import { Avatar, Box, Stack, Skeleton } from "@mui/material";
+import { Avatar, Box, Stack, Skeleton, TextField, InputAdornment } from "@mui/material";
+import { Search as SearchIcon } from "@mui/icons-material";
 import moment from "moment";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/layout/AdminLayout";
@@ -100,6 +101,10 @@ const MessageManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 50 });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [chatIdFilter, setChatIdFilter] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [debouncedChatId, setDebouncedChatId] = useState("");
 
   useErrors([
     {
@@ -108,11 +113,35 @@ const MessageManagement = () => {
     },
   ]);
 
-  const fetchPage = useCallback(async (page, pageSize) => {
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      // Reset to page 0 when search changes
+      setPaginationModel((prev) => ({ ...prev, page: 0 }));
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Debounce chat ID filter
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedChatId(chatIdFilter);
+      // Reset to page 0 when filter changes
+      setPaginationModel((prev) => ({ ...prev, page: 0 }));
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [chatIdFilter]);
+
+  const fetchPage = useCallback(async (page, pageSize, search, chatId) => {
     try {
       setLoading(true);
       setError(null);
-      const url = `${server}/api/v1/admin/messages?page=${page + 1}&limit=${pageSize}`;
+      const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
+      const chatIdParam = chatId ? `&chatId=${encodeURIComponent(chatId)}` : "";
+      const url = `${server}/api/v1/admin/messages?page=${page + 1}&limit=${pageSize}${searchParam}${chatIdParam}`;
       const res = await fetch(url, { credentials: "include" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: res.statusText }));
@@ -140,12 +169,12 @@ const MessageManagement = () => {
   }, []);
 
   useEffect(() => {
-    fetchPage(paginationModel.page, paginationModel.pageSize);
-  }, [fetchPage, paginationModel.page, paginationModel.pageSize]);
+    fetchPage(paginationModel.page, paginationModel.pageSize, debouncedSearch, debouncedChatId);
+  }, [fetchPage, paginationModel.page, paginationModel.pageSize, debouncedSearch, debouncedChatId]);
 
   return (
     <AdminLayout>
-      {loading ? (
+      {loading && !rows.length ? (
         <Skeleton height={"100vh"} sx={{ bgcolor: "#1a2e2b" }} />
       ) : (
         <div
@@ -155,6 +184,80 @@ const MessageManagement = () => {
             padding: "2rem",
           }}
         >
+          <Box sx={{ mb: 3, display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
+            <TextField
+              placeholder="Search messages by content..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{
+                flex: 1,
+                minWidth: "300px",
+                maxWidth: "500px",
+                bgcolor: "#234e4d",
+                borderRadius: 2,
+                "& .MuiOutlinedInput-root": {
+                  color: "#fff",
+                  "& fieldset": {
+                    borderColor: "#ffd600",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#ffd600",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#ffd600",
+                  },
+                },
+                "& .MuiInputBase-input::placeholder": {
+                  color: "#87d485ff",
+                  opacity: 1,
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: "#ffd600" }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            
+            <TextField
+              placeholder="Filter by Chat ID..."
+              value={chatIdFilter}
+              onChange={(e) => setChatIdFilter(e.target.value)}
+              sx={{
+                flex: 1,
+                minWidth: "300px",
+                maxWidth: "500px",
+                bgcolor: "#234e4d",
+                borderRadius: 2,
+                "& .MuiOutlinedInput-root": {
+                  color: "#fff",
+                  "& fieldset": {
+                    borderColor: "#ffd600",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#ffd600",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#ffd600",
+                  },
+                },
+                "& .MuiInputBase-input::placeholder": {
+                  color: "#87d485ff",
+                  opacity: 1,
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: "#ffd600" }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+          
           <Table
             heading={"All Messages"}
             columns={columns}

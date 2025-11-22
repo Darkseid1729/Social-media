@@ -6,6 +6,7 @@ import {
   ManageAccounts as ManageAccountsIcon,
   Menu as MenuIcon,
   Message as MessageIcon,
+  SmartToy as BotIcon,
 } from "@mui/icons-material";
 import {
   Box,
@@ -54,6 +55,11 @@ const adminTabs = [
     name: "Messages",
     path: "/admin/messages",
     icon: <MessageIcon />,
+  },
+  {
+    name: "Bot",
+    path: "/admin/bot",
+    icon: <BotIcon />,
   },
 ];
 

@@ -40,7 +40,7 @@ import { createBotUser } from "./seeders/bot.js";
 const mongoURI = process.env.MONGO_URI;
 const port = process.env.PORT || 3000;
 const envMode = (process.env.NODE_ENV?.trim() || "PRODUCTION");
-const adminSecretKey = process.env.ADMIN_SECRET_KEY || "admin123";
+const adminSecretKey = process.env.ADMIN_SECRET_KEY;
 const userSocketIDs = new Map();
 const onlineUsers = new Set();
 

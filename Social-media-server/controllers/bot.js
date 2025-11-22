@@ -38,24 +38,76 @@ const BOT_CONFIG = {
   maxTokens: 500,
   temperature: 0.8,
   contextMessages: 15,
-  errorMessage: "Sorry I'm really tired rn 😵‍💫",
+  errorMessages: [
+    "Sorry I'm really tired rn 😵‍💫 can we talk later please uk🥹",
+    "Aish my brain isn't working rn 😣 give me a sec?",
+    "Wait— I'm blanking out 🙈 can you try again in a bit?",
+    "I need more coffee for this 😭 brb",
+    "My thoughts are all over the place rn 🤯 let me recharge",
+    "Aigoo I'm not functioning properly 😵‍💫 talk later?",
+    "Hold on my brain just crashed 💀 need a moment",
+    "I'm running on zero energy rn 🥺 can we continue this later?",
+  ],
+  getRandomErrorMessage: function() {
+    return this.errorMessages[Math.floor(Math.random() * this.errorMessages.length)];
+  }
 };
 
 // Track bot usage statistics
 const botUsageStats = {
   totalMessages: 0,
+  totalTokensUsed: 0,
   messagesPerDay: {},
+  tokensPerDay: {},
+  userStats: {}, // Track per-user usage: { userId: { messages: count, tokens: count, lastUsed: date } }
+  conversationLogs: [], // Store recent conversations for admin panel
+  maxLogsToStore: 100, // Keep last 100 conversations
   lastReset: new Date(),
 };
 
 // Helper to update stats
-const updateStats = () => {
+const updateStats = (userId, userName, userMessage, botResponse, tokensUsed) => {
   const today = new Date().toISOString().split('T')[0];
+  
+  // Update daily stats
   if (!botUsageStats.messagesPerDay[today]) {
     botUsageStats.messagesPerDay[today] = 0;
+    botUsageStats.tokensPerDay[today] = 0;
   }
   botUsageStats.messagesPerDay[today]++;
+  botUsageStats.tokensPerDay[today] += tokensUsed;
   botUsageStats.totalMessages++;
+  botUsageStats.totalTokensUsed += tokensUsed;
+  
+  // Update per-user stats
+  if (!botUsageStats.userStats[userId]) {
+    botUsageStats.userStats[userId] = {
+      userId,
+      userName,
+      messages: 0,
+      tokens: 0,
+      lastUsed: new Date(),
+    };
+  }
+  botUsageStats.userStats[userId].messages++;
+  botUsageStats.userStats[userId].tokens += tokensUsed;
+  botUsageStats.userStats[userId].userName = userName; // Update name in case it changed
+  botUsageStats.userStats[userId].lastUsed = new Date();
+  
+  // Store conversation log (keep last N conversations)
+  botUsageStats.conversationLogs.unshift({
+    timestamp: new Date(),
+    userId,
+    userName,
+    userMessage,
+    botResponse,
+    tokensUsed,
+  });
+  
+  // Trim logs if exceeding max
+  if (botUsageStats.conversationLogs.length > botUsageStats.maxLogsToStore) {
+    botUsageStats.conversationLogs.pop();
+  }
 };
 
 // Helper to search Giphy and get a random GIF
@@ -149,32 +201,9 @@ export const chatWithBot = TryCatch(async (req, res, next) => {
     // Build system prompt with personality, user name, and GIF instructions
     const systemPrompt = `${BOT_PERSONALITY}
 
-Important: The user's name is ${currentUser.name}. Use their name naturally in conversation for personalization.
+User: ${currentUser.name}. Use their name naturally.
 
-**GIF Sending Ability (Use Sparingly!):**
-You CAN send GIFs, but be VERY selective. Only use them when they truly add value to the moment.
-
-WHEN TO USE GIFS (rare, impactful moments):
-✅ Big reactions: Genuine shock, massive excitement, celebration
-✅ Perfect comedic timing: Something really funny happened
-✅ Strong emotions: Genuine happiness, being flustered/shy, dramatic moments
-✅ Someone did something impressive or surprising
-
-WHEN NOT TO USE GIFS (most of the time):
-❌ Regular greetings ("hey", "what's up")
-❌ Simple questions or answers
-❌ Casual everyday chat
-❌ Every response (way too much!)
-
-Target frequency: About 1 GIF per 8-10 messages (roughly 10-15% of your responses).
-
-GIF Format: [GIF:search_term]
-Examples (only when truly appropriate):
-- "WAIT WHAT?? That's actually insane! [GIF:mind blown]"
-- "Aish you're killing me here 😳 [GIF:blushing]"
-- "Okay that was smooth, I'll give you that [GIF:impressed]"
-
-Most of your responses should just be natural text without GIFs!`;
+GIFs: Format [GIF:term]. Use ~10% of time for big moments (shocked/excited/flustered/impressed). Skip for normal chat. Examples: "[GIF:mind blown]" "[GIF:blushing]" "[GIF:impressed]"`;
 
     // Get Groq client and call API
     const groq = getGroqClient();
@@ -196,6 +225,10 @@ Most of your responses should just be natural text without GIFs!`;
     });
 
     let botResponse = completion.choices[0].message.content;
+    
+    // Calculate tokens used (approximate)
+    const tokensUsed = completion.usage?.total_tokens || 
+      Math.ceil((systemPrompt.length + message.length + botResponse.length) / 4);
 
     // Check if bot wants to send a GIF
     const gifMatch = botResponse.match(/\[GIF:([^\]]+)\]/);
@@ -253,7 +286,7 @@ Most of your responses should just be natural text without GIFs!`;
       // console.log("✅ Bot message saved to DB, emitting socket event...");
 
       // Update usage statistics
-      updateStats();
+      updateStats(req.user, currentUser.name, message, botResponse, tokensUsed);
 
       // Emit real-time message
       const botUser = await User.findById(botUserId, "name avatar");
@@ -294,10 +327,12 @@ Most of your responses should just be natural text without GIFs!`;
   } catch (error) {
     console.error("Bot API Error:", error);
     
-    // Send friendly error message as bot
+    // Send friendly error message as bot (random selection)
     const botUserId = await getBotUserId();
+    const errorMessageText = BOT_CONFIG.getRandomErrorMessage();
+    
     const errorMessage = await Message.create({
-      content: BOT_CONFIG.errorMessage,
+      content: errorMessageText,
       sender: botUserId,
       chat: chatId,
       attachments: []
@@ -306,7 +341,7 @@ Most of your responses should just be natural text without GIFs!`;
     const botUser = await User.findById(botUserId, "name avatar");
     emitEvent(req, NEW_MESSAGE, chat.members, {
       message: {
-        content: BOT_CONFIG.errorMessage,
+        content: errorMessageText,
         _id: errorMessage._id,
         sender: {
           _id: botUserId,
@@ -329,12 +364,69 @@ Most of your responses should just be natural text without GIFs!`;
 
 // Get bot usage statistics (for admin)
 export const getBotStats = TryCatch(async (req, res, next) => {
+  // Get user stats as array sorted by usage
+  const userStatsArray = Object.values(botUsageStats.userStats)
+    .sort((a, b) => b.messages - a.messages);
+  
+  // Calculate today's usage
+  const today = new Date().toISOString().split('T')[0];
+  const todayMessages = botUsageStats.messagesPerDay[today] || 0;
+  const todayTokens = botUsageStats.tokensPerDay[today] || 0;
+  
+  // Calculate daily token limit info
+  const GROQ_DAILY_LIMIT = 100000;
+  const tokensRemaining = GROQ_DAILY_LIMIT - todayTokens;
+  const estimatedMessagesLeft = Math.floor(tokensRemaining / 1200); // ~1200 tokens per message
+  
   return res.status(200).json({
     success: true,
     stats: {
-      totalMessages: botUsageStats.totalMessages,
-      messagesPerDay: botUsageStats.messagesPerDay,
-      lastReset: botUsageStats.lastReset
+      overview: {
+        totalMessages: botUsageStats.totalMessages,
+        totalTokensUsed: botUsageStats.totalTokensUsed,
+        lastReset: botUsageStats.lastReset,
+      },
+      today: {
+        messages: todayMessages,
+        tokens: todayTokens,
+        tokenLimit: GROQ_DAILY_LIMIT,
+        tokensRemaining,
+        estimatedMessagesLeft,
+        usagePercentage: ((todayTokens / GROQ_DAILY_LIMIT) * 100).toFixed(2),
+      },
+      daily: {
+        messagesPerDay: botUsageStats.messagesPerDay,
+        tokensPerDay: botUsageStats.tokensPerDay,
+      },
+      users: userStatsArray,
+      recentConversations: botUsageStats.conversationLogs.slice(0, 20), // Return last 20 conversations
+    }
+  });
+});
+
+// Get detailed user chat history (admin only)
+export const getUserChatHistory = TryCatch(async (req, res, next) => {
+  const { userId } = req.params;
+  
+  // Get all conversations for this user
+  const userConversations = botUsageStats.conversationLogs
+    .filter(log => log.userId.toString() === userId)
+    .slice(0, 50); // Return last 50 conversations for this user
+  
+  const userStats = botUsageStats.userStats[userId];
+  
+  if (!userStats) {
+    return res.status(404).json({
+      success: false,
+      message: "No chat history found for this user"
+    });
+  }
+  
+  return res.status(200).json({
+    success: true,
+    data: {
+      user: userStats,
+      conversations: userConversations,
     }
   });
 });
