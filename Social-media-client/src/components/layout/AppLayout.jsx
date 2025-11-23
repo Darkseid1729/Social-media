@@ -12,6 +12,7 @@ import {
 import { useErrors, useSocketEvents } from "../../hooks/hook";
 import { getOrSaveFromStorage } from "../../lib/features";
 import { useMyChatsQuery } from "../../redux/api/api";
+import { useChatDetailsQuery } from "../../redux/api/api";
 import {
   incrementNotification,
   setNewMessagesAlert,
@@ -26,6 +27,7 @@ import DeleteChatMenu from "../dialogs/DeleteChatMenu";
 import Title from "../shared/Title";
 import ChatList from "../specific/ChatList";
 import Profile from "../specific/Profile";
+import GroupMembersList from "../specific/GroupMembersList";
 import { useGetUserProfileQuery } from "../../redux/api/api";
 import { useUpdateAvatarMutation } from "../../redux/api/api";
 import { updateUserAvatar } from "../../redux/reducers/updateUserAvatar";
@@ -70,6 +72,12 @@ const AppLayout = () => (WrappedComponent) => {
     const { newMessagesAlert } = useSelector((state) => state.chat);
 
     const { isLoading, data, isError, error, refetch } = useMyChatsQuery("");
+
+    // Fetch chat details if chatId exists to determine if it's a group
+    const { data: chatDetailsData, isLoading: chatDetailsLoading } = useChatDetailsQuery(
+      { chatId, populate: true }, 
+      { skip: !chatId }
+    );
 
     useErrors([{ isError, error }]);
 
@@ -128,7 +136,7 @@ const AppLayout = () => (WrappedComponent) => {
     return (
       <>
         <Title />
-        <Header />
+        <Header chatDetails={chatDetailsData?.chat} />
 
         <DeleteChatMenu
           dispatch={dispatch}
@@ -190,7 +198,16 @@ const AppLayout = () => (WrappedComponent) => {
               background: theme.APP_OVERLAY,
             }}
           >
-            {selectedUserId ? (
+            {chatDetailsLoading ? (
+              <Skeleton />
+            ) : chatDetailsData?.chat?.groupChat ? (
+              // Show group members list for group chats
+              <GroupMembersList 
+                members={chatDetailsData.chat.members} 
+                currentUserId={user._id}
+              />
+            ) : selectedUserId ? (
+              // Show selected user profile
               selectedProfileLoading ? (
                 <Skeleton />
               ) : selectedProfileData && selectedProfileData.user ? (
@@ -199,6 +216,7 @@ const AppLayout = () => (WrappedComponent) => {
                 <div style={{ color: theme.TEXT_PRIMARY }}>User not found</div>
               )
             ) : (
+              // Show current user profile by default
               <Profile user={user} onAvatarChange={handleAvatarChange} />
             )}
           </Grid>

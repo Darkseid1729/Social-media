@@ -16,10 +16,12 @@ import { themes } from "../../constants/themes";
 import AddIcon from "@mui/icons-material/Add";
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import WallpaperDialog from '../dialogs/WallpaperDialog';
+import GroupMembersDialog from '../dialogs/GroupMembersDialog';
 import MenuIcon from "@mui/icons-material/Menu";
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import SearchIcon from "@mui/icons-material/Search";
 import GroupIcon from "@mui/icons-material/Group";
+import InfoIcon from "@mui/icons-material/Info";
+import SearchIcon from "@mui/icons-material/Search";
 import LogoutIcon from "@mui/icons-material/Logout";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
@@ -151,8 +153,11 @@ const Header = (props) => {
 
   // Wallpaper dialog state
   const [showWallpaperDialog, setShowWallpaperDialog] = useState(false);
+  const [showGroupMembersDialog, setShowGroupMembersDialog] = useState(false);
   // Use chatId from props
   const chatId = props.chatId;
+  const chatDetails = props.chatDetails;
+  const isGroupChat = chatDetails?.groupChat;
 
   const handleWallpaperChange = () => {
     setShowWallpaperDialog(true);
@@ -160,6 +165,15 @@ const Header = (props) => {
 
   const handleWallpaperDialogClose = () => {
     setShowWallpaperDialog(false);
+  };
+
+  const handleGroupMembersOpen = () => {
+    setShowGroupMembersDialog(true);
+    handleMobileMenuClose();
+  };
+
+  const handleGroupMembersClose = () => {
+    setShowGroupMembersDialog(false);
   };
 
   return (
@@ -193,6 +207,22 @@ const Header = (props) => {
             </Box>
 
             <Box sx={{ flexGrow: 1 }} />
+
+            {/* Group members button - visible on mobile when in a group chat */}
+            {isGroupChat && (
+              <Box
+                sx={{
+                  display: { xs: "block", md: "none" },
+                  mr: 1,
+                }}
+              >
+                <Tooltip title="View Group Members">
+                  <IconButton color="inherit" onClick={handleGroupMembersOpen}>
+                    <InfoIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
 
             {/* Desktop header actions */}
             <Box sx={{ display: { xs: "none", sm: "flex" } }}>
@@ -262,6 +292,11 @@ const Header = (props) => {
                 <MenuItem onClick={openProfile}>
                   <AccountCircleIcon sx={{ mr: 1 }} /> Profile
                 </MenuItem>
+                {isGroupChat && (
+                  <MenuItem onClick={handleGroupMembersOpen}>
+                    <InfoIcon sx={{ mr: 1 }} /> Group Members
+                  </MenuItem>
+                )}
                 <MenuItem onClick={openSearch}>
                   <SearchIcon sx={{ mr: 1 }} /> Search
                 </MenuItem>
@@ -346,6 +381,14 @@ const Header = (props) => {
           <Profile user={user} onAvatarChange={handleAvatarChange} />
         </DialogContent>
       </Dialog>
+
+      {/* Group Members Dialog */}
+      <GroupMembersDialog
+        open={showGroupMembersDialog}
+        onClose={handleGroupMembersClose}
+        members={chatDetails?.members || []}
+        currentUserId={user?._id}
+      />
     </>
   );
 };

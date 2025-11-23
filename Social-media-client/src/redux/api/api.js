@@ -71,7 +71,7 @@ const api = createApi({
         credentials: "include",
         body: data,
       }),
-      invalidatesTags: ["User"],
+      invalidatesTags: ["User", "Chat"],
     }),
 
     getNotifications: builder.query({
@@ -227,6 +227,15 @@ const api = createApi({
       }),
       providesTags: ["User"],
     }),
+
+    // Check friend status with a user
+    checkFriendStatus: builder.query({
+      query: (userId) => ({
+        url: `user/friend-status/${userId}`,
+        credentials: "include",
+      }),
+      providesTags: ["User"],
+    }),
   }),
 });
 
@@ -253,5 +262,6 @@ export const {
   useUpdateAvatarMutation,
   useGetUserProfileQuery,
   useSetWallpaperMutation,
+  useCheckFriendStatusQuery,
 } = api;
 

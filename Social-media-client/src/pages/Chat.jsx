@@ -637,9 +637,16 @@ export default AppLayout()(Chat);
 
 export const ChatWithHeader = (props) => {
   const { chatId } = useParams();
+  
+  // Fetch chat details for the header
+  const { data: chatDetailsData } = useChatDetailsQuery(
+    { chatId, populate: true }, 
+    { skip: !chatId }
+  );
+  
   return (
     <>
-      <Header chatId={chatId} />
+      <Header chatId={chatId} chatDetails={chatDetailsData?.chat} />
       <Chat chatId={chatId} {...props} />
     </>
   );

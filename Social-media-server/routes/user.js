@@ -1,4 +1,4 @@
-import { getUserProfile } from "../controllers/user.js";
+import { getUserProfile, checkFriendStatus } from "../controllers/user.js";
 import express from "express";
 import { updateAvatar } from "../controllers/avatar.js";
 import {
@@ -44,6 +44,9 @@ app.get("/logout", logout);
 app.get("/search", searchUser);
 app.get("/notifications", getMyNotifications);
 app.get("/friends", getMyFriends);
+
+// Check friend status with a user
+app.get("/friend-status/:userId", checkFriendStatus);
 
 // Get another user's public profile by ID
 app.get("/:id", getUserProfile);

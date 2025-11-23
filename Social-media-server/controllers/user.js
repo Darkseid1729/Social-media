@@ -329,6 +329,33 @@ const getMyFriends = TryCatch(async (req, res) => {
   }
 });
 
+// Check friend status with a user
+const checkFriendStatus = TryCatch(async (req, res, next) => {
+  const { userId } = req.params;
+  
+  if (!userId) return next(new ErrorHandler("User ID required", 400));
+
+  // Check if they are already friends (have a chat together)
+  const chat = await Chat.findOne({
+    members: { $all: [req.user, userId] },
+    groupChat: false,
+  });
+
+  // Check if there's a pending request
+  const pendingRequest = await Request.findOne({
+    $or: [
+      { sender: req.user, receiver: userId },
+      { sender: userId, receiver: req.user },
+    ],
+  });
+
+  return res.status(200).json({
+    success: true,
+    isFriend: !!chat,
+    hasPendingRequest: !!pendingRequest,
+  });
+});
+
 export {
   acceptFriendRequest,
   getMyFriends,
@@ -340,4 +367,5 @@ export {
   searchUser,
   sendFriendRequest,
   getUserProfile,
+  checkFriendStatus,
 };
