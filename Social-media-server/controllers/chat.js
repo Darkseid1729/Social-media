@@ -42,10 +42,53 @@ const newGroupChat = TryCatch(async (req, res, next) => {
 });
 
 const getMyChats = TryCatch(async (req, res, next) => {
-  const chats = await Chat.find({ members: req.user }).populate(
-    "members",
-    "name avatar lastSeen"
-  );
+  // Aggregate to get chats with last message time for sorting
+  const chats = await Chat.aggregate([
+    // Match chats where user is a member
+    { $match: { members: new mongoose.Types.ObjectId(req.user) } },
+    
+    // Lookup last message for each chat
+    {
+      $lookup: {
+        from: "messages",
+        localField: "_id",
+        foreignField: "chat",
+        as: "lastMessage",
+        pipeline: [
+          { $sort: { createdAt: -1 } },
+          { $limit: 1 }
+        ]
+      }
+    },
+    
+    // Add lastMessageTime field for sorting
+    {
+      $addFields: {
+        lastMessageTime: {
+          $ifNull: [
+            { $arrayElemAt: ["$lastMessage.createdAt", 0] },
+            "$updatedAt" // Fallback to chat creation/update time
+          ]
+        }
+      }
+    },
+    
+    // Sort by most recent activity (descending)
+    { $sort: { lastMessageTime: -1 } },
+    
+    // Populate members
+    {
+      $lookup: {
+        from: "users",
+        localField: "members",
+        foreignField: "_id",
+        as: "members",
+        pipeline: [
+          { $project: { name: 1, avatar: 1, lastSeen: 1 } }
+        ]
+      }
+    }
+  ]);
 
   const transformedChats = chats.map(({ _id, name, members, groupChat }) => {
     const otherMember = getOtherMember(members, req.user);
