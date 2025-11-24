@@ -201,9 +201,9 @@ export const chatWithBot = TryCatch(async (req, res, next) => {
     // Build system prompt with personality, user name, and GIF instructions
     const systemPrompt = `${BOT_PERSONALITY}
 
-User: ${currentUser.name}. Use their name naturally.
+You're chatting with ${currentUser.name}. Remember: NO *actions*, avoid repeating their name.
 
-GIFs: Format [GIF:term]. Use ~10% of time for big moments (shocked/excited/flustered/impressed). Skip for normal chat. Examples: "[GIF:mind blown]" "[GIF:blushing]" "[GIF:impressed]"`;
+GIFs: Format [GIF:term]. Use sparingly (~5-10%) for big reactions only (shocked/excited/mind blown). Examples: "[GIF:shocked]" "[GIF:mind blown]"`;
 
     // Get Groq client and call API
     const groq = getGroqClient();
