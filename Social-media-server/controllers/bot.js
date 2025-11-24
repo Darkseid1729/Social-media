@@ -5,8 +5,9 @@ import { Chat } from "../models/chat.js";
 import { Message } from "../models/message.js";
 import { User } from "../models/user.js";
 import { emitEvent } from "../utils/features.js";
-import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from "../constants/events.js";
+import { NEW_MESSAGE, NEW_MESSAGE_ALERT, START_TYPING, STOP_TYPING } from "../constants/events.js";
 import { getBotUserId } from "../seeders/bot.js";
+import { getSockets } from "../lib/helper.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -188,22 +189,41 @@ export const chatWithBot = TryCatch(async (req, res, next) => {
       .populate("sender", "name")
       .lean();
 
-    // Format conversation history for Groq
+    // Format conversation history with timestamps for Groq
     const conversationHistory = recentMessages
       .reverse()
-      .map(msg => ({
-        role: msg.sender._id.toString() === botUserId.toString() ? "assistant" : "user",
-        content: msg.sender.name === currentUser.name 
+      .map(msg => {
+        const msgDate = new Date(msg.createdAt);
+        const timeStr = msgDate.toLocaleString('en-US', { 
+          month: 'short', day: 'numeric', 
+          hour: '2-digit', minute: '2-digit', hour12: true 
+        });
+        const content = msg.sender.name === currentUser.name 
           ? msg.content 
-          : `${msg.sender.name}: ${msg.content}`
-      }));
+          : `${msg.sender.name}: ${msg.content}`;
+        return {
+          role: msg.sender._id.toString() === botUserId.toString() ? "assistant" : "user",
+          content: `[${timeStr}] ${content}`
+        };
+      });
 
-    // Build system prompt with personality, user name, and GIF instructions
+    // Build system prompt with personality, user name, timestamp, and GIF instructions
+    const now = new Date();
+    const currentTime = now.toLocaleString('en-US', { 
+      weekday: 'short', month: 'short', day: 'numeric', 
+      hour: '2-digit', minute: '2-digit', hour12: true,
+      timeZone: 'Asia/Kolkata'
+    });
     const systemPrompt = `${BOT_PERSONALITY}
 
-You're chatting with ${currentUser.name}. Remember: NO *actions*, avoid repeating their name.
+Current time: ${currentTime}. You're chatting with ${currentUser.name}. Remember: NO *actions*, avoid repeating their name.
 
 GIFs: Format [GIF:term]. Use sparingly (~5-10%) for big reactions only (shocked/excited/mind blown). Examples: "[GIF:shocked]" "[GIF:mind blown]"`;
+
+    // Emit typing indicator
+    const io = req.app.get("io");
+    const membersSockets = getSockets(chat.members);
+    io.to(membersSockets).emit(START_TYPING, { chatId });
 
     // Get Groq client and call API
     const groq = getGroqClient();
@@ -229,6 +249,17 @@ GIFs: Format [GIF:term]. Use sparingly (~5-10%) for big reactions only (shocked/
     // Calculate tokens used (approximate)
     const tokensUsed = completion.usage?.total_tokens || 
       Math.ceil((systemPrompt.length + message.length + botResponse.length) / 4);
+
+    // Calculate realistic typing delay (2-4 seconds base + length factor)
+    const baseDelay = 2000 + Math.random() * 2000; // 2-4 seconds
+    const lengthDelay = Math.min(botResponse.length * 30, 3000); // 30ms per char, max 3s
+    const totalDelay = baseDelay + lengthDelay;
+    
+    // Wait for realistic typing time
+    await new Promise(resolve => setTimeout(resolve, totalDelay));
+
+    // Stop typing before sending message
+    io.to(membersSockets).emit(STOP_TYPING, { chatId });
 
     // Check if bot wants to send a GIF
     const gifMatch = botResponse.match(/\[GIF:([^\]]+)\]/);
