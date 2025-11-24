@@ -170,10 +170,16 @@ const Chat = ({ chatId, user }) => {
     e.preventDefault();
     if (!message.trim()) return;
 
+    // Store message and clear input immediately
+    const messageToSend = message.trim();
+    const replyToSend = replyToMessage;
+    setMessage("");
+    setReplyToMessage(null);
+
     // Check if message is a single emoji and trigger effect for all users
-    if (isOnlyEmoji(message.trim())) {
+    if (isOnlyEmoji(messageToSend)) {
       // Emit to all users in the chat (including self)
-      socket.emit(EMOJI_EFFECT, { chatId, members, emoji: message.trim() });
+      socket.emit(EMOJI_EFFECT, { chatId, members, emoji: messageToSend });
     }
 
     // Only send replyTo if it's a valid MongoDB ObjectId (24 char hex string)
@@ -181,7 +187,7 @@ const Chat = ({ chatId, user }) => {
       return id && /^[0-9a-fA-F]{24}$/.test(id);
     };
 
-    const replyToId = replyToMessage?._id;
+    const replyToId = replyToSend?._id;
     const validReplyTo = isValidObjectId(replyToId) ? replyToId : null;
 
     // Check if this is a bot chat (chat name contains "Joon")
@@ -202,7 +208,7 @@ const Chat = ({ chatId, user }) => {
       const messageData = { 
         chatId, 
         members, 
-        message,
+        message: messageToSend,
         replyTo: validReplyTo
       };
       //console.log("📤 Emitting NEW_MESSAGE:", messageData);
@@ -218,7 +224,7 @@ const Chat = ({ chatId, user }) => {
           credentials: 'include',
           body: JSON.stringify({
             chatId,
-            message: message.trim(),
+            message: messageToSend,
             replyTo: validReplyTo
           })
         });
@@ -241,15 +247,12 @@ const Chat = ({ chatId, user }) => {
       const messageData = { 
         chatId, 
         members, 
-        message,
+        message: messageToSend,
         replyTo: validReplyTo
       };
       //console.log("📤 Emitting NEW_MESSAGE:", messageData);
       socket.emit(NEW_MESSAGE, messageData);
     }
-
-    setMessage("");
-    setReplyToMessage(null); // Clear reply after sending
   };
 
   // Reset messages when chatId changes
