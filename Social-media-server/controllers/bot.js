@@ -176,6 +176,14 @@ export const chatWithBot = TryCatch(async (req, res, next) => {
     return next(new ErrorHandler("Bot is not in this chat", 403));
   }
 
+  // IMPORTANT: If the user IS the bot (logged in as Joon), don't generate a response
+  if (req.user.toString() === botUserId.toString()) {
+    return res.status(200).json({
+      success: true,
+      message: "Message sent as bot, no auto-response needed"
+    });
+  }
+
   // console.log("✅ Bot validation passed, calling Groq API...");
 
   try {
@@ -250,9 +258,9 @@ GIFs: Format [GIF:term]. Use sparingly (~5-10%) for big reactions only (shocked/
     const tokensUsed = completion.usage?.total_tokens || 
       Math.ceil((systemPrompt.length + message.length + botResponse.length) / 4);
 
-    // Calculate realistic typing delay (2-4 seconds base + length factor)
-    const baseDelay = 2000 + Math.random() * 2000; // 2-4 seconds
-    const lengthDelay = Math.min(botResponse.length * 30, 3000); // 30ms per char, max 3s
+    // Calculate realistic typing delay (1-2 seconds base + length factor)
+    const baseDelay = 1000 + Math.random() * 1000; // 1-2 seconds
+    const lengthDelay = Math.min(botResponse.length * 20, 2000); // 20ms per char, max 2s
     const totalDelay = baseDelay + lengthDelay;
     
     // Wait for realistic typing time
