@@ -211,24 +211,9 @@ const Chat = ({ chatId, user }) => {
         message: messageToSend,
         replyTo: validReplyTo
       };
-      //console.log("📤 Emitting NEW_MESSAGE:", messageData);
       socket.emit(NEW_MESSAGE, messageData);
       
-      // Optimistically add user's message to UI immediately
-      const optimisticMessage = {
-        _id: `temp-${Date.now()}`, // Temporary ID
-        content: messageToSend,
-        sender: {
-          _id: user._id,
-          name: user.name,
-          avatar: user.avatar?.url || null
-        },
-        chat: chatId,
-        createdAt: new Date().toISOString(),
-        replyTo: replyToSend,
-        isOptimistic: true // Flag to identify temporary message
-      };
-      setMessages((prev) => [...prev, optimisticMessage]);
+      // Message will appear after server confirmation via socket event
       
       // Then call bot API to get response
       try {
@@ -266,24 +251,9 @@ const Chat = ({ chatId, user }) => {
         message: messageToSend,
         replyTo: validReplyTo
       };
-      //console.log("📤 Emitting NEW_MESSAGE:", messageData);
       socket.emit(NEW_MESSAGE, messageData);
       
-      // Optimistically add user's message to UI immediately
-      const optimisticMessage = {
-        _id: `temp-${Date.now()}`,
-        content: messageToSend,
-        sender: {
-          _id: user._id,
-          name: user.name,
-          avatar: user.avatar?.url || null
-        },
-        chat: chatId,
-        createdAt: new Date().toISOString(),
-        replyTo: replyToSend,
-        isOptimistic: true
-      };
-      setMessages((prev) => [...prev, optimisticMessage]);
+      // Message will appear after server confirmation via socket event
     }
   };
 
@@ -333,25 +303,13 @@ const Chat = ({ chatId, user }) => {
 
   const newMessagesListener = useCallback(
     (data) => {
-      // console.log("📩 NEW_MESSAGE event received:", data);
       if (data.chatId !== chatId) return;
 
-      // Replace optimistic message with real one, or just add if not found
+      // Only add message if it doesn't already exist (prevent duplicates)
       setMessages((prev) => {
-        // Check if this message already exists (replace optimistic)
-        const existingIndex = prev.findIndex(m => 
-          (m.isOptimistic && m.sender._id === data.message.sender._id && 
-           Math.abs(new Date(m.createdAt) - new Date(data.message.createdAt)) < 3000) // Within 3 seconds
-        );
+        const exists = prev.some(m => m._id === data.message._id);
+        if (exists) return prev;
         
-        if (existingIndex !== -1) {
-          // Replace optimistic message with real one
-          const newMessages = [...prev];
-          newMessages[existingIndex] = { ...data.message, isOptimistic: false };
-          return newMessages;
-        }
-        
-        // Add new message if not replacing
         return [...prev, data.message];
       });
     },
