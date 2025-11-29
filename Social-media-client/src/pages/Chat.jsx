@@ -257,11 +257,22 @@ const Chat = ({ chatId, user }) => {
     }
   };
 
-  // Reset messages when chatId changes
+  // Reset messages when chatId changes - IMMEDIATE reset before anything else
   useEffect(() => {
+    // Immediately clear everything
     setMessages([]);
+    setOldMessages([]);
+    setPage(1);
     setHasScrolledToBottom(false);
   }, [chatId]);
+
+  // Synchronize oldMessages with query data when page 1 loads for new chat
+  useEffect(() => {
+    if (page === 1 && oldMessagesChunk.data?.messages && !oldMessagesChunk.isLoading) {
+      // Only set if it's actually different (prevent unnecessary updates)
+      setOldMessages(oldMessagesChunk.data.messages);
+    }
+  }, [chatId, page, oldMessagesChunk.data?.messages, oldMessagesChunk.isLoading]);
 
   useEffect(() => {
     socket.emit(CHAT_JOINED, { userId: user._id, members });
