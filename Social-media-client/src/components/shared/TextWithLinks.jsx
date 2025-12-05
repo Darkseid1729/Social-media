@@ -20,20 +20,19 @@ const TextWithLinks = ({ text, showPreviews = false }) => {
   if (showPreviews) {
     const textParts = parts.filter(part => part.type === 'text');
     const urlParts = parts.filter(part => part.type === 'url');
+    const hasText = textParts.some(part => part.content.trim().length > 0);
 
     return (
       <Box>
-        {/* Render text with inline links */}
-        <Typography style={{ marginBottom: urlParts.length > 0 ? 6 : 0, wordBreak: 'break-word' }}>
-          {parts.map((part, index) => {
-            if (part.type === 'text') {
-              return <span key={index}>{part.content}</span>;
-            } else if (part.type === 'url') {
-              return (
+        {/* 1. First render clickable links at the top */}
+        {urlParts.length > 0 && (
+          <Typography style={{ marginBottom: 6, wordBreak: 'break-word' }}>
+            {urlParts.map((urlPart, index) => (
+              <React.Fragment key={index}>
+                {index > 0 && ' '}
                 <Box
-                  key={index}
                   component="span"
-                  onClick={() => handleLinkClick(part.url)}
+                  onClick={() => handleLinkClick(urlPart.url)}
                   sx={{
                     color: theme.PRIMARY_COLOR || '#1976d2',
                     textDecoration: 'underline',
@@ -44,18 +43,26 @@ const TextWithLinks = ({ text, showPreviews = false }) => {
                     }
                   }}
                 >
-                  {part.content}
+                  {urlPart.content}
                 </Box>
-              );
-            }
-            return null;
-          })}
-        </Typography>
+              </React.Fragment>
+            ))}
+          </Typography>
+        )}
         
-        {/* Render link previews */}
+        {/* 2. Then render link previews (embedded player) in the middle */}
         {urlParts.map((urlPart, index) => (
           <LinkPreview key={index} url={urlPart.url} />
         ))}
+        
+        {/* 3. Finally render text content at the bottom */}
+        {hasText && (
+          <Typography style={{ marginTop: urlParts.length > 0 ? 6 : 0, wordBreak: 'break-word' }}>
+            {textParts.map((part, index) => (
+              <span key={index}>{part.content}</span>
+            ))}
+          </Typography>
+        )}
       </Box>
     );
   }
