@@ -3,11 +3,13 @@ import { Box, Typography, Card, CardContent, CardMedia, IconButton } from '@mui/
 import { OpenInNew as OpenInNewIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
 import { useTheme } from '../../context/ThemeContext';
 import { fetchLinkPreview, parseYouTubeUrl } from '../../utils/linkUtils';
+import YouTubePlayer from './YouTubePlayer';
 
 const LinkPreview = ({ url, inline = false }) => {
   const { theme } = useTheme();
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showPlayer, setShowPlayer] = useState(false);
 
   useEffect(() => {
     const loadPreview = async () => {
@@ -23,7 +25,10 @@ const LinkPreview = ({ url, inline = false }) => {
   }, [url]);
 
   const handleClick = () => {
-    if (preview?.url) {
+    // If it's YouTube, toggle player instead of opening link
+    if (preview?.type === 'youtube' && preview?.videoId) {
+      setShowPlayer(!showPlayer);
+    } else if (preview?.url) {
       window.open(preview.url, '_blank', 'noopener,noreferrer');
     }
   };
@@ -90,22 +95,30 @@ const LinkPreview = ({ url, inline = false }) => {
 
   // Full preview card
   return (
-    <Card
-      onClick={handleClick}
-      sx={{
-        maxWidth: 320,
-        margin: '8px 0',
-        cursor: 'pointer',
-        backgroundColor: theme.LIGHT_BG,
-        border: `1px solid ${theme.SUBTLE_BG_20}`,
-        '&:hover': {
-          backgroundColor: theme.SUBTLE_BG_10,
-          transform: 'translateY(-1px)',
-          boxShadow: `0 4px 12px 0 ${theme.SUBTLE_BG_20}`
-        },
-        transition: 'all 0.2s ease-in-out'
-      }}
-    >
+    <>
+      {showPlayer && preview?.type === 'youtube' && preview?.videoId ? (
+        <YouTubePlayer 
+          videoId={preview.videoId} 
+          isShorts={preview.isShorts}
+          onClose={() => setShowPlayer(false)}
+        />
+      ) : (
+        <Card
+          onClick={handleClick}
+          sx={{
+            maxWidth: 320,
+            margin: '8px 0',
+            cursor: 'pointer',
+            backgroundColor: theme.LIGHT_BG,
+            border: `1px solid ${theme.SUBTLE_BG_20}`,
+            '&:hover': {
+              backgroundColor: theme.SUBTLE_BG_10,
+              transform: 'translateY(-1px)',
+              boxShadow: `0 4px 12px 0 ${theme.SUBTLE_BG_20}`
+            },
+            transition: 'all 0.2s ease-in-out'
+          }}
+        >
       {preview.thumbnail && (
         <Box sx={{ position: 'relative' }}>
           <CardMedia
@@ -189,6 +202,10 @@ const LinkPreview = ({ url, inline = false }) => {
           
           <IconButton
             size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(preview.url, '_blank', 'noopener,noreferrer');
+            }}
             sx={{
               marginLeft: 1,
               color: theme.TEXT_SECONDARY,
@@ -202,6 +219,8 @@ const LinkPreview = ({ url, inline = false }) => {
         </Box>
       </CardContent>
     </Card>
+      )}
+    </>
   );
 };
 

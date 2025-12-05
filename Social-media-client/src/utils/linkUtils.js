@@ -3,8 +3,8 @@
 // URL regex pattern that matches various URL formats including query parameters
 const urlRegex = /(https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*))/gi;
 
-// YouTube URL patterns
-const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+// YouTube URL patterns - supports regular videos, shorts, and embeds
+const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:shorts\/|(?:[^\/\n\s]+\/\S+\/)|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
 
 /**
  * Detects URLs in text and returns array of found URLs
@@ -34,13 +34,15 @@ export const detectUrls = (text) => {
 /**
  * Checks if URL is a YouTube link and extracts video ID
  * @param {string} url - URL to check
- * @returns {Object} Object with isYoutube flag and videoId
+ * @returns {Object} Object with isYoutube flag, videoId, and isShorts flag
  */
 export const parseYouTubeUrl = (url) => {
   const match = url.match(youtubeRegex);
+  const isShorts = url.includes('/shorts/');
   return {
     isYoutube: !!match,
-    videoId: match ? match[1] : null
+    videoId: match ? match[1] : null,
+    isShorts: isShorts
   };
 };
 
@@ -90,9 +92,14 @@ export const fetchLinkPreview = async (url) => {
     if (!sanitizedUrl) return null;
     
     // For YouTube links, use YouTube oEmbed API
-    const { isYoutube, videoId } = parseYouTubeUrl(sanitizedUrl);
+    const { isYoutube, videoId, isShorts } = parseYouTubeUrl(sanitizedUrl);
     if (isYoutube && videoId) {
-      const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+      // Use the appropriate URL format for oEmbed API
+      const embedUrl = isShorts 
+        ? `https://www.youtube.com/shorts/${videoId}`
+        : `https://www.youtube.com/watch?v=${videoId}`;
+      
+      const response = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(embedUrl)}&format=json`);
       if (response.ok) {
         const data = await response.json();
         return {
@@ -101,6 +108,7 @@ export const fetchLinkPreview = async (url) => {
           thumbnail: data.thumbnail_url,
           type: 'youtube',
           videoId: videoId,
+          isShorts: isShorts,
           url: sanitizedUrl
         };
       }
