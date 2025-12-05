@@ -1,5 +1,5 @@
 import { Box, Typography, Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material";
-import React, { memo, useState } from "react";
+import React, { memo, useState, useMemo } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import moment from "moment";
 import "moment-timezone";
@@ -14,6 +14,32 @@ import { Reply as ReplyIcon, EmojiEmotions as EmojiIcon } from "@mui/icons-mater
 import { useAddMessageReactionMutation, useRemoveMessageReactionMutation } from "../../redux/api/api";
 import { motion } from "framer-motion";
 
+// Generate a consistent color shade based on userId (using last 5 characters for better distribution)
+const getUserColorShade = (userId, baseColor) => {
+  if (!userId) return baseColor;
+  
+  // Use only last 5 characters of userId for better color distribution
+  const last5 = userId.slice(-10);
+  
+  // Simple hash function to convert last 5 chars to a number
+  let hash = 0;
+  for (let i = 0; i < last5.length; i++) {
+    hash = last5.charCodeAt(i) + ((hash << 5) - hash);
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  // Generate hue variation (0-360 degrees) - spread across full spectrum
+  const hue = Math.abs(hash % 360);
+  
+  // Generate lightness variation (50-70% for good readability)
+  const lightness = 50 + (Math.abs(hash >> 8) % 20);
+  
+  // Generate saturation variation (65-85% for vibrant but not overwhelming)
+  const saturation = 65 + (Math.abs(hash >> 16) % 20);
+  
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
+
 const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
   // console.log('MessageComponent message:', message); // Debug line
   const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId, replyTo } = message;
@@ -26,6 +52,12 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
   const sameSender = sender?._id === user?._id;
   // Format time in Indian timezone
   const indianTime = moment(createdAt).tz("Asia/Kolkata").format("hh:mm A");
+
+  // Generate consistent color for this sender (only for other users)
+  const senderColor = useMemo(() => {
+    if (sameSender) return theme.SENDER_NAME_COLOR;
+    return getUserColorShade(sender?._id, theme.SENDER_NAME_COLOR);
+  }, [sender?._id, sameSender, theme.SENDER_NAME_COLOR]);
 
   const handleContextMenu = (e) => {
     e.preventDefault();
@@ -112,7 +144,7 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
       {/* Sender Name (only for other users) */}
       {!sameSender && (
         <Typography
-          style={{ color: theme.SENDER_NAME_COLOR, marginBottom: 2 }}
+          style={{ color: senderColor, marginBottom: 2 }}
           fontWeight={"600"}
           variant="caption"
         >
