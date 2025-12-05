@@ -35,6 +35,8 @@ import userRoute from "./routes/user.js";
 import chatRoute from "./routes/chat.js";
 import adminRoute from "./routes/admin.js";
 import botRoute from "./routes/bot.js";
+import youtubeRoute from "./routes/youtube.js";
+import gifRoute from "./routes/gif.js";
 import { createBotUser } from "./seeders/bot.js";
 
 const mongoURI = process.env.MONGO_URI;
@@ -74,6 +76,8 @@ app.use("/api/v1/user", userRoute);
 app.use("/api/v1/chat", chatRoute);
 app.use("/api/v1/admin", adminRoute);
 app.use("/api/v1/bot", botRoute);
+app.use("/api/v1/youtube", youtubeRoute);
+app.use("/api/v1/gif", gifRoute);
 
 app.get("/", (req, res) => {
   res.send("Hello World");

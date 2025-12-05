@@ -11,7 +11,8 @@ import React, {
 } from "react";
 import AppLayout from "../components/layout/AppLayout";
 import GifPicker from "../components/dialogs/GifPicker";
-import { IconButton, Skeleton, Stack } from "@mui/material";
+import YouTubeSearchDialog from "../components/dialogs/YouTubeSearchDialog";
+import { IconButton, Skeleton, Stack, Box } from "@mui/material";
 import { useTheme } from "../context/ThemeContext";
 import {
   AttachFile as AttachFileIcon,
@@ -26,6 +27,7 @@ import { InputBox } from "../components/styles/StyledComponents";
 import FileMenu from "../components/dialogs/FileMenu";
 import MessageComponent from "../components/shared/MessageComponent";
 import ReplyInputPreview from "../components/shared/ReplyInputPreview";
+import YouTubeInputPreview from "../components/shared/YouTubeInputPreview";
 import { getSocket } from "../socket";
 import {
   ALERT,
@@ -77,8 +79,10 @@ const Chat = ({ chatId, user }) => {
   // ...existing code...
   const [fileMenuAnchor, setFileMenuAnchor] = useState(null);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
+  const [youtubePickerOpen, setYoutubePickerOpen] = useState(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState(null);
+  const [selectedYouTubeVideo, setSelectedYouTubeVideo] = useState(null);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   
   // Send sticker as message
@@ -89,6 +93,17 @@ const Chat = ({ chatId, user }) => {
   const handleGifSelect = (gifUrl) => {
     // Send GIF URL as message content
     socket.emit(NEW_MESSAGE, { chatId, members, message: gifUrl });
+  };
+  
+  // Handle YouTube video selection
+  const handleYouTubeSelect = (videoUrl) => {
+    // Store video URL separately, don't add to message input
+    setSelectedYouTubeVideo(videoUrl);
+  };
+
+  // Handle clearing YouTube video selection
+  const handleClearYouTubeVideo = () => {
+    setSelectedYouTubeVideo(null);
   };
 
   // Reply handlers
@@ -168,12 +183,22 @@ const Chat = ({ chatId, user }) => {
 
   const submitHandler = async (e) => {
     e.preventDefault();
-    if (!message.trim()) return;
+    
+    // Allow sending if there's a message OR a YouTube video
+    if (!message.trim() && !selectedYouTubeVideo) return;
 
     // Store message and clear input immediately
-    const messageToSend = message.trim();
+    const messageText = message.trim();
+    const videoUrl = selectedYouTubeVideo;
     const replyToSend = replyToMessage;
+    
+    // Combine video URL and message text
+    const messageToSend = videoUrl 
+      ? (messageText ? `${videoUrl} ${messageText}` : videoUrl)
+      : messageText;
+    
     setMessage("");
+    setSelectedYouTubeVideo(null);
     setReplyToMessage(null);
 
     // Check if message is a single emoji and trigger effect for all users
@@ -476,18 +501,19 @@ const Chat = ({ chatId, user }) => {
 
       {/* ...existing code... */}
 
-      <Stack
-        ref={containerRef}
-        boxSizing={"border-box"}
-        padding={"1rem"}
-        spacing={"1rem"}
-        height={"80%"}
-        sx={{
-          overflowX: "hidden",
-          overflowY: "auto",
-          background: chatDetails?.data?.chat?.wallpaper
-            ? `url(${chatDetails.data.chat.wallpaper}) center/cover no-repeat`
-            : theme.LIGHT_BG,
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <Stack
+          ref={containerRef}
+          boxSizing={"border-box"}
+          padding={"1rem"}
+          spacing={"1rem"}
+          sx={{
+            flex: 1,
+            overflowX: "hidden",
+            overflowY: "auto",
+            background: chatDetails?.data?.chat?.wallpaper
+              ? `url(${chatDetails.data.chat.wallpaper}) center/cover no-repeat`
+              : theme.LIGHT_BG,
           position: 'relative',
         }}
       >
@@ -526,26 +552,35 @@ const Chat = ({ chatId, user }) => {
         <div ref={bottomRef} />
       </Stack>
 
-      {/* Reply Input Preview */}
-      <ReplyInputPreview 
-        replyTo={replyToMessage} 
-        onClose={handleCancelReply}
-      />
-
       <form
         style={{
-          height: "20%",
           minHeight: "80px",
+          maxHeight: "fit-content",
+          overflowX: "hidden",
+          display: "flex",
+          flexDirection: "column",
         }}
         onSubmit={submitHandler}
       >
+        {/* YouTube Video Preview */}
+        <YouTubeInputPreview
+          videoUrl={selectedYouTubeVideo}
+          onClose={handleClearYouTubeVideo}
+        />
+
+        {/* Reply Input Preview */}
+        <ReplyInputPreview 
+          replyTo={replyToMessage} 
+          onClose={handleCancelReply}
+        />
+
         <Stack
           direction={"row"}
-          height={"100%"}
           padding={"1rem"}
           alignItems={"flex-end"}
           position={"relative"}
           gap={"0.8rem"}
+          sx={{ overflowX: "hidden" }}
         >
           {/* Left side - File attachment icon */}
           <IconButton
@@ -644,11 +679,18 @@ const Chat = ({ chatId, user }) => {
           </div>
         </Stack>
       </form>
+      </Box>
 
-      <FileMenu anchorE1={fileMenuAnchor} chatId={chatId} onGifClick={() => setGifPickerOpen(true)} />
+      <FileMenu 
+        anchorE1={fileMenuAnchor} 
+        chatId={chatId} 
+        onGifClick={() => setGifPickerOpen(true)}
+        onYouTubeClick={() => setYoutubePickerOpen(true)}
+      />
       {/* Sticker Picker Dialog */}
       <StickerPicker open={stickerPickerOpen} onClose={() => setStickerPickerOpen(false)} onSelect={handleStickerSelect} />
       <GifPicker open={gifPickerOpen} onClose={() => setGifPickerOpen(false)} onSelect={handleGifSelect} />
+      <YouTubeSearchDialog open={youtubePickerOpen} onClose={() => setYoutubePickerOpen(false)} onSelect={handleYouTubeSelect} />
     </Fragment>
   );
 };

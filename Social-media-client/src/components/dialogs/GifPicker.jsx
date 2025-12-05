@@ -1,9 +1,8 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Dialog, DialogTitle, Input, Grid, IconButton } from "@mui/material";
 import { useTheme } from "../../context/ThemeContext";
-
-const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY; // Giphy API key from .env
-const TENOR_API_KEY = import.meta.env.VITE_TENOR_API_KEY; // Tenor API key from .env
+import axios from "axios";
+import { server } from "../../constants/config";
 
 const GifPicker = ({ open, onClose, onSelect }) => {
   const { theme } = useTheme();
@@ -12,6 +11,25 @@ const GifPicker = ({ open, onClose, onSelect }) => {
   const [debounceTimeout, setDebounceTimeout] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadedImages, setLoadedImages] = useState(new Set());
+
+  // Handle back button on mobile
+  useEffect(() => {
+    const handleBackButton = (e) => {
+      if (open) {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    if (open) {
+      window.history.pushState(null, '', window.location.href);
+      window.addEventListener('popstate', handleBackButton);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handleBackButton);
+    };
+  }, [open, onClose]);
 
   // Load trending GIFs when dialog opens
   useEffect(() => {
@@ -25,41 +43,26 @@ const GifPicker = ({ open, onClose, onSelect }) => {
     setLoadedImages(new Set());
     
     try {
-      const res = await fetch(
-        `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=12&rating=g`
+      const { data } = await axios.get(
+        `${server}/api/v1/gif/trending`,
+        { 
+          params: { limit: 12 },
+          withCredentials: true 
+        }
       );
-      if (!res.ok) throw new Error('Giphy error');
-      const data = await res.json();
-      if (!Array.isArray(data.data)) throw new Error('Giphy error');
-      setGifs(data.data.map(gif => ({
-        id: gif.id,
-        previewUrl: gif.images.fixed_height_small.url, // Use animated preview
-        fullUrl: gif.images.fixed_height.url,
-        title: gif.title
-      })));
+      
+      if (data.success && Array.isArray(data.gifs)) {
+        setGifs(data.gifs);
+      } else {
+        setGifs([]);
+      }
       setLoading(false);
     } catch (err) {
-      // Fallback to Tenor trending
-      try {
-        const res = await fetch(
-          `https://tenor.googleapis.com/v2/featured?key=${TENOR_API_KEY}&limit=12&contentfilter=high`
-        );
-        if (!res.ok) throw new Error('Tenor error');
-        const data = await res.json();
-        if (!Array.isArray(data.results)) throw new Error('Tenor error');
-        setGifs(data.results.map(gif => ({
-          id: gif.id,
-          previewUrl: gif.media_formats.tinygif?.url || gif.media_formats.gif.url,
-          fullUrl: gif.media_formats.gif.url,
-          title: gif.content_description || 'GIF'
-        })));
-        setLoading(false);
-      } catch (err2) {
-        setGifs([]);
-        setLoading(false);
-      }
+      console.error('Error fetching trending GIFs:', err);
+      setGifs([]);
+      setLoading(false);
     }
-  }, [GIPHY_API_KEY, TENOR_API_KEY]);
+  }, []);
 
   const fetchGifs = useCallback(async (query) => {
     if (query.trim().length === 0) {
@@ -71,43 +74,26 @@ const GifPicker = ({ open, onClose, onSelect }) => {
     setLoadedImages(new Set()); // Reset loaded images when searching
     
     try {
-      const res = await fetch(
-        `https://api.giphy.com/v1/gifs/search?q=${encodeURIComponent(query)}&api_key=${GIPHY_API_KEY}&limit=16&rating=g`
+      const { data } = await axios.get(
+        `${server}/api/v1/gif/search`,
+        { 
+          params: { query, limit: 16 },
+          withCredentials: true 
+        }
       );
-      if (!res.ok) throw new Error('Giphy error');
-      const data = await res.json();
-      if (!Array.isArray(data.data)) throw new Error('Giphy error');
-      setGifs(data.data.map(gif => ({
-        id: gif.id,
-        // Use animated small preview for better UX
-        previewUrl: gif.images.fixed_height_small.url,
-        fullUrl: gif.images.fixed_height.url,
-        title: gif.title
-      })));
+      
+      if (data.success && Array.isArray(data.gifs)) {
+        setGifs(data.gifs);
+      } else {
+        setGifs([]);
+      }
       setLoading(false);
     } catch (err) {
-      // Fallback to Tenor
-      try {
-        const res = await fetch(
-          `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${TENOR_API_KEY}&limit=16&contentfilter=high`
-        );
-        if (!res.ok) throw new Error('Tenor error');
-        const data = await res.json();
-        if (!Array.isArray(data.results)) throw new Error('Tenor error');
-        setGifs(data.results.map(gif => ({
-          id: gif.id,
-          // Use smaller preview image for faster loading
-          previewUrl: gif.media_formats.tinygif?.url || gif.media_formats.gif.url,
-          fullUrl: gif.media_formats.gif.url,
-          title: gif.content_description || 'GIF'
-        })));
-        setLoading(false);
-      } catch (err2) {
-        setGifs([]);
-        setLoading(false);
-      }
+      console.error('Error searching GIFs:', err);
+      setGifs([]);
+      setLoading(false);
     }
-  }, [GIPHY_API_KEY, TENOR_API_KEY]);
+  }, []);
 
   const handleSearch = useCallback((e) => {
     const value = e.target.value;
