@@ -12,8 +12,9 @@ import React, {
 import AppLayout from "../components/layout/AppLayout";
 import GifPicker from "../components/dialogs/GifPicker";
 import YouTubeSearchDialog from "../components/dialogs/YouTubeSearchDialog";
-import { IconButton, Skeleton, Stack, Box } from "@mui/material";
+import { IconButton, Skeleton, Stack, Box, useMediaQuery } from "@mui/material";
 import { useTheme } from "../context/ThemeContext";
+import { useMusicPlayer } from "../context/MusicPlayerContext";
 import {
   AttachFile as AttachFileIcon,
   Send as SendIcon,
@@ -64,6 +65,8 @@ const Chat = ({ chatId, user }) => {
   const [wallpaperError, setWallpaperError] = useState("");
   const [setWallpaper] = useSetWallpaperMutation();
   const { theme } = useTheme();
+  const { currentSong } = useMusicPlayer();
+  const isMobile = useMediaQuery('(max-width:900px)');
   const socket = getSocket();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -501,7 +504,7 @@ const Chat = ({ chatId, user }) => {
 
       {/* ...existing code... */}
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', paddingTop: (currentSong && isMobile) ? '60px' : 0, transition: 'padding-top 0.3s ease' }}>
         <Stack
           ref={containerRef}
           boxSizing={"border-box"}

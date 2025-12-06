@@ -19,12 +19,14 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { useMediaQuery } from "@mui/material";
 import React, { Suspense, lazy, memo, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { LayoutLoader } from "../components/layout/Loaders";
 import AvatarCard from "../components/shared/AvatarCard";
 import { Link } from "../components/styles/StyledComponents";
 import { useTheme } from "../context/ThemeContext";
+import { useMusicPlayer } from "../context/MusicPlayerContext";
 import { useDispatch, useSelector } from "react-redux";
 import UserItem from "../components/shared/UserItem";
 import { useAsyncMutation, useErrors } from "../hooks/hook";
@@ -74,6 +76,8 @@ const Groups = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
+  const { currentSong } = useMusicPlayer();
+  const isMobile = useMediaQuery('(max-width:900px)');
 
   const [groupName, setGroupName] = useState("");
   const [groupNameUpdatedValue, setGroupNameUpdatedValue] = useState("");
@@ -267,7 +271,7 @@ const Groups = () => {
   return myGroups.isLoading ? (
     <LayoutLoader />
   ) : (
-    <Grid container height={"100vh"}>
+    <Grid container height={"100vh"} sx={{ paddingTop: (currentSong && isMobile) ? '60px' : 0, transition: 'padding-top 0.3s ease' }}>
       <Grid
         item
         sx={{

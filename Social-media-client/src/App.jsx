@@ -8,6 +8,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { userExists, userNotExists } from "./redux/reducers/auth";
 import { Toaster } from "react-hot-toast";
 import { SocketProvider } from "./socket";
+import { MusicPlayerProvider } from "./context/MusicPlayerContext";
+import MiniMusicPlayer from "./components/music/MiniMusicPlayer";
+import MusicPlayerDialog from "./components/music/MusicPlayerDialog";
+import MusicSearchDialog from "./components/music/MusicSearchDialog";
 
 const Home = lazy(() => import("./pages/Home"));
 const Welcome = lazy(() => import("./pages/Welcome"));
@@ -41,41 +45,48 @@ const App = () => {
     <RandomLoader />
   ) : (
     <BrowserRouter>
-      <Suspense fallback={<RandomLoader />}>
-        <Routes>
-          <Route
-            element={
-              <SocketProvider>
-                <ProtectRoute user={user} />
-              </SocketProvider>
-            }
-          >
-            <Route path="/" element={<Welcome />} />
-            <Route path="/chat/:chatId" element={<Chat />} />
-            <Route path="/groups" element={<Groups />} />
-          </Route>
+      <MusicPlayerProvider>
+        <Suspense fallback={<RandomLoader />}>
+          <Routes>
+            <Route
+              element={
+                <SocketProvider>
+                  <ProtectRoute user={user} />
+                </SocketProvider>
+              }
+            >
+              <Route path="/" element={<Welcome />} />
+              <Route path="/chat/:chatId" element={<Chat />} />
+              <Route path="/groups" element={<Groups />} />
+            </Route>
 
-          <Route
-            path="/login"
-            element={
-              <ProtectRoute user={!user} redirect="/">
-                <Login />
-              </ProtectRoute>
-            }
-          />
+            <Route
+              path="/login"
+              element={
+                <ProtectRoute user={!user} redirect="/">
+                  <Login />
+                </ProtectRoute>
+              }
+            />
 
-          <Route path="/admin" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<Dashboard />} />
-          <Route path="/admin/users" element={<UserManagement />} />
-          <Route path="/admin/chats" element={<ChatManagement />} />
-          <Route path="/admin/messages" element={<MessagesManagement />} />
-          <Route path="/admin/bot" element={<BotManagement />} />
+            <Route path="/admin" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<Dashboard />} />
+            <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/chats" element={<ChatManagement />} />
+            <Route path="/admin/messages" element={<MessagesManagement />} />
+            <Route path="/admin/bot" element={<BotManagement />} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
 
-      <Toaster position="bottom-center" />
+        {/* Global Music Player Components */}
+        <MiniMusicPlayer />
+        <MusicPlayerDialog />
+        <MusicSearchDialog />
+
+        <Toaster position="bottom-center" />
+      </MusicPlayerProvider>
     </BrowserRouter>
   );
 };

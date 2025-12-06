@@ -12,9 +12,11 @@ import React, { Suspense, lazy, useState } from "react";
 
 
 import { useTheme } from "../../context/ThemeContext";
+import { useMusicPlayer } from "../../context/MusicPlayerContext";
 import { themes } from "../../constants/themes";
 import AddIcon from "@mui/icons-material/Add";
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import WallpaperDialog from '../dialogs/WallpaperDialog';
 import GroupMembersDialog from '../dialogs/GroupMembersDialog';
 import MenuIcon from "@mui/icons-material/Menu";
@@ -57,6 +59,7 @@ const Header = (props) => {
 
   // Theme switcher state and handlers
   const { themeName, changeTheme, theme } = useTheme();
+  const { setIsMusicSearchOpen } = useMusicPlayer();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   // Mobile menu state
@@ -126,6 +129,12 @@ const Header = (props) => {
     navigate("/groups");
     handleMobileMenuClose();
   };
+  
+  const openMusicPlayer = () => {
+    setIsMusicSearchOpen(true);
+    handleMobileMenuClose();
+  };
+  
   const openProfile = () => {
     setShowProfile(true);
     handleMobileMenuClose();
@@ -227,6 +236,11 @@ const Header = (props) => {
             {/* Desktop header actions */}
             <Box sx={{ display: { xs: "none", sm: "flex" } }}>
             <IconBtn
+              title={"Music Player"}
+              icon={<MusicNoteIcon />}
+              onClick={openMusicPlayer}
+            />
+            <IconBtn
               title={"Profile"}
               icon={<AccountCircleIcon />}
               onClick={openProfile}
@@ -278,6 +292,11 @@ const Header = (props) => {
             </Box>
 
             {/* Mobile header menu dropdown trigger */}
+            <Box sx={{ display: { xs: "block", sm: "none" } }}>
+              <IconButton color="inherit" onClick={openMusicPlayer}>
+                <MusicNoteIcon />
+              </IconButton>
+            </Box>
             <Box sx={{ display: { xs: "block", sm: "none" } }}>
               <IconButton color="inherit" onClick={handleMobileMenuClick}>
                 <MenuIcon />
