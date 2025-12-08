@@ -8,9 +8,13 @@ import {
   ExpandLess as ExpandLessIcon,
   Close as CloseIcon,
   MusicNote as MusicNoteIcon,
+  Share as ShareIcon,
 } from '@mui/icons-material';
 import { useMusicPlayer } from '../../context/MusicPlayerContext';
 import { useTheme } from '../../context/ThemeContext';
+import { getSocket } from '../../socket';
+import { NEW_MESSAGE } from '../../constants/events';
+import { useLocation } from 'react-router-dom';
 
 const MiniMusicPlayer = () => {
   const {
@@ -27,8 +31,41 @@ const MiniMusicPlayer = () => {
   } = useMusicPlayer();
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width:900px)');
+  const location = useLocation();
+  const socket = getSocket();
 
   if (!currentSong) return null;
+
+  const handleShare = (e) => {
+    e.stopPropagation();
+    
+    // Check if socket is available
+    if (!socket) {
+      console.warn('Socket not available');
+      return;
+    }
+    
+    // Extract chatId from current location path
+    const pathParts = location.pathname.split('/');
+    const chatIndex = pathParts.indexOf('chat');
+    const chatId = chatIndex !== -1 && pathParts[chatIndex + 1] ? pathParts[chatIndex + 1] : null;
+    
+    if (!chatId) {
+      console.warn('No chat is currently open');
+      return;
+    }
+
+    // Format the share message with song details
+    const videoUrl = `https://www.youtube.com/watch?v=${currentSong.videoId}`;
+    const shareMessage = `🎵 ${currentSong.title}\n${videoUrl}`;
+    
+    // Emit the message via socket
+    socket.emit(NEW_MESSAGE, { 
+      chatId, 
+      members: [], // Will be filled by backend based on chatId
+      message: shareMessage
+    });
+  };
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -234,6 +271,9 @@ const MiniMusicPlayer = () => {
         </IconButton>
         <IconButton size="small" onClick={handleNext} sx={{ color: theme.TEXT_PRIMARY }}>
           <SkipNextIcon />
+        </IconButton>
+        <IconButton size="small" onClick={handleShare} sx={{ color: theme.TEXT_PRIMARY }}>
+          <ShareIcon />
         </IconButton>
       </Box>
 

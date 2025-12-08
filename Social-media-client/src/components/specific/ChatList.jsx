@@ -23,7 +23,7 @@ const ChatList = ({
   return (
     <Stack width={w} direction={"column"} overflow={"auto"} height={"100%"}>
       {chats?.map((data, index) => {
-        const { avatar, _id, name, groupChat, members, lastSeen } = data;
+        const { avatar, _id, name, groupChat, members, lastSeen, memberDetails } = data;
 
         const newMessageAlert = newMessagesAlert.find(
           ({ chatId }) => chatId === _id
@@ -55,6 +55,7 @@ const ChatList = ({
                 sameSender={chatId === _id}
                 handleDeleteChat={handleDeleteChat}
                 lastSeen={lastSeen}
+                members={memberDetails || []}
               />
             </div>
           </div>

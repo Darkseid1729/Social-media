@@ -21,12 +21,34 @@ const Profile = ({ user, onAvatarChange }) => {
   const [showUpdateConfirm, setShowUpdateConfirm] = React.useState(false);
   const [showAvatarModal, setShowAvatarModal] = React.useState(false);
   const confirmBoxRef = useRef(null);
+  const [touchStartTime, setTouchStartTime] = React.useState(0);
 
   const handleAvatarClick = (e) => {
-    // Only handle left click
+    // Only handle left click for viewing avatar
     if (e.type === "click" && e.button === 0) {
-      if (user?.avatar?.url) {
+      if (user?.avatar?.url && !onAvatarChange) {
+        // If not editable, show avatar
         setShowAvatarModal(true);
+      } else if (onAvatarChange) {
+        // For own profile, show preview
+        setShowAvatarModal(true);
+      }
+    }
+  };
+
+  const handleTouchStart = (e) => {
+    if (onAvatarChange) {
+      setTouchStartTime(Date.now());
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (onAvatarChange) {
+      const touchDuration = Date.now() - touchStartTime;
+      // Long press (> 500ms) on mobile to change avatar
+      if (touchDuration > 500) {
+        e.preventDefault();
+        setShowUpdateConfirm(true);
       }
     }
   };
@@ -37,7 +59,9 @@ const Profile = ({ user, onAvatarChange }) => {
 
   const handleAvatarContextMenu = (e) => {
     e.preventDefault();
-    setShowUpdateConfirm(true);
+    if (onAvatarChange) {
+      setShowUpdateConfirm(true);
+    }
   };
 
   const handleConfirmUpdate = () => {
@@ -97,7 +121,9 @@ const Profile = ({ user, onAvatarChange }) => {
           }}
           onClick={handleAvatarClick}
           onContextMenu={onAvatarChange ? handleAvatarContextMenu : undefined}
-          title={onAvatarChange ? "Click or right-click to change avatar" : "Click to view avatar"}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          title={onAvatarChange ? "Click to view, long-press or right-click to change avatar" : "Click to view avatar"}
         />
         <ImageDialog
           open={showAvatarModal}

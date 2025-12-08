@@ -47,19 +47,13 @@ const YouTubeSearchDialog = ({ open, onClose, onSelect }) => {
   // Filters for video search
   const filters = [
     { label: "All", value: "any" },
+    { label: "Shorts", value: "shorts" },
     { label: "Music", value: "music" },
     { label: "Gaming", value: "gaming" },
     { label: "Sports", value: "sports" },
     { label: "News", value: "news" },
     { label: "Education", value: "education" }
   ];
-
-  // Load trending videos when dialog opens
-  useEffect(() => {
-    if (open && videos.length === 0 && search.trim().length === 0) {
-      fetchTrendingVideos();
-    }
-  }, [open]);
 
   const fetchTrendingVideos = useCallback(async () => {
     setLoading(true);
@@ -72,6 +66,11 @@ const YouTubeSearchDialog = ({ open, onClose, onSelect }) => {
       
       if (videoCategoryId) {
         params.categoryId = videoCategoryId;
+      }
+      
+      // Add shorts filter
+      if (selectedFilter === 'shorts') {
+        params.videoDuration = 'short';
       }
       
       const { data } = await axios.get(
@@ -112,6 +111,11 @@ const YouTubeSearchDialog = ({ open, onClose, onSelect }) => {
       
       if (videoCategoryId) {
         params.categoryId = videoCategoryId;
+      }
+      
+      // Add shorts filter
+      if (selectedFilter === 'shorts') {
+        params.videoDuration = 'short';
       }
       
       const { data } = await axios.get(
@@ -156,6 +160,13 @@ const YouTubeSearchDialog = ({ open, onClose, onSelect }) => {
       fetchTrendingVideos();
     }
   }, [search, fetchVideos, fetchTrendingVideos]);
+
+  // Load trending videos when dialog opens or filter changes
+  useEffect(() => {
+    if (open && search.trim().length === 0) {
+      fetchTrendingVideos();
+    }
+  }, [open, selectedFilter, fetchTrendingVideos]);
 
   // Helper function to get category ID
   const getCategoryId = (filter) => {

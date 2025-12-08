@@ -20,9 +20,13 @@ import {
   Repeat as RepeatIcon,
   Shuffle as ShuffleIcon,
   QueueMusic as QueueMusicIcon,
+  Share as ShareIcon,
 } from '@mui/icons-material';
 import { useMusicPlayer } from '../../context/MusicPlayerContext';
 import { useTheme } from '../../context/ThemeContext';
+import { getSocket } from '../../socket';
+import { NEW_MESSAGE } from '../../constants/events';
+import { useLocation } from 'react-router-dom';
 
 const MusicPlayerDialog = () => {
   const {
@@ -48,8 +52,42 @@ const MusicPlayerDialog = () => {
     removeFromQueue,
   } = useMusicPlayer();
   const { theme } = useTheme();
+  const location = useLocation();
+  const socket = getSocket();
 
   const [showQueue, setShowQueue] = React.useState(false);
+
+  const handleShare = () => {
+    // Check if socket is available
+    if (!socket) {
+      console.warn('Socket not available');
+      return;
+    }
+    
+    // Extract chatId from current location path
+    const pathParts = location.pathname.split('/');
+    const chatIndex = pathParts.indexOf('chat');
+    const chatId = chatIndex !== -1 && pathParts[chatIndex + 1] ? pathParts[chatIndex + 1] : null;
+    
+    if (!chatId) {
+      console.warn('No chat is currently open');
+      return;
+    }
+
+    // Format the share message with song details
+    const videoUrl = `https://www.youtube.com/watch?v=${currentSong.videoId}`;
+    const shareMessage = `🎵 ${currentSong.title}\n${videoUrl}`;
+    
+    // Emit the message via socket
+    socket.emit(NEW_MESSAGE, { 
+      chatId, 
+      members: [], // Will be filled by backend based on chatId
+      message: shareMessage
+    });
+    
+    // Close the dialog after sharing
+    setIsPlayerDialogOpen(false);
+  };
 
   const formatTime = (seconds) => {
     if (!seconds || isNaN(seconds)) return '0:00';
@@ -223,6 +261,23 @@ const MusicPlayerDialog = () => {
               sx={{ color: isRepeat ? theme.PRIMARY_COLOR : theme.TEXT_SECONDARY }}
             >
               <RepeatIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          {/* Share Button */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+            <IconButton
+              onClick={handleShare}
+              disabled={!currentSong}
+              sx={{ 
+                color: theme.PRIMARY_COLOR,
+                '&:disabled': { color: theme.TEXT_SECONDARY },
+              }}
+            >
+              <ShareIcon />
+              <Typography variant="caption" sx={{ marginLeft: '8px' }}>
+                Share to Chat
+              </Typography>
             </IconButton>
           </Box>
 

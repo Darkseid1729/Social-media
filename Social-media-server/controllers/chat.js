@@ -84,7 +84,7 @@ const getMyChats = TryCatch(async (req, res, next) => {
         foreignField: "_id",
         as: "members",
         pipeline: [
-          { $project: { name: 1, avatar: 1, lastSeen: 1 } }
+          { $project: { name: 1, username: 1, bio: 1, avatar: 1, lastSeen: 1 } }
         ]
       }
     }
@@ -102,6 +102,7 @@ const getMyChats = TryCatch(async (req, res, next) => {
         avatar: [selfMember?.avatar?.url || ""],
         name: `${selfMember?.name || "You"} (Self)`,
         members: [],
+        memberDetails: [],
       };
     }
 
@@ -118,6 +119,16 @@ const getMyChats = TryCatch(async (req, res, next) => {
         }
         return prev;
       }, []),
+      // Include full member details for profile viewing
+      memberDetails: members
+        .filter(m => m._id.toString() !== req.user.toString())
+        .map(m => ({
+          _id: m._id,
+          name: m.name,
+          username: m.username,
+          avatar: m.avatar?.url,
+          bio: m.bio
+        })),
       // Only include lastSeen for 1-on-1 chats, explicitly set undefined for groups
       lastSeen: !groupChat && otherMember ? otherMember.lastSeen : undefined,
     };
