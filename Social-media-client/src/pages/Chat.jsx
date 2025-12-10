@@ -15,6 +15,7 @@ import YouTubeSearchDialog from "../components/dialogs/YouTubeSearchDialog";
 import { IconButton, Skeleton, Stack, Box, useMediaQuery } from "@mui/material";
 import { useTheme } from "../context/ThemeContext";
 import { useMusicPlayer } from "../context/MusicPlayerContext";
+import { useNotificationSound } from "../context/NotificationSoundContext";
 import {
   AttachFile as AttachFileIcon,
   Send as SendIcon,
@@ -66,6 +67,7 @@ const Chat = ({ chatId, user }) => {
   const [setWallpaper] = useSetWallpaperMutation();
   const { theme } = useTheme();
   const { currentSong } = useMusicPlayer();
+  const { playNotificationSound } = useNotificationSound();
   const isMobile = useMediaQuery('(max-width:900px)');
   const socket = getSocket();
   const dispatch = useDispatch();
@@ -351,8 +353,13 @@ const Chat = ({ chatId, user }) => {
         
         return [...prev, data.message];
       });
+      
+      // Play notification sound if the message is from another user
+      if (data.message.sender._id !== user._id) {
+        playNotificationSound();
+      }
     },
-    [chatId]
+    [chatId, user._id, playNotificationSound]
   );
 
   const startTypingListener = useCallback(

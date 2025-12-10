@@ -13,10 +13,13 @@ import React, { Suspense, lazy, useState } from "react";
 
 import { useTheme } from "../../context/ThemeContext";
 import { useMusicPlayer } from "../../context/MusicPlayerContext";
+import { useNotificationSound } from "../../context/NotificationSoundContext";
 import { themes } from "../../constants/themes";
 import AddIcon from "@mui/icons-material/Add";
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import WallpaperDialog from '../dialogs/WallpaperDialog';
 import GroupMembersDialog from '../dialogs/GroupMembersDialog';
 import MenuIcon from "@mui/icons-material/Menu";
@@ -60,6 +63,7 @@ const Header = (props) => {
   // Theme switcher state and handlers
   const { themeName, changeTheme, theme } = useTheme();
   const { setIsMusicSearchOpen } = useMusicPlayer();
+  const { soundEnabled, toggleSound } = useNotificationSound();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   // Mobile menu state
@@ -289,6 +293,12 @@ const Header = (props) => {
                   <Brightness4Icon />
                 </IconButton>
               </Tooltip>
+              {/* Notification sound toggle */}
+              <Tooltip title={soundEnabled ? "Disable Notification Sound" : "Enable Notification Sound"}>
+                <IconButton onClick={toggleSound} color="inherit">
+                  {soundEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
+                </IconButton>
+              </Tooltip>
             </Box>
 
             {/* Mobile header menu dropdown trigger */}
@@ -336,6 +346,10 @@ const Header = (props) => {
                 </MenuItem>
                 <MenuItem onClick={handleThemeClick}>
                   <Brightness4Icon sx={{ mr: 1 }} /> Change Theme
+                </MenuItem>
+                <MenuItem onClick={toggleSound}>
+                  {soundEnabled ? <VolumeUpIcon sx={{ mr: 1 }} /> : <VolumeOffIcon sx={{ mr: 1 }} />}
+                  {soundEnabled ? 'Disable Sound' : 'Enable Sound'}
                 </MenuItem>
               </Menu>
               {/* Theme switcher menu for mobile */}

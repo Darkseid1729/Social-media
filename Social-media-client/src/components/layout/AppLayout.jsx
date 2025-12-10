@@ -1,5 +1,6 @@
 import { Drawer, Grid, Skeleton } from "@mui/material";
 import { useTheme } from "../../context/ThemeContext";
+import { useNotificationSound } from "../../context/NotificationSoundContext";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
@@ -39,6 +40,7 @@ const AppLayout = () => (WrappedComponent) => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const socket = getSocket();
+    const { playNotificationSound } = useNotificationSound();
 
     const chatId = params.chatId;
     const deleteMenuAnchor = useRef(null);
@@ -97,8 +99,10 @@ const AppLayout = () => (WrappedComponent) => {
       (data) => {
         if (data.chatId === chatId) return;
         dispatch(setNewMessagesAlert(data));
+        // Play notification sound for messages from other chats
+        playNotificationSound();
       },
-      [chatId]
+      [chatId, playNotificationSound]
     );
 
     const newRequestListener = useCallback(() => {
