@@ -308,6 +308,20 @@ const Header = (props) => {
               </IconButton>
             </Box>
             <Box sx={{ display: { xs: "block", sm: "none" } }}>
+              <IconButton color="inherit" onClick={openNotification}>
+                <Badge badgeContent={notificationCount} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+            </Box>
+            <Box sx={{ display: { xs: "block", sm: "none" } }}>
+              <Tooltip title={soundEnabled ? "Disable Notification Sound" : "Enable Notification Sound"}>
+                <IconButton onClick={toggleSound} color="inherit">
+                  {soundEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <Box sx={{ display: { xs: "block", sm: "none" } }}>
               <IconButton color="inherit" onClick={handleMobileMenuClick}>
                 <MenuIcon />
               </IconButton>
