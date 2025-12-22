@@ -42,6 +42,7 @@ import {
   MESSAGE_REACTION_REMOVED,
   MESSAGE_REPLY,
   EMOJI_EFFECT,
+  MESSAGE_DELETED,
 } from "../constants/events";
 import { useChatDetailsQuery, useGetMessagesQuery } from "../redux/api/api";
 import { useErrors, useSocketEvents } from "../hooks/hook";
@@ -455,6 +456,15 @@ const Chat = ({ chatId, user }) => {
     [chatId, theme]
   );
 
+  const messageDeletedListener = useCallback(
+    (data) => {
+      if (data.chatId !== chatId) return;
+      // Remove the deleted message from state
+      setMessages((prev) => prev.filter(msg => msg._id !== data.messageId));
+    },
+    [chatId]
+  );
+
   const eventHandler = {
     [ALERT]: alertListener,
     [NEW_MESSAGE]: newMessagesListener,
@@ -463,6 +473,7 @@ const Chat = ({ chatId, user }) => {
     [MESSAGE_REACTION_ADDED]: reactionAddedListener,
     [MESSAGE_REACTION_REMOVED]: reactionRemovedListener,
     [EMOJI_EFFECT]: emojiEffectListener,
+    [MESSAGE_DELETED]: messageDeletedListener,
   };
 
   useSocketEvents(socket, eventHandler);

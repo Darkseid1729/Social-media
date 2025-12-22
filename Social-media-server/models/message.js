@@ -60,6 +60,17 @@ const schema = new Schema(
       type: mongoose.Schema.Types.Mixed,
       default: null,
     },
+
+    // Soft delete fields
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+    deletedBy: {
+      type: Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   {
     timestamps: true,

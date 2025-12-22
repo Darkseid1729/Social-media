@@ -10,9 +10,10 @@ import TextWithLinks from "./TextWithLinks";
 import ReactionPicker from "./ReactionPicker";
 import ReactionsDisplay from "./ReactionsDisplay";
 import ReplyDisplay from "./ReplyDisplay";
-import { Reply as ReplyIcon, EmojiEmotions as EmojiIcon } from "@mui/icons-material";
-import { useAddMessageReactionMutation, useRemoveMessageReactionMutation } from "../../redux/api/api";
+import { Reply as ReplyIcon, EmojiEmotions as EmojiIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { useAddMessageReactionMutation, useRemoveMessageReactionMutation, useDeleteMessageMutation } from "../../redux/api/api";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 
 // Generate a consistent color shade based on userId (using last 5 characters for better distribution)
 const getUserColorShade = (userId, baseColor) => {
@@ -48,8 +49,17 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
   const [reactionPickerAnchor, setReactionPickerAnchor] = useState(null);
   const [addReaction] = useAddMessageReactionMutation();
   const [removeReaction] = useRemoveMessageReactionMutation();
+  const [deleteMessage] = useDeleteMessageMutation();
 
   const sameSender = sender?._id === user?._id;
+  
+  // Check if message can be deleted (within 10 minutes)
+  const canDelete = useMemo(() => {
+    if (!sameSender) return false;
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    return new Date(createdAt) > tenMinutesAgo;
+  }, [sameSender, createdAt]);
+  
   // Format time in Indian timezone
   const indianTime = moment(createdAt).tz("Asia/Kolkata").format("hh:mm A");
 
@@ -76,6 +86,23 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
   const handleShowReactions = () => {
     setReactionPickerAnchor(document.getElementById(`message-${messageId}`));
     handleCloseContextMenu();
+  };
+
+  const handleDelete = async () => {
+    handleCloseContextMenu();
+    if (!canDelete) {
+      toast.error("Cannot delete messages older than 10 minutes");
+      return;
+    }
+    
+    if (window.confirm("Are you sure you want to delete this message?")) {
+      try {
+        await deleteMessage(messageId).unwrap();
+        toast.success("Message deleted successfully");
+      } catch (error) {
+        toast.error(error?.data?.message || "Failed to delete message");
+      }
+    }
   };
 
   const handleReplyClick = () => {
@@ -268,6 +295,14 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
           </ListItemIcon>
           <ListItemText primary="Add Reaction" />
         </MenuItem>
+        {canDelete && (
+          <MenuItem onClick={handleDelete}>
+            <ListItemIcon>
+              <DeleteIcon fontSize="small" sx={{ color: theme.TEXT_SECONDARY }} />
+            </ListItemIcon>
+            <ListItemText primary="Delete Message" />
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Reaction Picker */}

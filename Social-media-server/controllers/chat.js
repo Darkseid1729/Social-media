@@ -14,6 +14,7 @@ import {
   REFETCH_CHATS,
   MESSAGE_REACTION_ADDED,
   MESSAGE_REACTION_REMOVED,
+  MESSAGE_DELETED,
 } from "../constants/events.js";
 import { getOtherMember } from "../lib/helper.js";
 import { User } from "../models/user.js";
@@ -484,7 +485,7 @@ const getMessages = TryCatch(async (req, res, next) => {
     );
 
   const [messages, totalMessagesCount] = await Promise.all([
-    Message.find({ chat: chatId })
+    Message.find({ chat: chatId, deletedAt: null })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(resultPerPage)
@@ -497,7 +498,7 @@ const getMessages = TryCatch(async (req, res, next) => {
         }
       })
       .lean(),
-    Message.countDocuments({ chat: chatId }),
+    Message.countDocuments({ chat: chatId, deletedAt: null }),
   ]);
 
   const totalPages = Math.ceil(totalMessagesCount / resultPerPage) || 0;
@@ -649,7 +650,8 @@ const getChatMedia = TryCatch(async (req, res, next) => {
   // Build query for messages with attachments
   const query = {
     chat: chatId,
-    attachments: { $exists: true, $ne: [] }
+    attachments: { $exists: true, $ne: [] },
+    deletedAt: null // Exclude deleted messages
   };
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -707,6 +709,52 @@ const getChatMedia = TryCatch(async (req, res, next) => {
   });
 });
 
+const deleteMessage = TryCatch(async (req, res, next) => {
+  const messageId = req.params.id;
+  const userId = req.user;
+
+  // Find the message
+  const message = await Message.findById(messageId);
+  if (!message) {
+    return next(new ErrorHandler("Message not found", 404));
+  }
+
+  // Check if user is the sender
+  if (message.sender.toString() !== userId.toString()) {
+    return next(new ErrorHandler("You can only delete your own messages", 403));
+  }
+
+  // Check if already deleted
+  if (message.deletedAt) {
+    return next(new ErrorHandler("Message already deleted", 400));
+  }
+
+  // Check if message is within 10 minutes
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+  if (message.createdAt < tenMinutesAgo) {
+    return next(new ErrorHandler("Cannot delete messages older than 10 minutes", 400));
+  }
+
+  // Soft delete the message
+  message.deletedAt = new Date();
+  message.deletedBy = userId;
+  await message.save();
+
+  // Get chat members to emit event
+  const chat = await Chat.findById(message.chat);
+  if (chat) {
+    emitEvent(req, MESSAGE_DELETED, chat.members, {
+      messageId: message._id,
+      chatId: message.chat,
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Message deleted successfully",
+  });
+});
+
 export {
   newGroupChat,
   getMyChats,
@@ -723,4 +771,5 @@ export {
   addMessageReaction,
   removeMessageReaction,
   getChatMedia,
+  deleteMessage,
 };

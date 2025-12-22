@@ -267,6 +267,16 @@ const api = createApi({
         return currentArg?.page !== previousArg?.page;
       },
     }),
+
+    // Delete message
+    deleteMessage: builder.mutation({
+      query: (messageId) => ({
+        url: `chat/message/${messageId}`,
+        method: "DELETE",
+        credentials: "include",
+      }),
+      invalidatesTags: ["Message"],
+    }),
   }),
 });
 
@@ -295,5 +305,6 @@ export const {
   useSetWallpaperMutation,
   useCheckFriendStatusQuery,
   useGetChatMediaQuery,
+  useDeleteMessageMutation,
 } = api;
 

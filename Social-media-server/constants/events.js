@@ -23,6 +23,9 @@ const MESSAGE_REPLY = "MESSAGE_REPLY";
 // Emoji effect event
 const EMOJI_EFFECT = "EMOJI_EFFECT";
 
+// Delete message event
+const MESSAGE_DELETED = "MESSAGE_DELETED";
+
 const ONLINE_USERS = "ONLINE_USERS";
 
 export {
@@ -41,4 +44,5 @@ export {
   MESSAGE_REACTION_REMOVED,
   MESSAGE_REPLY,
   EMOJI_EFFECT,
+  MESSAGE_DELETED,
 };
