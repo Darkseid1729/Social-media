@@ -18,6 +18,7 @@ import {
   setWallpaper,
   addMessageReaction,
   removeMessageReaction,
+  getChatMedia,
 } from "../controllers/chat.js";
 import { singleAvatar } from "../middlewares/multer.js";
 import {
@@ -66,6 +67,9 @@ app.post(
 
 // Get Messages
 app.get("/message/:id", chatIdValidator(), validateHandler, getMessages);
+
+// Get Chat Media (photos and videos)
+app.get("/media/:id", chatIdValidator(), validateHandler, getChatMedia);
 
 // Get Chat Details, rename,delete
 app

@@ -20,8 +20,10 @@ import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import CollectionsIcon from '@mui/icons-material/Collections';
 import WallpaperDialog from '../dialogs/WallpaperDialog';
 import GroupMembersDialog from '../dialogs/GroupMembersDialog';
+import MediaGallery from '../dialogs/MediaGallery';
 import MenuIcon from "@mui/icons-material/Menu";
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import GroupIcon from "@mui/icons-material/Group";
@@ -32,7 +34,7 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import { Menu, MenuItem } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { server } from "../../constants/config";
 import toast from "react-hot-toast";
@@ -167,8 +169,11 @@ const Header = (props) => {
   // Wallpaper dialog state
   const [showWallpaperDialog, setShowWallpaperDialog] = useState(false);
   const [showGroupMembersDialog, setShowGroupMembersDialog] = useState(false);
-  // Use chatId from props
-  const chatId = props.chatId;
+  const [showMediaGallery, setShowMediaGallery] = useState(false);
+  
+  // Get chatId from URL params
+  const params = useParams();
+  const chatId = params.chatId || props.chatId;
   const chatDetails = props.chatDetails;
   const isGroupChat = chatDetails?.groupChat;
 
@@ -187,6 +192,19 @@ const Header = (props) => {
 
   const handleGroupMembersClose = () => {
     setShowGroupMembersDialog(false);
+  };
+
+  const handleMediaGalleryOpen = () => {
+    if (!chatId) {
+      toast.error('Please select a chat first');
+      return;
+    }
+    setShowMediaGallery(true);
+    handleMobileMenuClose();
+  };
+
+  const handleMediaGalleryClose = () => {
+    setShowMediaGallery(false);
   };
 
   return (
@@ -248,6 +266,11 @@ const Header = (props) => {
               title={"Profile"}
               icon={<AccountCircleIcon />}
               onClick={openProfile}
+            />
+            <IconBtn
+              title={"Media Gallery"}
+              icon={<CollectionsIcon />}
+              onClick={handleMediaGalleryOpen}
             />
             <IconBtn
               title={"Change Chat Wallpaper"}
@@ -340,6 +363,9 @@ const Header = (props) => {
                     <InfoIcon sx={{ mr: 1 }} /> Group Members
                   </MenuItem>
                 )}
+                <MenuItem onClick={handleMediaGalleryOpen}>
+                  <CollectionsIcon sx={{ mr: 1 }} /> Media Gallery
+                </MenuItem>
                 <MenuItem onClick={openSearch}>
                   <SearchIcon sx={{ mr: 1 }} /> Search
                 </MenuItem>
@@ -435,6 +461,13 @@ const Header = (props) => {
         onClose={handleGroupMembersClose}
         members={chatDetails?.members || []}
         currentUserId={user?._id}
+      />
+
+      {/* Media Gallery Dialog */}
+      <MediaGallery
+        open={showMediaGallery}
+        onClose={handleMediaGalleryClose}
+        chatId={chatId}
       />
     </>
   );

@@ -634,6 +634,79 @@ const removeMessageReaction = TryCatch(async (req, res, next) => {
   });
 });
 
+const getChatMedia = TryCatch(async (req, res, next) => {
+  const chatId = req.params.id;
+  const { type, page = 1, limit = 50 } = req.query;
+
+  // Verify chat exists and user is a member
+  const chat = await Chat.findById(chatId);
+  if (!chat) return next(new ErrorHandler("Chat not found", 404));
+
+  if (!chat.members.includes(req.user.toString())) {
+    return next(new ErrorHandler("You are not authorized to view this chat's media", 403));
+  }
+
+  // Build query for messages with attachments
+  const query = {
+    chat: chatId,
+    attachments: { $exists: true, $ne: [] }
+  };
+
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  // Fetch messages with attachments (get all for filtering)
+  const messages = await Message.find(query)
+    .sort({ createdAt: -1 })
+    .populate('sender', 'name username avatar')
+    .lean();
+
+  // Extract and flatten all media items with type detection
+  const allMediaItems = [];
+  messages.forEach(message => {
+    message.attachments.forEach(attachment => {
+      // Detect media type from URL extension
+      const url = attachment.url.toLowerCase();
+      let mediaType = 'unknown';
+      
+      if (url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)($|\?)/i)) {
+        mediaType = 'image';
+      } else if (url.match(/\.(mp4|webm|ogg|mov|avi|mkv)($|\?)/i)) {
+        mediaType = 'video';
+      }
+
+      // Filter by type if specified
+      if (type === 'image' && mediaType !== 'image') return;
+      if (type === 'video' && mediaType !== 'video') return;
+
+      allMediaItems.push({
+        _id: attachment.public_id,
+        url: attachment.url,
+        type: mediaType === 'image' ? 'image/jpeg' : 'video/mp4',
+        messageId: message._id,
+        sender: message.sender,
+        createdAt: message.createdAt,
+        content: message.content
+      });
+    });
+  });
+
+  // Apply pagination to filtered results
+  const totalCount = allMediaItems.length;
+  const mediaItems = allMediaItems.slice(skip, skip + parseInt(limit));
+
+  return res.status(200).json({
+    success: true,
+    media: mediaItems,
+    pagination: {
+      total: totalCount,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages: Math.ceil(totalCount / parseInt(limit)),
+      hasMore: skip + mediaItems.length < totalCount
+    }
+  });
+});
+
 export {
   newGroupChat,
   getMyChats,
@@ -649,4 +722,5 @@ export {
   setWallpaper,
   addMessageReaction,
   removeMessageReaction,
+  getChatMedia,
 };

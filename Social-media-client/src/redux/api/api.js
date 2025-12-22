@@ -236,6 +236,37 @@ const api = createApi({
       }),
       providesTags: ["User"],
     }),
+
+    // Get chat media (photos and videos)
+    getChatMedia: builder.query({
+      query: ({ chatId, type, page = 1, limit = 50 }) => {
+        let url = `chat/media/${chatId}?page=${page}&limit=${limit}`;
+        if (type) url += `&type=${type}`;
+        
+        return {
+          url,
+          credentials: "include",
+        };
+      },
+      providesTags: ["Message"],
+      serializeQueryArgs: ({ queryArgs }) => {
+        // Only use chatId and type for cache key (ignore page)
+        return { chatId: queryArgs.chatId, type: queryArgs.type };
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        // Merge paginated results
+        if (arg.page === 1) {
+          return newItems;
+        }
+        return {
+          ...newItems,
+          media: [...(currentCache.media || []), ...(newItems.media || [])],
+        };
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg?.page !== previousArg?.page;
+      },
+    }),
   }),
 });
 
@@ -263,5 +294,6 @@ export const {
   useGetUserProfileQuery,
   useSetWallpaperMutation,
   useCheckFriendStatusQuery,
+  useGetChatMediaQuery,
 } = api;
 
