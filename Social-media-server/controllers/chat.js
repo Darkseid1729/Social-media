@@ -43,6 +43,8 @@ const newGroupChat = TryCatch(async (req, res, next) => {
 });
 
 const getMyChats = TryCatch(async (req, res, next) => {
+  const { limit = 50 } = req.query; // Limit chats for faster mobile loading
+  
   // Aggregate to get chats with last message time for sorting
   const chats = await Chat.aggregate([
     // Match chats where user is a member
@@ -76,6 +78,9 @@ const getMyChats = TryCatch(async (req, res, next) => {
     
     // Sort by most recent activity (descending)
     { $sort: { lastMessageTime: -1 } },
+    
+    // Limit results for faster loading
+    { $limit: parseInt(limit) },
     
     // Populate members
     {
@@ -472,7 +477,7 @@ const getMessages = TryCatch(async (req, res, next) => {
   const chatId = req.params.id;
   const { page = 1 } = req.query;
 
-  const resultPerPage = 20;
+  const resultPerPage = 15; // Reduced from 20 for faster mobile loading
   const skip = (page - 1) * resultPerPage;
 
   const chat = await Chat.findById(chatId);

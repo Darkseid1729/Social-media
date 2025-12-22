@@ -73,12 +73,14 @@ const AppLayout = () => (WrappedComponent) => {
     };
     const { newMessagesAlert } = useSelector((state) => state.chat);
 
-    const { isLoading, data, isError, error, refetch } = useMyChatsQuery("");
+    const { isLoading, data, isError, error, refetch } = useMyChatsQuery("", {
+      refetchOnMountOrArgChange: 30, // Only refetch if data is older than 30 seconds
+    });
 
     // Fetch chat details if chatId exists to determine if it's a group
     const { data: chatDetailsData, isLoading: chatDetailsLoading } = useChatDetailsQuery(
       { chatId, populate: true }, 
-      { skip: !chatId }
+      { skip: !chatId, refetchOnMountOrArgChange: false }
     );
 
     useErrors([{ isError, error }]);
@@ -111,8 +113,12 @@ const AppLayout = () => (WrappedComponent) => {
 
     const refetchListener = useCallback(() => {
       refetch();
-      navigate("/");
-    }, [refetch, navigate]);
+      // Only navigate to home if not currently in a chat
+      // This prevents unwanted redirects on page reload
+      if (!chatId) {
+        navigate("/");
+      }
+    }, [refetch, navigate, chatId]);
 
     const onlineUsersListener = useCallback((data) => {
       setOnlineUsers(data);

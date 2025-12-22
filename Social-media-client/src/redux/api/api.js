@@ -4,8 +4,12 @@ import { server } from "../../constants/config";
 
 const api = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({ baseUrl: `${server}/api/v1/` }),
+  baseQuery: fetchBaseQuery({ 
+    baseUrl: `${server}/api/v1/`,
+    timeout: 15000, // 15 second timeout for mobile networks
+  }),
   tagTypes: ["Chat", "User", "Message"],
+  keepUnusedDataFor: 300, // Keep cached data for 5 minutes
 
   endpoints: (builder) => ({
     updateAvatar: builder.mutation({

@@ -148,7 +148,11 @@ const Chat = ({ chatId, user }) => {
 
   const chatDetails = useChatDetailsQuery({ chatId, skip: !chatId });
 
-  const oldMessagesChunk = useGetMessagesQuery({ chatId, page });
+  const oldMessagesChunk = useGetMessagesQuery({ chatId, page }, { 
+    skip: !chatId,
+    refetchOnMountOrArgChange: false, // Prevent excessive refetches on mobile
+    refetchOnReconnect: true // Only refetch when reconnecting
+  });
 
   const { data: oldMessages, setData: setOldMessages } = useInfiniteScrollTop(
     containerRef,
@@ -306,8 +310,19 @@ const Chat = ({ chatId, user }) => {
   }, [chatId, page, oldMessagesChunk.data?.messages, oldMessagesChunk.isLoading]);
 
   useEffect(() => {
-    socket.emit(CHAT_JOINED, { userId: user._id, members });
-    dispatch(removeNewMessagesAlert(chatId));
+    // Join chat room when component mounts or chatId changes
+    // Wait a bit to ensure socket is connected
+    const joinChat = () => {
+      if (socket.connected && user?._id && members) {
+        socket.emit(CHAT_JOINED, { userId: user._id, members });
+        dispatch(removeNewMessagesAlert(chatId));
+      } else {
+        // If not connected, wait and retry
+        setTimeout(joinChat, 100);
+      }
+    };
+    
+    joinChat();
 
     return () => {
       setMessages([]);
@@ -315,9 +330,44 @@ const Chat = ({ chatId, user }) => {
       setOldMessages([]);
       setPage(1);
       setHasScrolledToBottom(false);
-      socket.emit(CHAT_LEAVED, { userId: user._id, members });
+      if (socket.connected && user?._id && members) {
+        socket.emit(CHAT_LEAVED, { userId: user._id, members });
+      }
     };
   }, [chatId]);
+
+  // Handle socket reconnection - rejoin chat and refetch messages
+  useEffect(() => {
+    const handleReconnect = () => {
+      // Always rejoin on reconnection, using current chatId
+      if (chatId && user?._id && members) {
+        socket.emit(CHAT_JOINED, { userId: user._id, members });
+        // Refetch messages to get any missed during disconnect
+        oldMessagesChunk.refetch();
+      }
+    };
+
+    const handleDisconnect = () => {
+      // Visual indicator could be added here
+    };
+
+    const handleConnect = () => {
+      // Rejoin chat if we're in one
+      if (chatId && user?._id && members) {
+        socket.emit(CHAT_JOINED, { userId: user._id, members });
+      }
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("reconnect", handleReconnect);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("reconnect", handleReconnect);
+    };
+  }, [chatId, members, user?._id]);
 
   useEffect(() => {
     if (bottomRef.current)
@@ -339,9 +389,20 @@ const Chat = ({ chatId, user }) => {
     }
   }, [oldMessages, page, oldMessagesChunk.isLoading, hasScrolledToBottom]);
 
+  // Only redirect if it's a 404 error (chat not found), not on loading/network errors
   useEffect(() => {
-    if (chatDetails.isError) return navigate("/");
-  }, [chatDetails.isError]);
+    // Don't check for errors while chatDetails is still loading
+    if (chatDetails.isLoading) return;
+    
+    if (chatDetails.isError) {
+      const errorStatus = chatDetails.error?.status;
+      // Only navigate away if chat doesn't exist (404), not on network/timeout errors
+      if (errorStatus === 404) {
+        navigate("/");
+      }
+      // For other errors (500, network, timeout), stay on page - user might reload to fix it
+    }
+  }, [chatDetails.isError, chatDetails.error, chatDetails.isLoading]);
 
   const newMessagesListener = useCallback(
     (data) => {
@@ -465,6 +526,11 @@ const Chat = ({ chatId, user }) => {
     [chatId]
   );
 
+  const handleDeleteMessage = useCallback((messageId) => {
+    // Immediately remove from local state when user deletes their own message
+    setMessages((prev) => prev.filter(msg => msg._id !== messageId));
+  }, []);
+
   const eventHandler = {
     [ALERT]: alertListener,
     [NEW_MESSAGE]: newMessagesListener,
@@ -565,6 +631,7 @@ const Chat = ({ chatId, user }) => {
             user={user} 
             onReply={handleReply}
             onScrollToMessage={handleScrollToMessage}
+            onDelete={handleDeleteMessage}
           />
         ))}
 
@@ -716,7 +783,7 @@ const Chat = ({ chatId, user }) => {
   );
 };
 
-export default AppLayout()(Chat);
+export default AppLayout()(React.memo(Chat));
 
 
 export const ChatWithHeader = (props) => {

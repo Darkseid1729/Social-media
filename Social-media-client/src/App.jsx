@@ -34,11 +34,43 @@ const App = () => {
 
   const dispatch = useDispatch();
 
+  // Register service worker for caching
   useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .catch(() => {
+          // Silently fail - not critical
+        });
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
     axios
-      .get(`${server}/api/v1/user/me`, { withCredentials: true })
-      .then(({ data }) => dispatch(userExists(data.user)))
-      .catch((err) => dispatch(userNotExists()));
+      .get(`${server}/api/v1/user/me`, { 
+        withCredentials: true,
+        signal: controller.signal,
+        timeout: 10000
+      })
+      .then(({ data }) => {
+        clearTimeout(timeoutId);
+        dispatch(userExists(data.user));
+      })
+      .catch((err) => {
+        clearTimeout(timeoutId);
+        // Don't set user state if request was aborted - we're still trying to auth
+        if (err.code === 'ERR_CANCELED' || err.message === 'canceled') {
+          return;
+        }
+        dispatch(userNotExists());
+      });
+    
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [dispatch]);
 
   return loader ? (
@@ -51,7 +83,7 @@ const App = () => {
             <Route
               element={
                 <SocketProvider>
-                  <ProtectRoute user={user} />
+                  <ProtectRoute user={user} loader={loader} />
                 </SocketProvider>
               }
             >
@@ -63,7 +95,7 @@ const App = () => {
             <Route
               path="/login"
               element={
-                <ProtectRoute user={!user} redirect="/">
+                <ProtectRoute user={!user} redirect="/" loader={loader}>
                   <Login />
                 </ProtectRoute>
               }

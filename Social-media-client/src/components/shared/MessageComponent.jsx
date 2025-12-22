@@ -41,12 +41,13 @@ const getUserColorShade = (userId, baseColor) => {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };
 
-const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
+const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete }) => {
   // console.log('MessageComponent message:', message); // Debug line
   const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId, replyTo } = message;
   const { theme } = useTheme();
   const [contextMenu, setContextMenu] = useState(null);
   const [reactionPickerAnchor, setReactionPickerAnchor] = useState(null);
+  const [touchTimer, setTouchTimer] = useState(null);
   const [addReaction] = useAddMessageReactionMutation();
   const [removeReaction] = useRemoveMessageReactionMutation();
   const [deleteMessage] = useDeleteMessageMutation();
@@ -74,6 +75,21 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
     setContextMenu({ mouseX: e.clientX - 2, mouseY: e.clientY - 4 });
   };
 
+  const handleTouchStart = (e) => {
+    const timer = setTimeout(() => {
+      const touch = e.touches[0];
+      setContextMenu({ mouseX: touch.clientX - 2, mouseY: touch.clientY - 4 });
+    }, 500); // 500ms long-press
+    setTouchTimer(timer);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimer) {
+      clearTimeout(touchTimer);
+      setTouchTimer(null);
+    }
+  };
+
   const handleCloseContextMenu = () => {
     setContextMenu(null);
   };
@@ -97,6 +113,9 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
     
     if (window.confirm("Are you sure you want to delete this message?")) {
       try {
+        // Immediately remove from UI
+        onDelete?.(messageId);
+        // Call API to delete on server
         await deleteMessage(messageId).unwrap();
         toast.success("Message deleted successfully");
       } catch (error) {
@@ -160,6 +179,9 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage }) => {
         cursor: 'pointer',
       }}
       onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchEnd}
     >
       {/* Reply Display */}
       {replyTo && (
