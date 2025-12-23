@@ -177,10 +177,12 @@ const MessageManagement = () => {
               lineHeight: 1.5,
               py: 1,
               px: 1,
-              bgcolor: isDeleted ? "#ffcccc" : "transparent",
+              bgcolor: isDeleted ? "#ffe6e6" : "transparent",
               borderRadius: isDeleted ? 1 : 0,
-              color: isDeleted ? "#cc0000" : "inherit",
+              color: isDeleted ? "#ff0000" : "inherit",
+              fontWeight: isDeleted ? "600" : "normal",
               fontStyle: isDeleted ? "italic" : "normal",
+              border: isDeleted ? "1px solid #ff0000" : "none",
             }}
           >
             {params.row.content || (isDeleted ? "[Deleted Message]" : "")}

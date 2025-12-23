@@ -202,11 +202,13 @@ const allMessages = TryCatch(async (req, res) => {
   ]);
 
   const transformedMessages = messages.map(
-    ({ content, attachments, _id, sender, createdAt, chat }) => ({
+    ({ content, attachments, _id, sender, createdAt, chat, deletedAt, deletedBy }) => ({
       _id,
       attachments,
       content,
       createdAt,
+      deletedAt,
+      deletedBy,
       chat: chat?._id,
       groupChat: !!chat?.groupChat,
       sender: {
