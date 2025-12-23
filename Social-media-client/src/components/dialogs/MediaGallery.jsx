@@ -29,7 +29,6 @@ const MediaGallery = ({ open, onClose, chatId }) => {
   const [activeTab, setActiveTab] = useState('all');
   const [page, setPage] = useState(1);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(null);
-  const [allMedia, setAllMedia] = useState([]);
 
   // Get media type for API query
   const mediaType = activeTab === 'all' ? undefined : activeTab;
@@ -39,23 +38,15 @@ const MediaGallery = ({ open, onClose, chatId }) => {
     { skip: !open || !chatId }
   );
 
-  // Reset when dialog opens or tab changes
+  // Reset page when dialog opens or tab changes
   useEffect(() => {
     if (open) {
       setPage(1);
-      setAllMedia([]);
     }
   }, [open, activeTab]);
 
-  // Accumulate media items as pages load
-  useEffect(() => {
-    if (data?.media) {
-      setAllMedia(prev => {
-        if (page === 1) return data.media;
-        return [...prev, ...data.media];
-      });
-    }
-  }, [data, page]);
+  // Use media directly from RTK Query (which handles merging via the merge function in api.js)
+  const allMedia = data?.media || [];
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
