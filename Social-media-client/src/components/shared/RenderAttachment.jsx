@@ -9,27 +9,27 @@ const RenderAttachment = (file, url) => {
       <img
         src={url}
         alt="GIF"
-        width={"200px"}
-        height={"150px"}
-        style={{ objectFit: "contain" }}
+        width={"100px"}
+        height={"75px"}
+        style={{ objectFit: "contain", display: "block", margin: 0, padding: 0 }}
       />
     );
   }
   switch (file) {
     case "video":
-      return <video src={url} preload="none" width={"200px"} controls />;
+      return <video src={url} preload="none" width={"100px"} controls style={{ display: "block", margin: 0, padding: 0 }} />;
     case "image":
       return (
         <img
           src={transformImage(url, 200)}
           alt="Attachement"
-          width={"200px"}
-          height={"150px"}
-          style={{ objectFit: "contain" }}
+          width={"100px"}
+          height={"75px"}
+          style={{ objectFit: "contain", display: "block", margin: 0, padding: 0 }}
         />
       );
     case "audio":
-      return <audio src={url} preload="none" controls />;
+      return <audio src={url} preload="none" controls style={{ display: "block", margin: 0, padding: 0 }} />;
     default:
       return <FileOpenIcon />;
   }

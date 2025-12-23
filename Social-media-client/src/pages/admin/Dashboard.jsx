@@ -45,7 +45,7 @@ const Dashboard = () => {
   const Appbar = (
     <Paper
       elevation={3}
-      sx={{ padding: "2rem", margin: "2rem 0", borderRadius: "1rem" }}
+      sx={{ padding: { xs: "0.75rem", sm: "1.25rem", md: "2rem" }, margin: { xs: "0.5rem 0", sm: "1rem 0", md: "2rem 0" }, borderRadius: "1rem" }}
     >
       <Stack direction={"row"} alignItems={"center"} spacing={"1rem"}>
         <AdminPanelSettingsIcon sx={{ fontSize: "3rem" }} />
@@ -83,10 +83,10 @@ const Dashboard = () => {
       <Paper
         elevation={3}
         sx={{
-          padding: "2rem",
-          margin: "2rem 0",
+          padding: { xs: "1rem", sm: "1.5rem", md: "2rem" },
+          margin: { xs: "0.5rem 0", sm: "1rem 0", md: "2rem 0" },
           borderRadius: "1.5rem",
-          width: "20rem",
+          width: { xs: "100%", sm: "18rem", md: "20rem" },
           bgcolor: bg,
           color: color,
         }}
@@ -145,6 +145,8 @@ const Dashboard = () => {
             bgcolor: "#1a2e2b",
             minHeight: "100vh",
             color: "#fff",
+            px: { xs: 1, sm: 2, md: 3 },
+            py: { xs: 1, sm: 2, md: 3 },
           }}
         >
           {Appbar}
@@ -165,7 +167,7 @@ const Dashboard = () => {
             <Paper
               elevation={3}
               sx={{
-                padding: "2rem 3.5rem",
+                padding: { xs: "1rem", sm: "1.5rem 2rem", md: "2rem 3.5rem" },
                 borderRadius: "1rem",
                 width: "100%",
                 maxWidth: "45rem",

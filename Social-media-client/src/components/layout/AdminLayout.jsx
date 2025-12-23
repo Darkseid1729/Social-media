@@ -73,7 +73,7 @@ const Sidebar = ({ w = "100%" }) => {
   };
 
   return (
-    <Stack width={w} direction={"column"} p={"3rem"} spacing={"3rem"} sx={{ bgcolor: theme.SURFACE_BG, color: "#fff" }}>
+    <Stack width={w} direction={"column"} p={{ xs: "1rem", sm: "2rem", md: "3rem" }} spacing={{ xs: "1.5rem", md: "3rem" }} sx={{ bgcolor: theme.SURFACE_BG, color: "#fff" }}>
       <Typography variant="h5" textTransform={"uppercase"} color="#ffd600">
         Chattu
       </Typography>
@@ -135,15 +135,15 @@ const AdminLayout = ({ children }) => {
         </IconButton>
       </Box>
 
-      <Grid item md={4} lg={3} sx={{ display: { xs: "none", md: "block" }, bgcolor: "#234e4d", color: "#fff" }}>
+      <Grid item md={3} lg={2} sx={{ display: { xs: "none", md: "block" }, bgcolor: "#234e4d", color: "#fff" }}>
         <Sidebar />
       </Grid>
 
       <Grid
         item
         xs={12}
-        md={8}
-        lg={9}
+        md={9}
+        lg={10}
         sx={{
           bgcolor: "#49736d",
           color: "#fff",

@@ -1,6 +1,6 @@
 import { useFetchData } from "6pp";
-import { Avatar, Skeleton, Stack, TextField, Box, InputAdornment } from "@mui/material";
-import { Search as SearchIcon } from "@mui/icons-material";
+import { Avatar, Skeleton, Stack, TextField, Box, InputAdornment, IconButton } from "@mui/material";
+import { Search as SearchIcon, ContentCopy as CopyIcon } from "@mui/icons-material";
 import React, { useEffect, useState } from "react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import AvatarCard from "../../components/shared/AvatarCard";
@@ -9,19 +9,52 @@ import { server } from "../../constants/config";
 import { useErrors } from "../../hooks/hook";
 import { transformImage } from "../../lib/features";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const columns = [
   {
     field: "id",
     headerName: "ID",
     headerClassName: "table-header",
-    width: 200,
+    width: 120,
+    renderCell: (params) => {
+      const [longPressTimer, setLongPressTimer] = React.useState(null);
+      
+      const handleCopy = () => {
+        navigator.clipboard.writeText(params.row.id);
+        toast.success("Chat ID copied!");
+      };
+      
+      const handleTouchStart = () => {
+        const timer = setTimeout(handleCopy, 500);
+        setLongPressTimer(timer);
+      };
+      
+      const handleTouchEnd = () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          setLongPressTimer(null);
+        }
+      };
+      
+      return (
+        <Box
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onClick={handleCopy}
+          sx={{ cursor: "pointer", fontSize: "0.75rem" }}
+          title="Click to copy ID"
+        >
+          {params.row.id}
+        </Box>
+      );
+    },
   },
   {
     field: "avatar",
     headerName: "Avatar",
     headerClassName: "table-header",
-    width: 150,
+    width: 80,
     renderCell: (params) => <AvatarCard avatar={params.row.avatar} />,
   },
 
@@ -29,45 +62,45 @@ const columns = [
     field: "name",
     headerName: "Name",
     headerClassName: "table-header",
-    width: 300,
+    width: 150,
   },
 
   {
     field: "groupChat",
     headerName: "Group",
     headerClassName: "table-header",
-    width: 100,
+    width: 70,
   },
   {
     field: "totalMembers",
-    headerName: "Total Members",
+    headerName: "Members",
     headerClassName: "table-header",
-    width: 120,
+    width: 80,
   },
   {
     field: "members",
-    headerName: "Members",
+    headerName: "Member List",
     headerClassName: "table-header",
-    width: 400,
+    width: 200,
     renderCell: (params) => (
       <AvatarCard max={100} avatar={params.row.members} />
     ),
   },
   {
     field: "totalMessages",
-    headerName: "Total Messages",
+    headerName: "Messages",
     headerClassName: "table-header",
-    width: 120,
+    width: 90,
   },
   {
     field: "creator",
     headerName: "Created By",
     headerClassName: "table-header",
-    width: 250,
+    width: 150,
     renderCell: (params) => (
-      <Stack direction="row" alignItems="center" spacing={"1rem"}>
-        <Avatar alt={params.row.creator.name} src={params.row.creator.avatar} />
-        <span>{params.row.creator.name}</span>
+      <Stack direction="row" alignItems="center" spacing={"0.5rem"}>
+        <Avatar alt={params.row.creator.name} src={params.row.creator.avatar} sx={{ width: 30, height: 30 }} />
+        <span style={{ fontSize: "0.875rem" }}>{params.row.creator.name}</span>
       </Stack>
     ),
   },
@@ -126,21 +159,21 @@ const ChatManagement = () => {
       {loading && !rows.length ? (
         <Skeleton height={"100vh"} sx={{ bgcolor: "#1a2e2b" }} />
       ) : (
-        <div
-          style={{
+        <Box
+          sx={{
             background: "#1a2e2b",
             minHeight: "100vh",
-            padding: "2rem",
+            padding: { xs: "0.5rem", sm: "1rem", md: "2rem" },
           }}
         >
-          <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
+          <Box sx={{ mb: { xs: 1, sm: 2, md: 3 }, display: "flex", justifyContent: "center", px: { xs: 0.5, sm: 0 } }}>
             <TextField
               placeholder="Search chats by name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
                 width: "100%",
-                maxWidth: "600px",
+                maxWidth: { xs: "100%", sm: "600px" },
                 bgcolor: "#234e4d",
                 borderRadius: 2,
                 "& .MuiOutlinedInput-root": {
@@ -178,7 +211,7 @@ const ChatManagement = () => {
             headerStyle={{ background: "#234e4d", color: "#ffd600" }}
             rowStyle={{ background: "#e6a3a3" }}
           />
-        </div>
+        </Box>
       )}
     </AdminLayout>
   );

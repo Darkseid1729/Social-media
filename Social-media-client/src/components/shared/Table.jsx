@@ -22,13 +22,15 @@ const Table = ({
   return (
     <Container
       sx={{
-        height: "100vh",
+        height: "auto",
+        maxHeight: "100%",
+        py: 0,
       }}
     >
       <Paper
         elevation={3}
         sx={{
-          padding: "1rem 4rem",
+          padding: { xs: "0.25rem", sm: "0.5rem 1rem", md: "0.75rem 2rem" },
           borderRadius: "1rem",
           margin: "auto",
           width: "100%",
@@ -41,8 +43,9 @@ const Table = ({
           textAlign={"center"}
           variant="h4"
           sx={{
-            margin: "2rem",
+            margin: { xs: "0.25rem", sm: "0.5rem", md: "1rem" },
             textTransform: "uppercase",
+            fontSize: { xs: "1.25rem", sm: "1.75rem", md: "2.125rem" },
           }}
         >
           {heading}
@@ -52,7 +55,7 @@ const Table = ({
           columns={columns}
           rowHeight={rowHeight}
           style={{
-            height: "80%",
+            height: "70vh",
           }}
           loading={loading}
           paginationMode={serverPagination ? "server" : "client"}
@@ -69,6 +72,15 @@ const Table = ({
             ".MuiDataGrid-row": {
               bgcolor: rowStyle.background || "inherit",
               color: rowStyle.color || "inherit",
+            },
+            ".MuiDataGrid-cell": {
+              display: "flex",
+              alignItems: "center",
+              whiteSpace: "normal !important",
+              wordWrap: "break-word !important",
+            },
+            ".MuiDataGrid-columnHeaders": {
+              fontSize: { xs: "0.75rem", sm: "0.875rem", md: "1rem" },
             },
           }}
         />

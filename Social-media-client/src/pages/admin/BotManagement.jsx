@@ -97,11 +97,11 @@ const BotManagement = () => {
       <Paper
         elevation={3}
         sx={{
-          padding: "2rem",
+          padding: { xs: "1rem", sm: "1.5rem", md: "2rem" },
           borderRadius: "1.5rem",
           bgcolor: bg,
           color: color,
-          minWidth: "200px",
+          minWidth: { xs: "150px", sm: "200px" },
           flex: 1,
         }}
       >
@@ -171,15 +171,16 @@ const BotManagement = () => {
           bgcolor: "#1a2e2b",
           minHeight: "100vh",
           color: "#fff",
-          py: 4,
+          py: { xs: 1, sm: 2, md: 4 },
+          px: { xs: 1, sm: 2, md: 3 },
         }}
       >
         {/* Header */}
         <Paper
           elevation={3}
           sx={{
-            padding: "2rem",
-            marginBottom: "2rem",
+            padding: { xs: "0.75rem", sm: "1.25rem", md: "2rem" },
+            marginBottom: { xs: "0.5rem", sm: "1rem", md: "2rem" },
             borderRadius: "1rem",
             bgcolor: "#234e4d",
           }}
@@ -203,10 +204,10 @@ const BotManagement = () => {
             xs: "column",
             sm: "row",
           }}
-          spacing="2rem"
+          spacing={{ xs: "1rem", sm: "1.5rem", md: "2rem" }}
           justifyContent="space-between"
           alignItems={"stretch"}
-          marginBottom={"2rem"}
+          marginBottom={{ xs: "0.5rem", sm: "1rem", md: "2rem" }}
           flexWrap="wrap"
         >
           <Widget
@@ -240,8 +241,8 @@ const BotManagement = () => {
         <Paper
           elevation={3}
           sx={{
-            padding: "2rem",
-            marginBottom: "2rem",
+            padding: { xs: "0.75rem", sm: "1.25rem", md: "2rem" },
+            marginBottom: { xs: "0.5rem", sm: "1rem", md: "2rem" },
             borderRadius: "1rem",
             bgcolor: "#234e4d",
           }}
@@ -292,12 +293,12 @@ const BotManagement = () => {
         </Paper>
 
         {/* Charts */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid container spacing={{ xs: 1, sm: 2, md: 3 }} sx={{ mb: { xs: 1, sm: 2, md: 3 } }}>
           <Grid item xs={12} lg={8}>
             <Paper
               elevation={3}
               sx={{
-                padding: "2rem",
+                padding: { xs: "0.75rem", sm: "1.25rem", md: "2rem" },
                 borderRadius: "1rem",
                 bgcolor: "#234e4d",
               }}
@@ -315,7 +316,7 @@ const BotManagement = () => {
             <Paper
               elevation={3}
               sx={{
-                padding: "2rem",
+                padding: { xs: "0.75rem", sm: "1.25rem", md: "2rem" },
                 borderRadius: "1rem",
                 bgcolor: "#234e4d",
                 height: "100%",
@@ -358,8 +359,8 @@ const BotManagement = () => {
         <Paper
           elevation={3}
           sx={{
-            padding: "2rem",
-            marginBottom: "2rem",
+            padding: { xs: "0.75rem", sm: "1.25rem", md: "2rem" },
+            marginBottom: { xs: "0.5rem", sm: "1rem", md: "2rem" },
             borderRadius: "1rem",
             bgcolor: "#234e4d",
           }}
@@ -367,7 +368,7 @@ const BotManagement = () => {
           <Typography variant="h6" gutterBottom fontWeight="bold" color="#ffd600">
             👥 User Statistics
           </Typography>
-          <TableContainer sx={{ mt: 2 }}>
+          <TableContainer sx={{ mt: 2, overflowX: "auto" }}>
             <Table>
               <TableHead>
                 <TableRow>
@@ -427,7 +428,7 @@ const BotManagement = () => {
         <Paper
           elevation={3}
           sx={{
-            padding: "2rem",
+            padding: { xs: "0.75rem", sm: "1.25rem", md: "2rem" },
             borderRadius: "1rem",
             bgcolor: "#234e4d",
           }}

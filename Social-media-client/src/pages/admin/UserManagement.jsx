@@ -14,15 +14,15 @@ const columns = [
     field: "id",
     headerName: "ID",
     headerClassName: "table-header",
-    width: 200,
+    width: 120,
   },
   {
     field: "avatar",
     headerName: "Avatar",
     headerClassName: "table-header",
-    width: 150,
+    width: 80,
     renderCell: (params) => (
-      <Avatar alt={params.row.name} src={params.row.avatar} />
+      <Avatar alt={params.row.name} src={params.row.avatar} sx={{ width: 35, height: 35 }} />
     ),
   },
 
@@ -30,19 +30,19 @@ const columns = [
     field: "name",
     headerName: "Name",
     headerClassName: "table-header",
-    width: 200,
+    width: 150,
   },
   {
     field: "username",
     headerName: "Username",
     headerClassName: "table-header",
-    width: 200,
+    width: 130,
   },
   {
     field: "friends",
     headerName: "Friends",
     headerClassName: "table-header",
-    width: 150,
+    width: 80,
   },
   {
     field: "groups",
@@ -100,21 +100,21 @@ const UserManagement = () => {
       {loading && !rows.length ? (
         <Skeleton height={"100vh"} sx={{ bgcolor: "#1a2e2b" }} />
       ) : (
-        <div
-          style={{
+        <Box
+          sx={{
             background: "#1a2e2b",
             minHeight: "100vh",
-            padding: "2rem",
+            padding: { xs: "0.5rem", sm: "1rem", md: "2rem" },
           }}
         >
-          <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
+          <Box sx={{ mb: { xs: 1, sm: 2, md: 3 }, display: "flex", justifyContent: "center", px: { xs: 0.5, sm: 0 } }}>
             <TextField
               placeholder="Search users by name or username..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
                 width: "100%",
-                maxWidth: "600px",
+                maxWidth: { xs: "100%", sm: "600px" },
                 bgcolor: "#234e4d",
                 borderRadius: 2,
                 "& .MuiOutlinedInput-root": {
@@ -152,7 +152,7 @@ const UserManagement = () => {
             headerStyle={{ background: "#234e4d", color: "#ffd600" }}
             rowStyle={{ background: "#a3e6b3" }}
           />
-        </div>
+        </Box>
       )}
     </AdminLayout>
   );
