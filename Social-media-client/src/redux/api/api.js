@@ -144,6 +144,15 @@ const api = createApi({
       }),
     }),
 
+    forwardMessage: builder.mutation({
+      query: ({ messageId, targetChatIds }) => ({
+        url: "chat/forward",
+        method: "POST",
+        credentials: "include",
+        body: { messageId, targetChatIds },
+      }),
+    }),
+
     myGroups: builder.query({
       query: () => ({
         url: "chat/my/groups",
@@ -296,6 +305,7 @@ export const {
   useSendAttachmentsMutation,
   useAddMessageReactionMutation,
   useRemoveMessageReactionMutation,
+  useForwardMessageMutation,
   useMyGroupsQuery,
   useAvailableFriendsQuery,
   useNewGroupMutation,

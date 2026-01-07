@@ -71,6 +71,17 @@ const schema = new Schema(
       ref: "User",
       default: null,
     },
+
+    // Forward tracking
+    isForwarded: {
+      type: Boolean,
+      default: false,
+    },
+    originalMessage: {
+      type: Types.ObjectId,
+      ref: "Message",
+      default: null,
+    },
   },
   {
     timestamps: true,

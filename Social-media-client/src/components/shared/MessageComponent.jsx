@@ -10,10 +10,11 @@ import TextWithLinks from "./TextWithLinks";
 import ReactionPicker from "./ReactionPicker";
 import ReactionsDisplay from "./ReactionsDisplay";
 import ReplyDisplay from "./ReplyDisplay";
-import { Reply as ReplyIcon, EmojiEmotions as EmojiIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { Reply as ReplyIcon, EmojiEmotions as EmojiIcon, Delete as DeleteIcon, Forward as ForwardIcon } from "@mui/icons-material";
 import { useAddMessageReactionMutation, useRemoveMessageReactionMutation, useDeleteMessageMutation } from "../../redux/api/api";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import ForwardDialog from "../dialogs/ForwardDialog";
 
 // Generate a consistent color shade based on userId (using last 5 characters for better distribution)
 const getUserColorShade = (userId, baseColor) => {
@@ -43,11 +44,12 @@ const getUserColorShade = (userId, baseColor) => {
 
 const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete }) => {
   // console.log('MessageComponent message:', message); // Debug line
-  const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId, replyTo } = message;
+  const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId, replyTo, isForwarded } = message;
   const { theme } = useTheme();
   const [contextMenu, setContextMenu] = useState(null);
   const [reactionPickerAnchor, setReactionPickerAnchor] = useState(null);
   const [touchTimer, setTouchTimer] = useState(null);
+  const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
   const [addReaction] = useAddMessageReactionMutation();
   const [removeReaction] = useRemoveMessageReactionMutation();
   const [deleteMessage] = useDeleteMessageMutation();
@@ -124,6 +126,11 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete 
     }
   };
 
+  const handleForward = () => {
+    handleCloseContextMenu();
+    setForwardDialogOpen(true);
+  };
+
   const handleReplyClick = () => {
     if (replyTo && onScrollToMessage) {
       onScrollToMessage(replyTo._id);
@@ -189,6 +196,23 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete 
           replyTo={replyTo} 
           onClick={handleReplyClick}
         />
+      )}
+      {/* Forwarded Badge */}
+      {isForwarded && (
+        <Typography
+          variant="caption"
+          sx={{
+            color: theme.TEXT_SECONDARY,
+            fontStyle: "italic",
+            display: "flex",
+            alignItems: "center",
+            gap: 0.5,
+            mb: 0.5,
+          }}
+        >
+          <ForwardIcon sx={{ fontSize: 14 }} />
+          Forwarded
+        </Typography>
       )}
       {/* Sender Name (only for other users) */}
       {!sameSender && (
@@ -317,6 +341,12 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete 
           </ListItemIcon>
           <ListItemText primary="Add Reaction" />
         </MenuItem>
+        <MenuItem onClick={handleForward}>
+          <ListItemIcon>
+            <ForwardIcon fontSize="small" sx={{ color: theme.TEXT_SECONDARY }} />
+          </ListItemIcon>
+          <ListItemText primary="Forward" />
+        </MenuItem>
         {canDelete && (
           <MenuItem onClick={handleDelete}>
             <ListItemIcon>
@@ -333,6 +363,13 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete 
         anchorEl={reactionPickerAnchor}
         onClose={closeReactionPicker}
         onReactionSelect={handleReactionSelect}
+      />
+
+      {/* Forward Dialog */}
+      <ForwardDialog
+        open={forwardDialogOpen}
+        onClose={() => setForwardDialogOpen(false)}
+        messageId={messageId}
       />
     </motion.div>
   );

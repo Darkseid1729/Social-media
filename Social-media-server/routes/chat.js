@@ -20,6 +20,7 @@ import {
   removeMessageReaction,
   getChatMedia,
   deleteMessage,
+  forwardMessage,
 } from "../controllers/chat.js";
 import { singleAvatar } from "../middlewares/multer.js";
 import {
@@ -82,6 +83,9 @@ app
 // Message reactions
 app.post("/reaction/add", isAuthenticated, addMessageReaction);
 app.post("/reaction/remove", isAuthenticated, removeMessageReaction);
+
+// Forward message
+app.post("/forward", isAuthenticated, forwardMessage);
 
 // Delete message
 app.delete("/message/:id", isAuthenticated, deleteMessage);

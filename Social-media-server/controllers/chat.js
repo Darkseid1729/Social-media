@@ -760,6 +760,81 @@ const deleteMessage = TryCatch(async (req, res, next) => {
   });
 });
 
+const forwardMessage = TryCatch(async (req, res, next) => {
+  const { messageId, targetChatIds } = req.body;
+
+  if (!messageId || !targetChatIds || !Array.isArray(targetChatIds) || targetChatIds.length === 0) {
+    return next(new ErrorHandler("Please provide message ID and target chats", 400));
+  }
+
+  if (targetChatIds.length > 5) {
+    return next(new ErrorHandler("You can forward to maximum 5 chats at a time", 400));
+  }
+
+  // Find the original message
+  const originalMessage = await Message.findById(messageId).populate("sender", "name");
+  if (!originalMessage) {
+    return next(new ErrorHandler("Message not found", 404));
+  }
+
+  // Verify user has access to the original message's chat
+  const originalChat = await Chat.findById(originalMessage.chat);
+  if (!originalChat || !originalChat.members.includes(req.user)) {
+    return next(new ErrorHandler("You don't have access to this message", 403));
+  }
+
+  const me = await User.findById(req.user, "name");
+  const forwardedMessages = [];
+
+  // Forward to each target chat
+  for (const targetChatId of targetChatIds) {
+    // Verify target chat exists and user is a member
+    const targetChat = await Chat.findById(targetChatId);
+    if (!targetChat) {
+      continue; // Skip invalid chats
+    }
+
+    if (!targetChat.members.includes(req.user)) {
+      continue; // Skip chats where user is not a member
+    }
+
+    // Create forwarded message
+    const messageForDB = {
+      content: originalMessage.content || "",
+      attachments: originalMessage.attachments || [],
+      sender: me._id,
+      chat: targetChatId,
+      isForwarded: true,
+      originalMessage: messageId,
+    };
+
+    const messageForRealTime = {
+      ...messageForDB,
+      sender: {
+        _id: me._id,
+        name: me.name,
+      },
+    };
+
+    const newMessage = await Message.create(messageForDB);
+    forwardedMessages.push(newMessage);
+
+    // Emit events for real-time updates
+    emitEvent(req, NEW_MESSAGE, targetChat.members, {
+      message: messageForRealTime,
+      chatId: targetChatId,
+    });
+
+    emitEvent(req, NEW_MESSAGE_ALERT, targetChat.members, { chatId: targetChatId });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: `Message forwarded to ${forwardedMessages.length} chat(s)`,
+    forwardedMessages,
+  });
+});
+
 export {
   newGroupChat,
   getMyChats,
@@ -777,4 +852,5 @@ export {
   removeMessageReaction,
   getChatMedia,
   deleteMessage,
+  forwardMessage,
 };
