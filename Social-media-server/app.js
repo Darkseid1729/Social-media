@@ -62,7 +62,10 @@ cloudinary.config({
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
-  cors: corsOptions
+  cors: corsOptions,
+  maxHttpBufferSize: 50 * 1024 * 1024, // 50MB max buffer for file uploads
+  pingTimeout: 60000, // 60 seconds
+  pingInterval: 25000, // 25 seconds
 });
 
 app.set("io", io);

@@ -44,9 +44,13 @@ const uploadFilesToCloudinary = async (files = []) => {
         {
           resource_type: "auto",
           public_id: uuid(),
+          timeout: 120000, // 2 minutes timeout for mobile uploads
         },
         (error, result) => {
-          if (error) return reject(error);
+          if (error) {
+            console.error('Cloudinary upload error:', error);
+            return reject(new Error(`Failed to upload ${file.originalname || 'file'}: ${error.message || error}`));
+          }
           resolve(result);
         }
       );
@@ -62,7 +66,8 @@ const uploadFilesToCloudinary = async (files = []) => {
     }));
     return formattedResults;
   } catch (err) {
-    throw new Error("Error uploading files to cloudinary", err);
+    console.error('Upload to Cloudinary failed:', err);
+    throw new Error(err.message || "Error uploading files to cloudinary");
   }
 };
 

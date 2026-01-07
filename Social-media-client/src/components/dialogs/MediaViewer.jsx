@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   IconButton,
@@ -6,15 +6,19 @@ import {
   Typography,
   Avatar,
 } from '@mui/material';
+import ForwardDialog from './ForwardDialog';
 import {
   Close as CloseIcon,
   NavigateBefore as PrevIcon,
   NavigateNext as NextIcon,
   Download as DownloadIcon,
+  Forward as ForwardIcon,
 } from '@mui/icons-material';
 import moment from 'moment';
 
 const MediaViewer = ({ open, onClose, media, currentIndex, onNavigate }) => {
+  const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
+  
   if (!media || media.length === 0) return null;
 
   const currentMedia = media[currentIndex];
@@ -49,6 +53,10 @@ const MediaViewer = ({ open, onClose, media, currentIndex, onNavigate }) => {
     } catch (error) {
       console.error('Download failed:', error);
     }
+  };
+
+  const handleForward = () => {
+    setForwardDialogOpen(true);
   };
 
   const handleKeyDown = (e) => {
@@ -93,7 +101,7 @@ const MediaViewer = ({ open, onClose, media, currentIndex, onNavigate }) => {
         sx={{
           position: 'absolute',
           top: 16,
-          right: 72,
+          right: 128,
           color: 'white',
           bgcolor: 'rgba(0, 0, 0, 0.5)',
           '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
@@ -101,6 +109,22 @@ const MediaViewer = ({ open, onClose, media, currentIndex, onNavigate }) => {
         }}
       >
         <DownloadIcon />
+      </IconButton>
+
+      {/* Forward button */}
+      <IconButton
+        onClick={handleForward}
+        sx={{
+          position: 'absolute',
+          top: 16,
+          right: 72,
+          color: 'white',
+          bgcolor: 'rgba(0, 0, 0, 0.5)',
+          '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
+          zIndex: 2,
+        }}
+      >
+        <ForwardIcon />
       </IconButton>
 
       {/* Media info */}
@@ -226,6 +250,13 @@ const MediaViewer = ({ open, onClose, media, currentIndex, onNavigate }) => {
           {currentIndex + 1} / {media.length}
         </Typography>
       </Box>
+
+      {/* Forward Dialog */}
+      <ForwardDialog
+        open={forwardDialogOpen}
+        onClose={() => setForwardDialogOpen(false)}
+        messageId={currentMedia?.messageId}
+      />
     </Dialog>
   );
 };

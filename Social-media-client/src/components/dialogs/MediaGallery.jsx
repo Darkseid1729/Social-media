@@ -20,15 +20,19 @@ import {
   Image as ImageIcon,
   VideoLibrary as VideoIcon,
   Collections as AllIcon,
+  Forward as ForwardIcon,
 } from '@mui/icons-material';
 import { useGetChatMediaQuery } from '../../redux/api/api';
 import MediaViewer from './MediaViewer';
+import ForwardDialog from './ForwardDialog';
 import moment from 'moment';
 
 const MediaGallery = ({ open, onClose, chatId }) => {
   const [activeTab, setActiveTab] = useState('all');
   const [page, setPage] = useState(1);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(null);
+  const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
 
   // Get media type for API query
   const mediaType = activeTab === 'all' ? undefined : activeTab;
@@ -58,6 +62,12 @@ const MediaGallery = ({ open, onClose, chatId }) => {
 
   const handleCloseViewer = () => {
     setSelectedMediaIndex(null);
+  };
+
+  const handleForwardClick = (e, messageId) => {
+    e.stopPropagation();
+    setSelectedMessageId(messageId);
+    setForwardDialogOpen(true);
   };
 
   const handleLoadMore = () => {
@@ -153,7 +163,10 @@ const MediaGallery = ({ open, onClose, chatId }) => {
                           overflow: 'hidden',
                           '&:hover .overlay': {
                             opacity: 1,
-                          }
+                          },
+                          '&:hover .forward-btn': {
+                            opacity: 1,
+                          },
                         }}
                         onClick={() => handleMediaClick(index)}
                       >
@@ -180,6 +193,26 @@ const MediaGallery = ({ open, onClose, chatId }) => {
                             <PlayIcon sx={{ fontSize: 48, opacity: 0.9 }} />
                           </Box>
                         )}
+                        {/* Forward button */}
+                        <IconButton
+                          className="forward-btn"
+                          onClick={(e) => handleForwardClick(e, item.messageId)}
+                          sx={{
+                            position: 'absolute',
+                            top: 4,
+                            right: 4,
+                            color: 'white',
+                            bgcolor: 'rgba(0, 0, 0, 0.6)',
+                            opacity: 0,
+                            transition: 'opacity 0.2s',
+                            '&:hover': {
+                              bgcolor: 'rgba(0, 0, 0, 0.8)',
+                            },
+                          }}
+                          size="small"
+                        >
+                          <ForwardIcon fontSize="small" />
+                        </IconButton>
                         <Box
                           className="overlay"
                           sx={{
@@ -230,6 +263,16 @@ const MediaGallery = ({ open, onClose, chatId }) => {
           onNavigate={setSelectedMediaIndex}
         />
       )}
+
+      {/* Forward Dialog */}
+      <ForwardDialog
+        open={forwardDialogOpen}
+        onClose={() => {
+          setForwardDialogOpen(false);
+          setSelectedMessageId(null);
+        }}
+        messageId={selectedMessageId}
+      />
     </>
   );
 };

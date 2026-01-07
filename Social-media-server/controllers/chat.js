@@ -305,8 +305,8 @@ const sendAttachments = TryCatch(async (req, res, next) => {
   if (files.length < 1)
     return next(new ErrorHandler("Please Upload Attachments", 400));
 
-  if (files.length > 5)
-    return next(new ErrorHandler("Files Can't be more than 5", 400));
+  if (files.length > 10)
+    return next(new ErrorHandler("Files Can't be more than 10", 400));
 
   const [chat, me] = await Promise.all([
     Chat.findById(chatId),
@@ -314,9 +314,6 @@ const sendAttachments = TryCatch(async (req, res, next) => {
   ]);
 
   if (!chat) return next(new ErrorHandler("Chat not found", 404));
-
-  if (files.length < 1)
-    return next(new ErrorHandler("Please provide attachments", 400));
 
   // Validate replyToId if provided
   if (replyToId && !mongoose.Types.ObjectId.isValid(replyToId)) {
@@ -335,7 +332,13 @@ const sendAttachments = TryCatch(async (req, res, next) => {
   }
 
   //   Upload files here
-  const attachments = await uploadFilesToCloudinary(files);
+  let attachments;
+  try {
+    attachments = await uploadFilesToCloudinary(files);
+  } catch (uploadError) {
+    console.error('File upload error:', uploadError);
+    return next(new ErrorHandler(uploadError.message || "Failed to upload files", 500));
+  }
 
   const messageForDB = {
     content: "",
@@ -767,8 +770,8 @@ const forwardMessage = TryCatch(async (req, res, next) => {
     return next(new ErrorHandler("Please provide message ID and target chats", 400));
   }
 
-  if (targetChatIds.length > 5) {
-    return next(new ErrorHandler("You can forward to maximum 5 chats at a time", 400));
+  if (targetChatIds.length > 10) {
+    return next(new ErrorHandler("You can forward to maximum 10 chats at a time", 400));
   }
 
   // Find the original message

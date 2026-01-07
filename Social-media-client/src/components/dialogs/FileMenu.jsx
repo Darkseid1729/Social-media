@@ -38,8 +38,8 @@ const FileMenu = (props) => {
 
     if (files.length <= 0) return;
 
-    if (files.length > 5)
-      return toast.error(`You can only send 5 ${key} at a time`);
+    if (files.length > 10)
+      return toast.error(`You can only send 10 ${key} at a time`);
 
     dispatch(setUploadingLoader(true));
 
@@ -54,12 +54,19 @@ const FileMenu = (props) => {
 
       const res = await sendAttachments(myForm);
 
-      if (res.data) toast.success(`${key} sent successfully`, { id: toastId });
-      else toast.error(`Failed to send ${key}`, { id: toastId });
+      if (res.data) {
+        toast.success(`${key} sent successfully`, { id: toastId });
+      } else if (res.error) {
+        const errorMessage = res.error?.data?.message || res.error?.message || `Failed to send ${key}`;
+        toast.error(errorMessage, { id: toastId });
+      } else {
+        toast.error(`Failed to send ${key}`, { id: toastId });
+      }
 
       // Fetching Here
     } catch (error) {
-      toast.error(error, { id: toastId });
+      const errorMessage = error?.data?.message || error?.message || `Failed to send ${key}`;
+      toast.error(errorMessage, { id: toastId });
     } finally {
       dispatch(setUploadingLoader(false));
     }

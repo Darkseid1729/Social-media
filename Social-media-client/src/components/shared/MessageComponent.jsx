@@ -278,11 +278,11 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete 
               </Box>
             )}
 
-            {otherAttachments.length > 0 && otherAttachments.map((attachment, index) => {
+            {otherAttachments.length > 0 && otherAttachments.map((attachment) => {
               const url = attachment.url;
               const file = fileFormat(url);
               return (
-                <Box key={`file-${index}`} sx={{ mt: 0.5 }}>
+                <Box key={attachment.public_id || attachment.url} sx={{ mt: 0.5 }}>
                   <a
                     href={url}
                     target="_blank"

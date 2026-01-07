@@ -40,6 +40,7 @@ const ImageGrid = ({ images = [] }) => {
       >
         {visible.map((att, idx) => {
           const url = att.url || att; // support array of strings or objects
+          const publicId = att.public_id || url; // use public_id as unique key or fall back to url
           const isGif = url.toLowerCase().endsWith(".gif");
           const thumb = isGif ? url : transformImage(url, 400);
 
@@ -78,7 +79,7 @@ const ImageGrid = ({ images = [] }) => {
           const extraCount = count > 4 && idx === 3 ? count - 4 : 0;
 
           return (
-            <Box key={idx} sx={sx} onClick={() => handleOpen(idx)}>
+            <Box key={publicId} sx={sx} onClick={() => handleOpen(idx)}>
               <Box
                 component="img"
                 src={thumb}

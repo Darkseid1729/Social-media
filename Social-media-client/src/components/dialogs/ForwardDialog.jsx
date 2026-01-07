@@ -55,8 +55,8 @@ const ForwardDialog = ({ open, onClose, messageId }) => {
       return;
     }
 
-    if (selectedChats.length > 5) {
-      toast.error("You can forward to maximum 5 chats at a time");
+    if (selectedChats.length > 10) {
+      toast.error("You can forward to maximum 10 chats at a time");
       return;
     }
 
@@ -89,12 +89,12 @@ const ForwardDialog = ({ open, onClose, messageId }) => {
       fullWidth
       PaperProps={{
         sx: {
-          bgcolor: theme.BG_PRIMARY,
+          background: theme.DIALOG_BG,
           color: theme.TEXT_PRIMARY,
         },
       }}
     >
-      <DialogTitle sx={{ color: theme.TEXT_PRIMARY }}>
+      <DialogTitle sx={{ color: theme.PRIMARY_COLOR }}>
         Forward Message
       </DialogTitle>
       <DialogContent>
@@ -109,13 +109,13 @@ const ForwardDialog = ({ open, onClose, messageId }) => {
             "& .MuiOutlinedInput-root": {
               color: theme.TEXT_PRIMARY,
               "& fieldset": {
-                borderColor: theme.BORDER_COLOR,
+                borderColor: theme.TEXT_SECONDARY,
               },
               "&:hover fieldset": {
-                borderColor: theme.ACCENT_COLOR,
+                borderColor: theme.PRIMARY_COLOR,
               },
               "&.Mui-focused fieldset": {
-                borderColor: theme.ACCENT_COLOR,
+                borderColor: theme.PRIMARY_COLOR,
               },
             },
           }}
@@ -150,7 +150,7 @@ const ForwardDialog = ({ open, onClose, messageId }) => {
                     borderRadius: 1,
                     mb: 0.5,
                     "&:hover": {
-                      bgcolor: theme.HOVER_BG,
+                      bgcolor: theme.SUBTLE_BG_20,
                     },
                   }}
                 >
@@ -162,21 +162,23 @@ const ForwardDialog = ({ open, onClose, messageId }) => {
                     sx={{
                       color: theme.TEXT_SECONDARY,
                       "&.Mui-checked": {
-                        color: theme.ACCENT_COLOR,
+                        color: theme.PRIMARY_COLOR,
                       },
                     }}
                   />
-                  <ListItemAvatar>
-                    <Avatar
-                      src={chat.avatar}
-                      alt={chat.name}
-                      sx={{
-                        bgcolor: theme.ACCENT_COLOR,
-                      }}
-                    >
-                      {chat.name[0]}
-                    </Avatar>
-                  </ListItemAvatar>
+                  {!chat.groupChat && (
+                    <ListItemAvatar>
+                      <Avatar
+                        src={Array.isArray(chat.avatar) ? chat.avatar[0] : chat.avatar}
+                        alt={chat.name}
+                        sx={{
+                          bgcolor: theme.PRIMARY_COLOR,
+                        }}
+                      >
+                        {chat.name[0]}
+                      </Avatar>
+                    </ListItemAvatar>
+                  )}
                   <ListItemText
                     primary={chat.name}
                     secondary={
@@ -185,10 +187,14 @@ const ForwardDialog = ({ open, onClose, messageId }) => {
                         : "Personal chat"
                     }
                     primaryTypographyProps={{
-                      color: theme.TEXT_PRIMARY,
+                      color: theme.PROFILE_USERNAME_COLOR,
+                      fontWeight: 600,
                     }}
                     secondaryTypographyProps={{
                       color: theme.TEXT_SECONDARY,
+                    }}
+                    sx={{
+                      ml: chat.groupChat ? 0 : undefined,
                     }}
                   />
                 </ListItemButton>
@@ -203,7 +209,7 @@ const ForwardDialog = ({ open, onClose, messageId }) => {
             sx={{ mt: 1, display: "block", color: theme.TEXT_SECONDARY }}
           >
             {selectedChats.length} chat{selectedChats.length > 1 ? "s" : ""} selected
-            {selectedChats.length >= 5 && " (maximum reached)"}
+            {selectedChats.length >= 10 && " (maximum reached)"}
           </Typography>
         )}
       </DialogContent>
@@ -220,13 +226,14 @@ const ForwardDialog = ({ open, onClose, messageId }) => {
           variant="contained"
           disabled={selectedChats.length === 0 || isForwarding}
           sx={{
-            bgcolor: theme.ACCENT_COLOR,
+            background: theme.BUTTON_ACCENT,
+            color: theme.TEXT_ON_ACCENT,
             "&:hover": {
-              bgcolor: theme.ACCENT_COLOR,
+              background: theme.BUTTON_ACCENT,
               opacity: 0.9,
             },
             "&:disabled": {
-              bgcolor: theme.DISABLED_BG,
+              bgcolor: theme.SUBTLE_BG_20,
               color: theme.TEXT_SECONDARY,
             },
           }}
