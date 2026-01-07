@@ -6,7 +6,7 @@ const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({ 
     baseUrl: `${server}/api/v1/`,
-    timeout: 15000, // 15 second timeout for mobile networks
+    timeout: 60000, // 60 second timeout for mobile networks and large uploads
   }),
   tagTypes: ["Chat", "User", "Message"],
   keepUnusedDataFor: 300, // Keep cached data for 5 minutes
@@ -123,6 +123,7 @@ const api = createApi({
         method: "POST",
         credentials: "include",
         body: data,
+        timeout: 120000, // 2 minutes for large file uploads from mobile
       }),
     }),
 

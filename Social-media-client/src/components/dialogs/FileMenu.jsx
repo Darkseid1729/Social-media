@@ -65,8 +65,24 @@ const FileMenu = (props) => {
 
       // Fetching Here
     } catch (error) {
-      const errorMessage = error?.data?.message || error?.message || `Failed to send ${key}`;
-      toast.error(errorMessage, { id: toastId });
+      // Handle specific error cases
+      const errorCode = error?.code || error?.name;
+      const errorMsg = error?.data?.message || error?.message || '';
+      
+      let userMessage = `Failed to send ${key}`;
+      
+      // Check for abort/timeout/network errors
+      if (errorCode === 'ERR_CANCELED' || errorCode === 'ECONNABORTED' || 
+          errorMsg.toLowerCase().includes('abort') || 
+          errorMsg.toLowerCase().includes('timeout')) {
+        userMessage = `Upload timed out. Please check your connection and try again.`;
+      } else if (errorCode === 'ERR_NETWORK' || errorMsg.toLowerCase().includes('network')) {
+        userMessage = `Network error. Please check your connection.`;
+      } else if (errorMsg) {
+        userMessage = errorMsg;
+      }
+      
+      toast.error(userMessage, { id: toastId });
     } finally {
       dispatch(setUploadingLoader(false));
     }
