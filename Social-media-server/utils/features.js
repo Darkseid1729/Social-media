@@ -13,7 +13,14 @@ const cookieOptions = {
 
 const connectDB = (uri) => {
   mongoose
-    .connect(uri, { dbName: "my-social-media" })
+    .connect(uri, { 
+      dbName: "my-social-media",
+      serverSelectionTimeoutMS: 5000,    // Timeout after 5s instead of hanging
+      socketTimeoutMS: 45000,             // Close sockets after 45s of inactivity  
+      maxPoolSize: 10,                    // Limit connection pool size
+      minPoolSize: 2,                     // Keep minimum connections ready
+      connectTimeoutMS: 10000,            // Initial connection timeout
+    })
     .then((data) => console.log(`Connected to DB: ${data.connection.host}`))
     .catch((err) => {
       throw err;

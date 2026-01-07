@@ -47,4 +47,8 @@ schema.pre("save", async function (next) {
   this.password = await hash(this.password, 10);
 });
 
+// Add indexes for faster queries
+schema.index({ username: 1 });
+schema.index({ _id: 1, lastSeen: 1 });
+
 export const User = mongoose.models.User || model("User", schema);
