@@ -33,6 +33,52 @@ const FileMenu = (props) => {
   const selectVideo = () => videoRef.current?.click();
   const selectFile = () => fileRef.current?.click();
 
+  // Compress image before upload to reduce file size
+  const compressImage = async (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Calculate new dimensions (max 1920px width/height)
+          let width = img.width;
+          let height = img.height;
+          const maxDimension = 1920;
+          
+          if (width > height && width > maxDimension) {
+            height = (height * maxDimension) / width;
+            width = maxDimension;
+          } else if (height > maxDimension) {
+            width = (width * maxDimension) / height;
+            height = maxDimension;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Draw and compress
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob(
+            (blob) => {
+              resolve(new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              }));
+            },
+            'image/jpeg',
+            0.8 // 80% quality - good balance between quality and size
+          );
+        };
+      };
+    });
+  };
+
   const fileChangeHandler = async (e, key) => {
     const files = Array.from(e.target.files);
 
@@ -43,14 +89,30 @@ const FileMenu = (props) => {
 
     dispatch(setUploadingLoader(true));
 
-    const toastId = toast.loading(`Sending ${key}...`);
+    const toastId = toast.loading(`Preparing ${key}...`);
     closeFileMenu();
 
     try {
-      const myForm = new FormData();
+      // Compress images before uploading
+      let processedFiles = files;
+      if (key === "Images") {
+        toast.loading(`Compressing ${files.length} image(s)...`, { id: toastId });
+        processedFiles = await Promise.all(
+          files.map(file => compressImage(file))
+        );
+        
+        // Show size reduction
+        const originalSize = files.reduce((sum, f) => sum + f.size, 0);
+        const compressedSize = processedFiles.reduce((sum, f) => sum + f.size, 0);
+        const reduction = Math.round((1 - compressedSize / originalSize) * 100);
+        console.log(`Compressed images: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(compressedSize / 1024 / 1024).toFixed(2)}MB (${reduction}% reduction)`);
+      }
 
+      toast.loading(`Uploading ${key}...`, { id: toastId });
+
+      const myForm = new FormData();
       myForm.append("chatId", chatId);
-      files.forEach((file) => myForm.append("files", file));
+      processedFiles.forEach((file) => myForm.append("files", file));
 
       const res = await sendAttachments(myForm);
 

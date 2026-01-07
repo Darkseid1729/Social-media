@@ -271,9 +271,9 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete 
         const otherAttachments = attachments.filter(a => fileFormat(a.url) !== 'image');
 
         return (
-          <>
+          <React.Fragment key="attachments">
             {imageAttachments.length > 0 && (
-              <Box sx={{ mt: 0.5, maxWidth: '100%', overflow: 'hidden' }}>
+              <Box key="image-grid" sx={{ mt: 0.5, maxWidth: '100%', overflow: 'hidden' }}>
                 <ImageGrid images={imageAttachments} />
               </Box>
             )}
@@ -294,7 +294,7 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete 
                 </Box>
               );
             })}
-          </>
+          </React.Fragment>
         );
       })()}
 

@@ -28,7 +28,7 @@ const TextWithLinks = ({ text, showPreviews = false }) => {
         {urlParts.length > 0 && (
           <Typography style={{ marginBottom: 6, wordBreak: 'break-word' }}>
             {urlParts.map((urlPart, index) => (
-              <React.Fragment key={index}>
+              <React.Fragment key={`url-${index}-${urlPart.url}`}>
                 {index > 0 && ' '}
                 <Box
                   component="span"
@@ -52,14 +52,14 @@ const TextWithLinks = ({ text, showPreviews = false }) => {
         
         {/* 2. Then render link previews (embedded player) in the middle */}
         {urlParts.map((urlPart, index) => (
-          <LinkPreview key={index} url={urlPart.url} />
+          <LinkPreview key={`preview-${index}-${urlPart.url}`} url={urlPart.url} />
         ))}
         
         {/* 3. Finally render text content at the bottom */}
         {hasText && (
           <Typography style={{ marginTop: urlParts.length > 0 ? 6 : 0, wordBreak: 'break-word' }}>
             {textParts.map((part, index) => (
-              <span key={index}>{part.content}</span>
+              <span key={`text-${index}`}>{part.content}</span>
             ))}
           </Typography>
         )}
@@ -72,11 +72,11 @@ const TextWithLinks = ({ text, showPreviews = false }) => {
     <Typography style={{ marginBottom: 6, wordBreak: 'break-word' }}>
       {parts.map((part, index) => {
         if (part.type === 'text') {
-          return <span key={index}>{part.content}</span>;
+          return <span key={`inline-text-${index}`}>{part.content}</span>;
         } else if (part.type === 'url') {
           return (
             <Box
-              key={index}
+              key={`inline-url-${index}-${part.url}`}
               component="span"
               onClick={() => handleLinkClick(part.url)}
               sx={{
