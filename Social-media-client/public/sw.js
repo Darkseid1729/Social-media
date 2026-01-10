@@ -17,6 +17,17 @@ self.addEventListener('fetch', (event) => {
   // Only cache GET requests
   if (event.request.method !== 'GET') return;
   
+  // CRITICAL: Skip service worker for API requests
+  // This prevents mobile browsers from interfering with backend connections
+  if (event.request.url.includes('/api/')) {
+    return; // Let the request pass through normally
+  }
+  
+  // Skip service worker for socket.io connections
+  if (event.request.url.includes('socket.io')) {
+    return; // Let socket connections pass through normally
+  }
+  
   // Cache images from Cloudinary
   if (event.request.url.includes('cloudinary.com')) {
     event.respondWith(

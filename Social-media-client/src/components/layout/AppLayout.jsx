@@ -11,6 +11,7 @@ import {
   REFETCH_CHATS,
 } from "../../constants/events";
 import { useErrors, useSocketEvents } from "../../hooks/hook";
+import { usePageVisibility } from "../../hooks/usePageVisibility";
 import { getOrSaveFromStorage } from "../../lib/features";
 import { useMyChatsQuery } from "../../redux/api/api";
 import { useChatDetailsQuery } from "../../redux/api/api";
@@ -132,6 +133,24 @@ const AppLayout = () => (WrappedComponent) => {
     };
 
     useSocketEvents(socket, eventHandlers);
+
+    // Handle mobile page visibility - reconnect socket when user returns to tab
+    usePageVisibility(
+      () => {
+        // When page becomes visible (user returns to app on mobile)
+        if (!socket.connected) {
+          console.log('Page visible - reconnecting socket...');
+          socket.connect();
+        }
+        // Refetch chats to get latest data
+        refetch();
+      },
+      () => {
+        // When page is hidden (optional - could disconnect to save resources)
+        // For now, keep connection alive
+        console.log('Page hidden');
+      }
+    );
 
     // Fetch selected user's profile if selected
     const { data: selectedProfileData, isLoading: selectedProfileLoading } = useGetUserProfileQuery(selectedUserId, { skip: !selectedUserId });
