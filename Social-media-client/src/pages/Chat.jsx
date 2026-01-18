@@ -56,6 +56,7 @@ import { TypingLoader } from "../components/layout/Loaders";
 import { useNavigate } from "react-router-dom";
 import { useSetWallpaperMutation } from "../redux/api/api";
 import { server } from "../constants/config";
+import toast from "react-hot-toast";
 
 const Chat = ({ chatId, user }) => {
   const [message, setMessage] = useState("");
@@ -206,6 +207,26 @@ const Chat = ({ chatId, user }) => {
     const messageToSend = videoUrl 
       ? (messageText ? `${videoUrl} ${messageText}` : videoUrl)
       : messageText;
+    
+    // Check if message is only one word (ban dry replies)
+    // Split by spaces and filter out empty strings
+    const words = messageToSend.trim().split(/\s+/).filter(word => word.length > 0);
+    
+    // Only check for single word if it's not a URL (like sticker, gif, youtube)
+    const isUrl = messageToSend.startsWith('http://') || 
+                   messageToSend.startsWith('https://') ||
+                   messageToSend.includes('cloudinary.com') ||
+                   messageToSend.includes('giphy.com') ||
+                   messageToSend.includes('youtube.com') ||
+                   messageToSend.includes('youtu.be');
+    
+    if (words.length === 1 && !isUrl) {
+      toast.error("banned dry reply", {
+        duration: 2000,
+        position: "top-center",
+      });
+      return;
+    }
     
     setMessage("");
     setSelectedYouTubeVideo(null);
