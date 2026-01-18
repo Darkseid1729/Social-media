@@ -588,7 +588,14 @@ const Chat = ({ chatId, user }) => {
 
       {/* ...existing code... */}
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', paddingTop: (currentSong && isMobile) ? '60px' : 0, transition: 'padding-top 0.3s ease' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        height: '100%', 
+        paddingTop: (currentSong && isMobile) ? '60px' : 0, 
+        transition: 'padding-top 0.3s ease',
+        overflow: 'hidden',
+      }}>
         <Stack
           ref={containerRef}
           boxSizing={"border-box"}

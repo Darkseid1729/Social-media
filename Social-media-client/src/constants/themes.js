@@ -9,7 +9,7 @@ export const themes = {
     MODAL_OVERLAY: "rgba(0,0,0,0.7)",
     MODAL_OVERLAY_STRONG: "rgba(0,0,0,0.8)",
     MODAL_OVERLAY_MEDIUM: "rgba(0,0,0,0.5)",
-    APP_BG: "linear-gradient(135deg, #18191A 0%, #232526 100%)",
+    APP_BG: "linear-gradient(135deg, #aed0f1 0%, #232526 100%)",
     SIDEBAR_BG: "linear-gradient(135deg, #232526 0%, #23272F 100%)",
     DIALOG_BG: "linear-gradient(135deg, #232526 0%, #1c1c1c 100%)",
     GRADIENT_BG: "linear-gradient(135deg, #232526 0%, #414345 100%)",
@@ -130,9 +130,9 @@ export const themes = {
     SENDER_NAME_COLOR: "#f06292",
     TIMEAGO_COLOR: "#ba68c8",
     FRIEND_NAME_COLOR: "#f06292", // Pink accent for friend names in left grid
-  },
+  }, 
   blue: {
-    PRIMARY_COLOR: "#1976d2", // Blue accent for icons and primary actions
+    PRIMARY_COLOR: "#000000", // Blue accent for icons and primary actions
     PROFILE_BIO_COLOR: "#1f5e4a", // color for bio (light blue)
     PROFILE_USERNAME_COLOR: "#1976d2", // color for username (blue accent)
     PROFILE_NAME_COLOR: "#ffb300", // color for name (orange accent)

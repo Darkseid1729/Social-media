@@ -163,7 +163,22 @@ const AppLayout = () => (WrappedComponent) => {
     };
 
     // Pass handler to ChatList via prop
-    const { theme } = useTheme();
+    const { theme, themeName } = useTheme();
+    
+    // Get appropriate SVG based on theme
+    const getBackgroundSVG = () => {
+      switch(themeName) {
+        case 'dark':
+          return '/assets/AnimatedShape-dark.svg';
+        case 'light':
+          return '/assets/AnimatedShape-light.svg';
+        case 'pink':
+          return '/assets/AnimatedShape-pink.svg';
+        default:
+          return '/assets/AnimatedShape-light.svg';
+      }
+    };
+    
     return (
       <>
         <Title />
@@ -214,7 +229,21 @@ const AppLayout = () => (WrappedComponent) => {
               />
             )}
           </Grid>
-          <Grid item xs={12} sm={8} md={5} lg={6} height={"100%"} sx={{ background: theme.APP_BG }}>
+          <Grid 
+            item 
+            xs={12} 
+            sm={8} 
+            md={5} 
+            lg={6} 
+            height={"100%"} 
+            sx={{ 
+              position: 'relative',
+              backgroundImage: `url(${getBackgroundSVG()})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
             <WrappedComponent {...props} chatId={chatId} user={user} />
           </Grid>
 
