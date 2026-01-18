@@ -63,8 +63,8 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete 
     return new Date(createdAt) > tenMinutesAgo;
   }, [sameSender, createdAt]);
   
-  // Format time in Indian timezone
-  const indianTime = moment(createdAt).tz("Asia/Kolkata").format("hh:mm A");
+  // Format time in Indian timezone with date (e.g., "1 jan: 04:48 PM")
+  const indianTime = moment(createdAt).tz("Asia/Kolkata").format("D MMM: hh:mm A");
 
   // Generate consistent color for this sender (only for other users)
   const senderColor = useMemo(() => {

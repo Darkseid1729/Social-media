@@ -142,8 +142,10 @@ const AppLayout = () => (WrappedComponent) => {
           console.log('Page visible - reconnecting socket...');
           socket.connect();
         }
-        // Refetch chats to get latest data
-        refetch();
+        // Refetch chats to get latest data (only if query has been started)
+        if (!isLoading && data) {
+          refetch();
+        }
       },
       () => {
         // When page is hidden (optional - could disconnect to save resources)
