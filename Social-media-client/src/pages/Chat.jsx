@@ -212,7 +212,7 @@ const Chat = ({ chatId, user }) => {
     // Split by spaces and filter out empty strings
     const words = messageToSend.trim().split(/\s+/).filter(word => word.length > 0);
     
-    // Only check for single word if it's not a URL (like sticker, gif, youtube)
+    // Only check for single word if it's not a URL (like sticker, gif, youtube) or emoji
     const isUrl = messageToSend.startsWith('http://') || 
                    messageToSend.startsWith('https://') ||
                    messageToSend.includes('cloudinary.com') ||
@@ -220,7 +220,9 @@ const Chat = ({ chatId, user }) => {
                    messageToSend.includes('youtube.com') ||
                    messageToSend.includes('youtu.be');
     
-    if (words.length === 1 && !isUrl) {
+    const isEmoji = isOnlyEmoji(messageToSend);
+    
+    if (words.length === 1 && !isUrl && !isEmoji) {
       toast.error("banned dry reply", {
         duration: 2000,
         position: "top-center",
