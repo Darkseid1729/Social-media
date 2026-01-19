@@ -250,6 +250,15 @@ const AppLayout = () => (WrappedComponent) => {
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
+                animation: 'backgroundShift 8s ease-in-out infinite',
+                '@keyframes backgroundShift': {
+                  '0%, 100%': {
+                    filter: 'brightness(1) saturate(1) hue-rotate(0deg)',
+                  },
+                  '50%': {
+                    filter: 'brightness(1.2) saturate(1.3) hue-rotate(5deg)',
+                  },
+                },
               }
             }}
           >
@@ -276,6 +285,15 @@ const AppLayout = () => (WrappedComponent) => {
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
+              animation: 'backgroundShift 8s ease-in-out infinite',
+              '@keyframes backgroundShift': {
+                '0%, 100%': {
+                  filter: 'brightness(1) saturate(1) hue-rotate(0deg)',
+                },
+                '50%': {
+                  filter: 'brightness(1.2) saturate(1.3) hue-rotate(5deg)',
+                },
+              },
             }}
             height={"100%"}
           >

@@ -9,10 +9,22 @@ export const isOnlyEmoji = (text) => {
   // Remove all whitespace
   const trimmed = text.trim();
   
-  // Check if it's a single emoji (including compound emojis with modifiers and ZWJ sequences)
-  const emojiRegex = /^(?:[\u2700-\u27bf]|(?:\ud83c[\udde6-\uddff]){2}|[\ud800-\udbff][\udc00-\udfff]|[\u0023-\u0039]\ufe0f?\u20e3|\u3299|\u3297|\u303d|\u3030|\u24c2|\ud83c[\udd70-\udd71]|\ud83c[\udd7e-\udd7f]|\ud83c\udd8e|\ud83c[\udd91-\udd9a]|\ud83c[\udde6-\uddff]|\ud83c[\ude01-\ude02]|\ud83c\ude1a|\ud83c\ude2f|\ud83c[\ude32-\ude3a]|\ud83c[\ude50-\ude51]|\u203c|\u2049|[\u25aa-\u25ab]|\u25b6|\u25c0|[\u25fb-\u25fe]|\u00a9|\u00ae|\u2122|\u2139|\ud83c\udc04|[\u2600-\u26FF]|\u2b05|\u2b06|\u2b07|\u2b1b|\u2b1c|\u2b50|\u2b55|\u231a|\u231b|\u2328|\u23cf|[\u23e9-\u23f3]|[\u23f8-\u23fa]|\ud83c\udccf|\u2934|\u2935|[\u2190-\u21ff])+$/;
+  // Empty string is not an emoji
+  if (trimmed.length === 0) return false;
   
-  return emojiRegex.test(trimmed) && trimmed.length <= 10; // Allow up to 10 characters to support complex emojis
+  // Remove all whitespace to check content
+  const textWithoutSpaces = trimmed.replace(/\s/g, '');
+  
+  // If it contains any letters or numbers, it's not just emoji
+  const hasAlphanumeric = /[a-zA-Z0-9]/.test(textWithoutSpaces);
+  if (hasAlphanumeric) return false;
+  
+  // Check if it has any emoji-like characters
+  // This includes all unicode symbols and pictographs
+  const hasEmojiLikeChars = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F910}-\u{1F96B}\u{1F980}-\u{1F9E0}]/u.test(textWithoutSpaces);
+  
+  // If no alphanumeric and has emoji-like chars, or if it's short and has no alphanumeric, consider it emoji
+  return hasEmojiLikeChars || textWithoutSpaces.length <= 20;
 };
 
 export const createEmojiExplosion = (emoji, theme) => {
