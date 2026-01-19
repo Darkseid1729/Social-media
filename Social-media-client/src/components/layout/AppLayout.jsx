@@ -113,13 +113,16 @@ const AppLayout = () => (WrappedComponent) => {
     }, [dispatch]);
 
     const refetchListener = useCallback(() => {
-      refetch();
+      // Only refetch if query is not currently loading
+      if (!isLoading && data) {
+        refetch();
+      }
       // Only navigate to home if not currently in a chat
       // This prevents unwanted redirects on page reload
       if (!chatId) {
         navigate("/");
       }
-    }, [refetch, navigate, chatId]);
+    }, [refetch, navigate, chatId, isLoading, data]);
 
     const onlineUsersListener = useCallback((data) => {
       setOnlineUsers(data);
@@ -174,8 +177,54 @@ const AppLayout = () => (WrappedComponent) => {
           return '/assets/AnimatedShape-light.svg';
         case 'pink':
           return '/assets/AnimatedShape-pink.svg';
+        case 'pinkDark':
+          return '/assets/AnimatedShape-pinkDark.svg';
+        case 'blue':
+          return '/assets/AnimatedShape-blue.svg';
+        case 'blueDark':
+          return '/assets/AnimatedShape-blueDark.svg';
         default:
           return '/assets/AnimatedShape-light.svg';
+      }
+    };
+    
+    // Get sidebar background based on theme
+    const getSidebarBackground = () => {
+      switch(themeName) {
+        case 'dark':
+          return 'url(/assets/low-poly-grid-haikei-dark.svg)';
+        case 'light':
+          return 'url(/assets/low-poly-grid-haikei-light.svg)';
+        case 'pink':
+          return 'url(/assets/low-poly-grid-haikei-pink.svg)';
+        case 'pinkDark':
+          return 'url(/assets/low-poly-grid-haikei-pinkDark.svg)';
+        case 'blue':
+          return 'url(/assets/low-poly-grid-haikei-blue.svg)';
+        case 'blueDark':
+          return 'url(/assets/low-poly-grid-haikei-blueDark.svg)';
+        default:
+          return 'url(/assets/low-poly-grid-haikei-light.svg)';
+      }
+    };
+    
+    // Get profile background based on theme
+    const getProfileBackground = () => {
+      switch(themeName) {
+        case 'dark':
+          return 'url(/assets/symbol-scatter-haikei.svg)';
+        case 'light':
+          return 'url(/assets/symbol-scatter-haikei-light.svg)';
+        case 'pink':
+          return 'url(/assets/symbol-scatter-haikei-pink.svg)';
+        case 'pinkDark':
+          return 'url(/assets/symbol-scatter-haikei-pinkDark.svg)';
+        case 'blue':
+          return 'url(/assets/symbol-scatter-haikei-blue.svg)';
+        case 'blueDark':
+          return 'url(/assets/symbol-scatter-haikei-blueDark.svg)';
+        default:
+          return 'url(/assets/symbol-scatter-haikei-light.svg)';
       }
     };
     
@@ -192,7 +241,18 @@ const AppLayout = () => (WrappedComponent) => {
         {isLoading ? (
           <Skeleton />
         ) : (
-          <Drawer open={isMobile} onClose={handleMobileClose}>
+          <Drawer 
+            open={isMobile} 
+            onClose={handleMobileClose}
+            PaperProps={{
+              sx: {
+                background: getSidebarBackground(),
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              }
+            }}
+          >
             <ChatList
               w="70vw"
               chats={data?.chats}
@@ -212,7 +272,10 @@ const AppLayout = () => (WrappedComponent) => {
             md={3}
             sx={{
               display: { xs: "none", sm: "block" },
-              background: theme.SIDEBAR_BG,
+              background: getSidebarBackground(),
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
             }}
             height={"100%"}
           >
@@ -255,7 +318,10 @@ const AppLayout = () => (WrappedComponent) => {
             sx={{
               display: { xs: "none", md: "block" },
               padding: "2rem",
-              background: theme.APP_OVERLAY,
+              background: getProfileBackground(),
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
             }}
           >
             {chatDetailsLoading ? (
