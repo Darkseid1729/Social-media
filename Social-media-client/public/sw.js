@@ -14,7 +14,7 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only cache GET requests
+  // Only cache GET requests and handle specific resources
   if (event.request.method !== 'GET') return;
   
   // CRITICAL: Skip service worker for API requests
@@ -26,6 +26,11 @@ self.addEventListener('fetch', (event) => {
   // Skip service worker for socket.io connections
   if (event.request.url.includes('socket.io')) {
     return; // Let socket connections pass through normally
+  }
+  
+  // Skip Chrome extension requests
+  if (event.request.url.startsWith('chrome-extension://')) {
+    return;
   }
   
   // Cache images from Cloudinary
