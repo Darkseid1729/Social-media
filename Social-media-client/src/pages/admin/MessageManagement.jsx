@@ -1,5 +1,5 @@
-import { Avatar, Box, Stack, Skeleton, TextField, InputAdornment, Typography, Dialog, DialogContent, IconButton, Badge } from "@mui/material";
-import { Search as SearchIcon, Close as CloseIcon, ChevronLeft, ChevronRight, Image as ImageIcon } from "@mui/icons-material";
+import { Avatar, Box, Stack, Skeleton, TextField, InputAdornment, Typography, Dialog, DialogContent, IconButton, Badge, Link, Chip } from "@mui/material";
+import { Search as SearchIcon, Close as CloseIcon, ChevronLeft, ChevronRight, Image as ImageIcon, Gif as GifIcon, EmojiEmotions as StickerIcon } from "@mui/icons-material";
 import moment from "moment";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/layout/AdminLayout";
@@ -164,29 +164,142 @@ const MessageManagement = () => {
       field: "content",
       headerName: "Content",
       headerClassName: "table-header",
-      width: 250,
+      width: 350,
       renderCell: (params) => {
         // Check deletedAt field - it will have a date object/string when deleted, null when not
         const isDeleted = Boolean(params.row.deletedAt);
+        const content = params.row.content || "";
+        
+        // Check if content is a GIF or sticker URL
+        const isGiphyGif = content.includes('giphy.com') || content.includes('tenor.com');
+        const isSticker = content.includes('cloudinary.com') && (content.includes('/stickers/') || content.includes('sticker'));
+        const isYouTube = content.includes('youtube.com') || content.includes('youtu.be');
+        
+        // Extract URL from content if it contains one
+        const urlMatch = content.match(/(https?:\/\/[^\s]+)/);
+        const url = urlMatch ? urlMatch[0] : null;
         
         return (
-          <Typography
-            sx={{
-              whiteSpace: "normal",
-              wordWrap: "break-word",
-              lineHeight: 1.5,
-              py: 1,
-              px: 1,
-              bgcolor: isDeleted ? "#ffe6e6" : "transparent",
-              borderRadius: isDeleted ? 1 : 0,
-              color: isDeleted ? "#ff0000" : "inherit",
-              fontWeight: isDeleted ? "600" : "normal",
-              fontStyle: isDeleted ? "italic" : "normal",
-              border: isDeleted ? "1px solid #ff0000" : "none",
-            }}
-          >
-            {params.row.content || (isDeleted ? "[Deleted Message]" : "")}
-          </Typography>
+          <Box sx={{ width: "100%", py: 1 }}>
+            {isDeleted ? (
+              <Typography
+                sx={{
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  lineHeight: 1.5,
+                  px: 1,
+                  bgcolor: "#ffe6e6",
+                  borderRadius: 1,
+                  color: "#ff0000",
+                  fontWeight: "600",
+                  fontStyle: "italic",
+                  border: "1px solid #ff0000",
+                  overflowWrap: "break-word",
+                }}
+              >
+                {content || "[Deleted Message]"}
+              </Typography>
+            ) : (
+              <>
+                {/* Show media type indicator */}
+                {(isGiphyGif || isSticker || isYouTube) && (
+                  <Box sx={{ mb: 0.5 }}>
+                    {isGiphyGif && (
+                      <Chip
+                        icon={<GifIcon />}
+                        label="GIF"
+                        size="small"
+                        sx={{ 
+                          bgcolor: "#9c27b0", 
+                          color: "#fff",
+                          fontWeight: "bold",
+                          fontSize: "0.7rem",
+                          height: "20px",
+                          mr: 0.5
+                        }}
+                      />
+                    )}
+                    {isSticker && (
+                      <Chip
+                        icon={<StickerIcon />}
+                        label="Sticker"
+                        size="small"
+                        sx={{ 
+                          bgcolor: "#ff9800", 
+                          color: "#fff",
+                          fontWeight: "bold",
+                          fontSize: "0.7rem",
+                          height: "20px",
+                          mr: 0.5
+                        }}
+                      />
+                    )}
+                    {isYouTube && (
+                      <Chip
+                        label="YouTube"
+                        size="small"
+                        sx={{ 
+                          bgcolor: "#ff0000", 
+                          color: "#fff",
+                          fontWeight: "bold",
+                          fontSize: "0.7rem",
+                          height: "20px"
+                        }}
+                      />
+                    )}
+                  </Box>
+                )}
+                
+                {/* Show content with clickable link if URL exists */}
+                {url ? (
+                  <Box>
+                    <Link
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        color: "#1976d2",
+                        textDecoration: "none",
+                        wordBreak: "break-all",
+                        fontSize: "0.875rem",
+                        "&:hover": {
+                          textDecoration: "underline",
+                        },
+                      }}
+                    >
+                      {url}
+                    </Link>
+                    {/* Show additional text if content has more than just the URL */}
+                    {content.replace(url, "").trim() && (
+                      <Typography
+                        sx={{
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                          lineHeight: 1.5,
+                          mt: 0.5,
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        {content.replace(url, "").trim()}
+                      </Typography>
+                    )}
+                  </Box>
+                ) : (
+                  <Typography
+                    sx={{
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      lineHeight: 1.5,
+                      overflowWrap: "break-word",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    {content}
+                  </Typography>
+                )}
+              </>
+            )}
+          </Box>
         );
       },
     },
@@ -394,7 +507,7 @@ const MessageManagement = () => {
             heading={"All Messages"}
             columns={columnsWithViewer}
             rows={rows}
-            rowHeight={100}
+            getRowHeight={() => 'auto'}
             headerStyle={{ background: "#234e4d", color: "#ffd600" }}
             rowStyle={{ background: "#a3c7e6" }}
             serverPagination

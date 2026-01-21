@@ -8,6 +8,7 @@ const Table = ({
   columns,
   heading,
   rowHeight = 52,
+  getRowHeight,
   headerStyle = {},
   rowStyle = {},
   // Optional server-side pagination props
@@ -54,6 +55,7 @@ const Table = ({
           rows={rows}
           columns={columns}
           rowHeight={rowHeight}
+          getRowHeight={getRowHeight}
           style={{
             height: "70vh",
           }}
@@ -78,6 +80,8 @@ const Table = ({
               alignItems: "center",
               whiteSpace: "normal !important",
               wordWrap: "break-word !important",
+              padding: "8px 16px !important",
+              lineHeight: "1.5 !important",
             },
             ".MuiDataGrid-columnHeaders": {
               fontSize: { xs: "0.75rem", sm: "0.875rem", md: "1rem" },
