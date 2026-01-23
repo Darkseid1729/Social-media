@@ -818,6 +818,7 @@ export default AppLayout()(React.memo(Chat));
 
 export const ChatWithHeader = (props) => {
   const { chatId } = useParams();
+  const chatRef = useRef(null);
   
   // Fetch chat details for the header
   const { data: chatDetailsData } = useChatDetailsQuery(
@@ -825,10 +826,32 @@ export const ChatWithHeader = (props) => {
     { skip: !chatId }
   );
   
+  const handleSearchMessageClick = (messageId) => {
+    // Scroll to the message
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Add highlight effect
+      const highlightColor = '#ffeb3b40'; // Yellow highlight
+      const originalBackground = messageElement.style.backgroundColor;
+      messageElement.style.backgroundColor = highlightColor;
+      messageElement.style.transition = 'background-color 0.3s ease';
+      
+      setTimeout(() => {
+        messageElement.style.backgroundColor = originalBackground || '';
+      }, 2000);
+    }
+  };
+  
   return (
     <>
-      <Header chatId={chatId} chatDetails={chatDetailsData?.chat} />
-      <Chat chatId={chatId} {...props} />
+      <Header 
+        chatId={chatId} 
+        chatDetails={chatDetailsData?.chat} 
+        onSearchMessageClick={handleSearchMessageClick}
+      />
+      <Chat chatId={chatId} ref={chatRef} {...props} />
     </>
   );
 };

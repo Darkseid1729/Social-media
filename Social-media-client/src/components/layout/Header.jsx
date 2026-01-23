@@ -15,15 +15,15 @@ import { useTheme } from "../../context/ThemeContext";
 import { useMusicPlayer } from "../../context/MusicPlayerContext";
 import { useNotificationSound } from "../../context/NotificationSoundContext";
 import { themes } from "../../constants/themes";
-import AddIcon from "@mui/icons-material/Add";
-import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import CollectionsIcon from '@mui/icons-material/Collections';
-import WallpaperDialog from '../dialogs/WallpaperDialog';
+import GroupAddIcon from '@mui/icons-material/GroupAdd';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import GroupMembersDialog from '../dialogs/GroupMembersDialog';
 import MediaGallery from '../dialogs/MediaGallery';
+import SearchMessagesDialog from '../dialogs/SearchMessagesDialog';
 import MenuIcon from "@mui/icons-material/Menu";
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import GroupIcon from "@mui/icons-material/Group";
@@ -51,6 +51,7 @@ import {
   setIsSearch,
 } from "../../redux/reducers/misc";
 import { resetNotificationCount } from "../../redux/reducers/chat";
+import { AddBox } from "@mui/icons-material";
 
 
 
@@ -166,24 +167,16 @@ const Header = (props) => {
   };
 
 
-  // Wallpaper dialog state
-  const [showWallpaperDialog, setShowWallpaperDialog] = useState(false);
+  // Group members dialog state
   const [showGroupMembersDialog, setShowGroupMembersDialog] = useState(false);
   const [showMediaGallery, setShowMediaGallery] = useState(false);
+  const [showSearchMessages, setShowSearchMessages] = useState(false);
   
   // Get chatId from URL params
   const params = useParams();
   const chatId = params.chatId || props.chatId;
   const chatDetails = props.chatDetails;
   const isGroupChat = chatDetails?.groupChat;
-
-  const handleWallpaperChange = () => {
-    setShowWallpaperDialog(true);
-  };
-
-  const handleWallpaperDialogClose = () => {
-    setShowWallpaperDialog(false);
-  };
 
   const handleGroupMembersOpen = () => {
     setShowGroupMembersDialog(true);
@@ -205,6 +198,26 @@ const Header = (props) => {
 
   const handleMediaGalleryClose = () => {
     setShowMediaGallery(false);
+  };
+
+  const handleSearchMessagesOpen = () => {
+    if (!chatId) {
+      toast.error('Please select a chat first');
+      return;
+    }
+    setShowSearchMessages(true);
+    handleMobileMenuClose();
+  };
+
+  const handleSearchMessagesClose = () => {
+    setShowSearchMessages(false);
+  };
+
+  const handleMessageClick = (messageId) => {
+    // This will be handled by the Chat component through props
+    if (props.onSearchMessageClick) {
+      props.onSearchMessageClick(messageId);
+    }
   };
 
   return (
@@ -272,26 +285,19 @@ const Header = (props) => {
               icon={<CollectionsIcon />}
               onClick={handleMediaGalleryOpen}
             />
-            <IconBtn
-              title={"Change Chat Wallpaper"}
-              icon={<PhotoLibraryIcon />}
-              onClick={handleWallpaperChange}
-            />
-      {/* Wallpaper change modal */}
-      <WallpaperDialog
-        open={showWallpaperDialog}
-        onClose={handleWallpaperDialogClose}
-        chatId={chatId}
-        onSuccess={() => toast.success('Wallpaper updated!')}
-      />
               <IconBtn
-                title={"Search"}
+                title={"Search Messages"}
                 icon={<SearchIcon />}
+                onClick={handleSearchMessagesOpen}
+              />
+              <IconBtn
+                title={"Search Users"}
+                icon={<PersonSearchIcon />}
                 onClick={openSearch}
               />
               <IconBtn
                 title={"New Group"}
-                icon={<AddIcon />}
+                icon={<GroupAddIcon />}
                 onClick={openNewGroup}
               />
               <IconBtn
@@ -366,11 +372,14 @@ const Header = (props) => {
                 <MenuItem onClick={handleMediaGalleryOpen}>
                   <CollectionsIcon sx={{ mr: 1 }} /> Media Gallery
                 </MenuItem>
+                <MenuItem onClick={handleSearchMessagesOpen}>
+                  <SearchIcon sx={{ mr: 1 }} /> Search Messages
+                </MenuItem>
                 <MenuItem onClick={openSearch}>
-                  <SearchIcon sx={{ mr: 1 }} /> Search
+                  <PersonSearchIcon sx={{ mr: 1 }} /> Search Users
                 </MenuItem>
                 <MenuItem onClick={openNewGroup}>
-                  <AddIcon sx={{ mr: 1 }} /> New Group
+                  <GroupAddIcon sx={{ mr: 1 }} /> New Group
                 </MenuItem>
                 <MenuItem onClick={navigateToGroup}>
                   <GroupIcon sx={{ mr: 1 }} /> Manage Groups
@@ -469,8 +478,15 @@ const Header = (props) => {
         onClose={handleMediaGalleryClose}
         chatId={chatId}
       />
-    </>
-  );
+
+      {/* Search Messages Dialog */}
+      <SearchMessagesDialog
+        open={showSearchMessages}
+        onClose={handleSearchMessagesClose}
+        chatId={chatId}
+        onMessageClick={handleMessageClick}
+      />
+    </>);
 };
 
 const IconBtn = ({ title, icon, onClick, value }) => {
