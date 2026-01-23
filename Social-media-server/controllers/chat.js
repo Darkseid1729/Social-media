@@ -838,6 +838,248 @@ const forwardMessage = TryCatch(async (req, res, next) => {
   });
 });
 
+const searchMessages = TryCatch(async (req, res, next) => {
+  const { id: chatId } = req.params;
+  const { search, page = 1 } = req.query;
+  const pageNum = parseInt(page) || 1;
+  const limit = 50; // Results per page
+
+  if (!search || !search.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: "Search query is required",
+    });
+  }
+
+  // Verify user is a member of the chat
+  const chat = await Chat.findById(chatId);
+
+  if (!chat) {
+    return next(new ErrorHandler("Chat not found", 404));
+  }
+
+  if (!chat.members.includes(req.user)) {
+    return next(new ErrorHandler("You are not a member of this chat", 403));
+  }
+
+  // Create a search query with word boundaries for more relevant results
+  // Using MongoDB's text search for better performance
+  // Note: Text search provides word-based matching and is indexed
+  
+  // Count total matching messages using text search
+  const totalResults = await Message.countDocuments({
+    chat: chatId,
+    $text: { $search: search },
+  });
+
+  // Fetch paginated results with text search and relevance score
+  const skip = (pageNum - 1) * limit;
+  const messages = await Message.find({
+    chat: chatId,
+    $text: { $search: search },
+  },
+  {
+    score: { $meta: "textScore" } // Get relevance score
+  })
+    .sort({ score: { $meta: "textScore" }, createdAt: -1 }) // Sort by relevance, then by date
+    .skip(skip)
+    .limit(limit)
+    .populate("sender", "name avatar")
+    .populate("chat", "name");
+
+  const totalPages = Math.ceil(totalResults / limit);
+
+  return res.status(200).json({
+    success: true,
+    messages,
+    pagination: {
+      total: totalResults,
+      page: pageNum,
+      limit,
+      pages: totalPages,
+    },
+  });
+});
+
+// Get messages around a specific message (for jump-to-message feature)
+const getMessagesAroundMessage = TryCatch(async (req, res, next) => {
+  const { chatId, messageId } = req.params;
+  const limit = 30; // 15 before + target + 15 after approximately
+
+  // Verify chat exists
+  const chat = await Chat.findById(chatId);
+  if (!chat) {
+    return next(new ErrorHandler("Chat not found", 404));
+  }
+
+  // Verify user is a member
+  if (!chat.members.includes(req.user.toString())) {
+    return next(new ErrorHandler("You are not a member of this chat", 403));
+  }
+
+  // Find the target message
+  const targetMessage = await Message.findById(messageId);
+  if (!targetMessage) {
+    return next(new ErrorHandler("Message not found", 404));
+  }
+
+  // Get messages before the target (older messages)
+  const messagesBefore = await Message.find({
+    chat: chatId,
+    createdAt: { $lt: targetMessage.createdAt },
+    deletedAt: null,
+  })
+    .sort({ createdAt: -1 })
+    .limit(Math.floor(limit / 2))
+    .populate("sender", "name avatar")
+    .populate({
+      path: "replyTo",
+      populate: {
+        path: "sender",
+        select: "name"
+      }
+    })
+    .lean();
+
+  // Get messages after the target (newer messages)
+  const messagesAfter = await Message.find({
+    chat: chatId,
+    createdAt: { $gt: targetMessage.createdAt },
+    deletedAt: null,
+  })
+    .sort({ createdAt: 1 })
+    .limit(Math.floor(limit / 2))
+    .populate("sender", "name avatar")
+    .populate({
+      path: "replyTo",
+      populate: {
+        path: "sender",
+        select: "name"
+      }
+    })
+    .lean();
+
+  // Get the target message with populated fields
+  const targetMessagePopulated = await Message.findById(messageId)
+    .populate("sender", "name avatar")
+    .populate({
+      path: "replyTo",
+      populate: {
+        path: "sender",
+        select: "name"
+      }
+    })
+    .lean();
+
+  // Combine: older messages (reversed to chronological) + target + newer messages
+  const messages = [
+    ...messagesBefore.reverse(),
+    targetMessagePopulated,
+    ...messagesAfter,
+  ];
+
+  // Get total count for pagination context
+  const totalMessagesCount = await Message.countDocuments({
+    chat: chatId,
+    deletedAt: null,
+  });
+
+  // Check if there are more messages above/below
+  const hasMoreAbove = messagesBefore.length === Math.floor(limit / 2);
+  const hasMoreBelow = messagesAfter.length === Math.floor(limit / 2);
+
+  // Get the oldest and newest message timestamps for pagination
+  const oldestMessage = messages[0];
+  const newestMessage = messages[messages.length - 1];
+
+  return res.status(200).json({
+    success: true,
+    messages,
+    targetMessageId: messageId,
+    totalMessages: totalMessagesCount,
+    hasMoreAbove,
+    hasMoreBelow,
+    oldestTimestamp: oldestMessage?.createdAt,
+    newestTimestamp: newestMessage?.createdAt,
+  });
+});
+
+// Get more messages (older or newer) from a specific timestamp
+const getMoreMessages = TryCatch(async (req, res, next) => {
+  const { chatId } = req.params;
+  const { timestamp, direction = 'older', limit = 20 } = req.query;
+
+  // Verify chat exists
+  const chat = await Chat.findById(chatId);
+  if (!chat) {
+    return next(new ErrorHandler("Chat not found", 404));
+  }
+
+  // Verify user is a member
+  if (!chat.members.includes(req.user.toString())) {
+    return next(new ErrorHandler("You are not a member of this chat", 403));
+  }
+
+  if (!timestamp) {
+    return next(new ErrorHandler("Timestamp is required", 400));
+  }
+
+  const parsedLimit = Math.min(parseInt(limit) || 20, 50);
+  const referenceDate = new Date(timestamp);
+
+  let messages;
+  if (direction === 'newer') {
+    // Get newer messages (after the timestamp)
+    messages = await Message.find({
+      chat: chatId,
+      createdAt: { $gt: referenceDate },
+      deletedAt: null,
+    })
+      .sort({ createdAt: 1 })
+      .limit(parsedLimit)
+      .populate("sender", "name avatar")
+      .populate({
+        path: "replyTo",
+        populate: {
+          path: "sender",
+          select: "name"
+        }
+      })
+      .lean();
+  } else {
+    // Get older messages (before the timestamp)
+    messages = await Message.find({
+      chat: chatId,
+      createdAt: { $lt: referenceDate },
+      deletedAt: null,
+    })
+      .sort({ createdAt: -1 })
+      .limit(parsedLimit)
+      .populate("sender", "name avatar")
+      .populate({
+        path: "replyTo",
+        populate: {
+          path: "sender",
+          select: "name"
+        }
+      })
+      .lean();
+    
+    // Reverse to get chronological order
+    messages = messages.reverse();
+  }
+
+  // Check if there are more messages in this direction
+  const hasMore = messages.length === parsedLimit;
+
+  return res.status(200).json({
+    success: true,
+    messages,
+    hasMore,
+    direction,
+  });
+});
+
 export {
   newGroupChat,
   getMyChats,
@@ -856,4 +1098,7 @@ export {
   getChatMedia,
   deleteMessage,
   forwardMessage,
+  searchMessages,
+  getMessagesAroundMessage,
+  getMoreMessages,
 };

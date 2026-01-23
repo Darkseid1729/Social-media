@@ -13,6 +13,11 @@ const initialState = {
     chatId: "",
     groupChat: false,
   },
+  // Target message for jump-to-message feature (like WhatsApp)
+  targetMessage: {
+    chatId: null,
+    messageId: null,
+  },
 };
 
 const miscSlice = createSlice({
@@ -46,6 +51,12 @@ const miscSlice = createSlice({
     setSelectedDeleteChat: (state, action) => {
       state.selectedDeleteChat = action.payload;
     },
+    setTargetMessage: (state, action) => {
+      state.targetMessage = action.payload;
+    },
+    clearTargetMessage: (state) => {
+      state.targetMessage = { chatId: null, messageId: null };
+    },
   },
 });
 
@@ -60,4 +71,6 @@ export const {
   setIsDeleteMenu,
   setUploadingLoader,
   setSelectedDeleteChat,
+  setTargetMessage,
+  clearTargetMessage,
 } = miscSlice.actions;

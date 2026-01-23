@@ -85,17 +85,12 @@ const getAdminData = TryCatch(async (req, res, next) => {
 const allUsers = TryCatch(async (req, res) => {
   const { search } = req.query;
   
-  // Build search query
-  const query = search
-    ? {
-        $or: [
-          { name: { $regex: search, $options: "i" } },
-          { username: { $regex: search, $options: "i" } },
-        ],
-      }
-    : {};
+  // Build search query using text search for better flexibility
+  const query = search ? { $text: { $search: search } } : {};
+  const projection = search ? { score: { $meta: "textScore" } } : {};
+  const sortOptions = search ? { score: { $meta: "textScore" } } : { createdAt: -1 };
   
-  const users = await User.find(query);
+  const users = await User.find(query, projection).sort(sortOptions);
 
   const transformedUsers = await Promise.all(
     users.map(async ({ name, username, avatar, _id }) => {
@@ -124,12 +119,13 @@ const allUsers = TryCatch(async (req, res) => {
 const allChats = TryCatch(async (req, res) => {
   const { search } = req.query;
   
-  // Build search query
-  const query = search
-    ? { name: { $regex: search, $options: "i" } }
-    : {};
+  // Build search query using text search for better flexibility
+  const query = search ? { $text: { $search: search } } : {};
+  const projection = search ? { score: { $meta: "textScore" } } : {};
+  const sortOptions = search ? { score: { $meta: "textScore" }, createdAt: -1 } : { createdAt: -1 };
   
-  const chats = await Chat.find(query)
+  const chats = await Chat.find(query, projection)
+    .sort(sortOptions)
     .populate("members", "name avatar")
     .populate("creator", "name avatar");
 
@@ -174,10 +170,14 @@ const allMessages = TryCatch(async (req, res) => {
 
   // Build search query
   const query = {};
+  const projection = {};
+  let sortOptions = { createdAt: -1 };
   
-  // Search by content
+  // Search by content using MongoDB text search for better flexibility
   if (search) {
-    query.content = { $regex: search, $options: "i" };
+    query.$text = { $search: search };
+    projection.score = { $meta: "textScore" };
+    sortOptions = { score: { $meta: "textScore" }, createdAt: -1 }; // Sort by relevance first
   }
   
   // Filter by chat ID
@@ -187,8 +187,8 @@ const allMessages = TryCatch(async (req, res) => {
 
   // Fetch total count in parallel with page slice
   const [messages, totalMessages] = await Promise.all([
-    Message.find(query)
-      .sort({ createdAt: -1 })
+    Message.find(query, projection)
+      .sort(sortOptions)
       .skip(skip)
       .limit(limit)
       .populate("sender", "name avatar")

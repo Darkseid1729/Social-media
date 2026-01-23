@@ -51,4 +51,7 @@ schema.pre("save", async function (next) {
 schema.index({ username: 1 });
 schema.index({ _id: 1, lastSeen: 1 });
 
+// Text index for efficient full-text search on name, username, and bio
+schema.index({ name: "text", username: "text", bio: "text" });
+
 export const User = mongoose.models.User || model("User", schema);

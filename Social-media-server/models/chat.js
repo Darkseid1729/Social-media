@@ -30,4 +30,7 @@ const schema = new Schema(
   }
 );
 
+// Text index for efficient full-text search on chat name
+schema.index({ name: "text" });
+
 export const Chat =mongoose.models.Chat || model("Chat", schema);

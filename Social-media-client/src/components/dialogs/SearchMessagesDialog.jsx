@@ -21,6 +21,9 @@ import {
   ArrowDownward as ArrowDownIcon,
 } from "@mui/icons-material";
 import { useTheme } from "../../context/ThemeContext";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { setTargetMessage } from "../../redux/reducers/misc";
 import axios from "axios";
 import { server } from "../../constants/config";
 import toast from "react-hot-toast";
@@ -28,41 +31,55 @@ import moment from "moment";
 
 const SearchMessagesDialog = ({ open, onClose, chatId, onMessageClick }) => {
   const { theme } = useTheme();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalResults, setTotalResults] = useState(0);
+  const resultsPerPage = 5;
 
   // Debounced search
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
       setSelectedIndex(-1);
+      setCurrentPage(1);
+      setTotalPages(0);
+      setTotalResults(0);
       return;
     }
 
     const timeoutId = setTimeout(() => {
-      performSearch(searchQuery);
+      performSearch(searchQuery, 1);
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  const performSearch = async (query) => {
+  const performSearch = async (query, page = 1) => {
     if (!query.trim()) return;
 
     setLoading(true);
     try {
       const { data } = await axios.get(
-        `${server}/api/v1/chat/search/${chatId}?search=${encodeURIComponent(query)}`,
+        `${server}/api/v1/chat/search/${chatId}?search=${encodeURIComponent(query)}&page=${page}`,
         { withCredentials: true }
       );
       setSearchResults(data.messages || []);
+      setTotalResults(data.pagination?.total || 0);
+      setTotalPages(data.pagination?.pages || 0);
+      setCurrentPage(page);
       setSelectedIndex(data.messages?.length > 0 ? 0 : -1);
     } catch (error) {
       console.error("Search error:", error);
       toast.error(error.response?.data?.message || "Search failed");
       setSearchResults([]);
+      setTotalResults(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
@@ -85,6 +102,17 @@ const SearchMessagesDialog = ({ open, onClose, chatId, onMessageClick }) => {
   };
 
   const handleResultClick = (message) => {
+    // Set target message in Redux for the Chat component to use
+    dispatch(setTargetMessage({
+      chatId: message.chat?._id || chatId,
+      messageId: message._id,
+    }));
+    
+    // Close the dialog
+    handleClose();
+    
+    // Navigate to the chat (if it's from global search, this ensures we go to right chat)
+    // For same-chat search, this will just trigger the scroll
     if (onMessageClick) {
       onMessageClick(message._id);
     }
@@ -94,6 +122,9 @@ const SearchMessagesDialog = ({ open, onClose, chatId, onMessageClick }) => {
     setSearchQuery("");
     setSearchResults([]);
     setSelectedIndex(-1);
+    setCurrentPage(1);
+    setTotalPages(0);
+    setTotalResults(0);
     onClose();
   };
 
@@ -183,36 +214,45 @@ const SearchMessagesDialog = ({ open, onClose, chatId, onMessageClick }) => {
         />
 
         {searchResults.length > 0 && (
-          <Box
-            sx={{
-              mt: 2,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Typography variant="body2" sx={{ color: theme.textSecondary }}>
-              {searchResults.length} {searchResults.length === 1 ? "result" : "results"} found
-              {selectedIndex >= 0 && ` (${selectedIndex + 1}/${searchResults.length})`}
-            </Typography>
-            <Box>
-              <IconButton
-                size="small"
-                onClick={handleNavigatePrev}
-                disabled={selectedIndex <= 0}
-                sx={{ color: theme.text }}
-              >
-                <ArrowUpIcon />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={handleNavigateNext}
-                disabled={selectedIndex >= searchResults.length - 1}
-                sx={{ color: theme.text }}
-              >
-                <ArrowDownIcon />
-              </IconButton>
+          <Box sx={{ mt: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 1,
+              }}
+            >
+              <Typography variant="body2" sx={{ color: theme.textSecondary }}>
+                {totalResults} {totalResults === 1 ? "result" : "results"} found
+                {selectedIndex >= 0 && ` (${selectedIndex + 1}/${searchResults.length})`}
+              </Typography>
+              <Box>
+                <IconButton
+                  size="small"
+                  onClick={handleNavigatePrev}
+                  disabled={selectedIndex <= 0}
+                  sx={{ color: theme.text }}
+                  title="Previous result"
+                >
+                  <ArrowUpIcon />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={handleNavigateNext}
+                  disabled={selectedIndex >= searchResults.length - 1}
+                  sx={{ color: theme.text }}
+                  title="Next result"
+                >
+                  <ArrowDownIcon />
+                </IconButton>
+              </Box>
             </Box>
+            {totalPages > 1 && (
+              <Typography variant="caption" sx={{ color: theme.textSecondary, display: "block" }}>
+                Page {currentPage} of {totalPages}
+              </Typography>
+            )}
           </Box>
         )}
       </Box>
@@ -240,7 +280,7 @@ const SearchMessagesDialog = ({ open, onClose, chatId, onMessageClick }) => {
                   }}
                 >
                   <Avatar
-                    src={message.sender?.avatar}
+                    src={typeof message.sender?.avatar === 'string' ? message.sender.avatar : ''}
                     sx={{ mr: 2, width: 40, height: 40 }}
                   >
                     {message.sender?.name?.[0]}
@@ -305,6 +345,39 @@ const SearchMessagesDialog = ({ open, onClose, chatId, onMessageClick }) => {
           </Box>
         ) : null}
       </DialogContent>
+
+      {totalPages > 1 && (
+        <Box
+          sx={{
+            p: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderTop: `1px solid ${theme.divider}`,
+            backgroundColor: theme.paper,
+          }}
+        >
+          <IconButton
+            onClick={() => performSearch(searchQuery, currentPage - 1)}
+            disabled={currentPage === 1}
+            sx={{ color: theme.text }}
+            title="Previous page"
+          >
+            <ArrowUpIcon />
+          </IconButton>
+          <Typography variant="body2" sx={{ color: theme.textSecondary }}>
+            Page {currentPage} of {totalPages}
+          </Typography>
+          <IconButton
+            onClick={() => performSearch(searchQuery, currentPage + 1)}
+            disabled={currentPage === totalPages}
+            sx={{ color: theme.text }}
+            title="Next page"
+          >
+            <ArrowDownIcon />
+          </IconButton>
+        </Box>
+      )}
     </Dialog>
   );
 };

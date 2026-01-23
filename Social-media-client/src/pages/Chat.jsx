@@ -49,14 +49,15 @@ import { useErrors, useSocketEvents } from "../hooks/hook";
 import { useInfiniteScrollTop } from "6pp";
 import moment from "moment";
 import "moment-timezone";
-import { useDispatch } from "react-redux";
-import { setIsFileMenu } from "../redux/reducers/misc";
+import { useDispatch, useSelector } from "react-redux";
+import { setIsFileMenu, clearTargetMessage, setTargetMessage } from "../redux/reducers/misc";
 import { removeNewMessagesAlert } from "../redux/reducers/chat";
 import { TypingLoader } from "../components/layout/Loaders";
 import { useNavigate } from "react-router-dom";
 import { useSetWallpaperMutation } from "../redux/api/api";
 import { server } from "../constants/config";
 import toast from "react-hot-toast";
+import axios from "axios";
 
 const Chat = ({ chatId, user }) => {
   const [message, setMessage] = useState("");
@@ -74,6 +75,18 @@ const Chat = ({ chatId, user }) => {
   const socket = getSocket();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Get target message from Redux (for jump-to-message feature)
+  const { targetMessage } = useSelector((state) => state.misc);
+  const [isJumpingToMessage, setIsJumpingToMessage] = useState(false);
+  
+  // State for bidirectional scroll after jumping to a message
+  const [isInJumpMode, setIsInJumpMode] = useState(false);
+  const [hasMoreAbove, setHasMoreAbove] = useState(false);
+  const [hasMoreBelow, setHasMoreBelow] = useState(false);
+  const [loadingMoreAbove, setLoadingMoreAbove] = useState(false);
+  const [loadingMoreBelow, setLoadingMoreBelow] = useState(false);
+  const [jumpedMessages, setJumpedMessages] = useState([]); // Messages after jump
 
   const containerRef = useRef(null);
   const bottomRef = useRef(null);
@@ -131,15 +144,169 @@ const Chat = ({ chatId, user }) => {
     setReplyToMessage(null);
   };
 
+  // Refs for debouncing scroll and tracking state reliably in scroll handler
+  const scrollDebounceRef = useRef(null);
+  const isLoadingRef = useRef({ above: false, below: false });
+  const hasMoreRef = useRef({ above: false, below: false });
+  const loadCooldownRef = useRef({ above: false, below: false });
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    hasMoreRef.current.above = hasMoreAbove;
+    hasMoreRef.current.below = hasMoreBelow;
+  }, [hasMoreAbove, hasMoreBelow]);
+
+  // Load more messages when scrolling (for jump mode - bidirectional)
+  const loadMoreMessages = useCallback(async (direction) => {
+    if (!isInJumpMode) return;
+    
+    // Use refs to check state (more reliable than state in scroll handler)
+    const key = direction === 'older' ? 'above' : 'below';
+    if (!hasMoreRef.current[key] || isLoadingRef.current[key] || loadCooldownRef.current[key]) {
+      return;
+    }
+
+    const currentMessages = [...messages];
+    if (currentMessages.length === 0) return;
+
+    const timestamp = direction === 'older' 
+      ? currentMessages[0]?.createdAt 
+      : currentMessages[currentMessages.length - 1]?.createdAt;
+
+    if (!timestamp) return;
+
+    // Set loading state immediately
+    isLoadingRef.current[key] = true;
+    if (direction === 'older') {
+      setLoadingMoreAbove(true);
+    } else {
+      setLoadingMoreBelow(true);
+    }
+
+    try {
+      const { data } = await axios.get(
+        `${server}/api/v1/chat/messages/${chatId}/more?timestamp=${timestamp}&direction=${direction}`,
+        { withCredentials: true }
+      );
+
+      if (data.success && data.messages.length > 0) {
+        setMessages(prev => {
+          // Filter out any duplicates by checking IDs
+          const existingIds = new Set(prev.map(m => m._id));
+          const newMessages = data.messages.filter(m => !existingIds.has(m._id));
+          
+          if (newMessages.length === 0) return prev;
+          
+          if (direction === 'older') {
+            return [...newMessages, ...prev];
+          } else {
+            return [...prev, ...newMessages];
+          }
+        });
+
+        // Update hasMore flags (both state and ref immediately)
+        if (direction === 'older') {
+          hasMoreRef.current.above = data.hasMore;
+          setHasMoreAbove(data.hasMore);
+        } else {
+          hasMoreRef.current.below = data.hasMore;
+          setHasMoreBelow(data.hasMore);
+          
+          // Exit jump mode if we've caught up to the latest messages
+          if (!data.hasMore) {
+            setIsInJumpMode(false);
+          }
+        }
+      } else {
+        // No more messages - update immediately
+        hasMoreRef.current[key] = false;
+        if (direction === 'older') {
+          setHasMoreAbove(false);
+        } else {
+          setHasMoreBelow(false);
+          // Exit jump mode - we've caught up
+          setIsInJumpMode(false);
+        }
+      }
+    } catch (error) {
+      console.error(`Error loading ${direction} messages:`, error);
+    } finally {
+      isLoadingRef.current[key] = false;
+      if (direction === 'older') {
+        setLoadingMoreAbove(false);
+      } else {
+        setLoadingMoreBelow(false);
+      }
+      
+      // Add cooldown to prevent immediate re-trigger
+      loadCooldownRef.current[key] = true;
+      setTimeout(() => {
+        loadCooldownRef.current[key] = false;
+      }, 500);
+    }
+  }, [isInJumpMode, messages, chatId]);
+
+  // Scroll handler for bidirectional loading in jump mode
+  useEffect(() => {
+    if (!isInJumpMode || !containerRef.current) return;
+
+    const container = containerRef.current;
+    
+    const handleScroll = () => {
+      // Debounce scroll handling
+      if (scrollDebounceRef.current) {
+        clearTimeout(scrollDebounceRef.current);
+      }
+      
+      scrollDebounceRef.current = setTimeout(() => {
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        
+        // Load older messages when scrolled near top (use refs for all checks)
+        if (scrollTop < 100 && hasMoreRef.current.above && !isLoadingRef.current.above && !loadCooldownRef.current.above) {
+          loadMoreMessages('older');
+        }
+        
+        // Load newer messages when scrolled near bottom
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+        if (distanceFromBottom < 100 && hasMoreRef.current.below && !isLoadingRef.current.below && !loadCooldownRef.current.below) {
+          loadMoreMessages('newer');
+        }
+      }, 150); // 150ms debounce
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (scrollDebounceRef.current) {
+        clearTimeout(scrollDebounceRef.current);
+      }
+    };
+  }, [isInJumpMode, loadMoreMessages]);
+
+  // Exit jump mode when chat changes
+  useEffect(() => {
+    setIsInJumpMode(false);
+    setHasMoreAbove(false);
+    setHasMoreBelow(false);
+    setJumpedMessages([]);
+  }, [chatId]);
+
   const handleScrollToMessage = (messageId) => {
     const messageElement = document.getElementById(`message-${messageId}`);
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Add a highlight effect
-      messageElement.style.backgroundColor = theme.PRIMARY_COLOR + '20';
+      // Add a highlight effect with animation
+      messageElement.style.transition = 'background-color 0.3s ease';
+      messageElement.style.backgroundColor = theme.PRIMARY_COLOR + '40';
       setTimeout(() => {
         messageElement.style.backgroundColor = '';
-      }, 2000);
+      }, 2500);
+    } else {
+      // Message not in current view - trigger jump via Redux
+      dispatch(setTargetMessage({
+        chatId: chatId,
+        messageId: messageId,
+      }));
     }
   };
 
@@ -399,6 +566,9 @@ const Chat = ({ chatId, user }) => {
 
   // Scroll to bottom when old messages first load (when switching chats)
   useEffect(() => {
+    // Don't scroll to bottom if we're jumping to a specific message
+    if (targetMessage.messageId && targetMessage.chatId === chatId) return;
+    
     if (!hasScrolledToBottom && !oldMessagesChunk.isLoading && oldMessages.length > 0 && page === 1 && bottomRef.current) {
       // Use requestAnimationFrame for better timing
       requestAnimationFrame(() => {
@@ -410,7 +580,68 @@ const Chat = ({ chatId, user }) => {
         });
       });
     }
-  }, [oldMessages, page, oldMessagesChunk.isLoading, hasScrolledToBottom]);
+  }, [oldMessages, page, oldMessagesChunk.isLoading, hasScrolledToBottom, targetMessage]);
+
+  // Jump to specific message when coming from search (like WhatsApp)
+  useEffect(() => {
+    const jumpToMessage = async () => {
+      // Check if we have a target message for this chat
+      if (!targetMessage.messageId || targetMessage.chatId !== chatId) return;
+      if (isJumpingToMessage) return; // Prevent multiple calls
+
+      setIsJumpingToMessage(true);
+
+      try {
+        // Fetch messages around the target message
+        const { data } = await axios.get(
+          `${server}/api/v1/chat/messages/${chatId}/around/${targetMessage.messageId}`,
+          { withCredentials: true }
+        );
+
+        if (data.success && data.messages) {
+          // Enter jump mode for bidirectional scrolling
+          setIsInJumpMode(true);
+          setJumpedMessages(data.messages);
+          setHasMoreAbove(data.hasMoreAbove);
+          setHasMoreBelow(data.hasMoreBelow);
+          
+          // Replace current messages with the fetched ones
+          setMessages(data.messages);
+          setPage(1); // Reset pagination
+          setHasScrolledToBottom(true); // Prevent auto-scroll to bottom
+
+          // Wait for DOM to update, then scroll to the target message
+          setTimeout(() => {
+            const messageElement = document.getElementById(`message-${targetMessage.messageId}`);
+            if (messageElement) {
+              // Scroll to the message
+              messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              
+              // Highlight the message with animation
+              messageElement.style.transition = 'background-color 0.3s ease';
+              messageElement.style.backgroundColor = theme.PRIMARY_COLOR + '40';
+              
+              // Remove highlight after animation
+              setTimeout(() => {
+                messageElement.style.backgroundColor = '';
+              }, 2500);
+            }
+            
+            // Clear the target message from Redux after jumping
+            dispatch(clearTargetMessage());
+            setIsJumpingToMessage(false);
+          }, 300);
+        }
+      } catch (error) {
+        console.error("Error jumping to message:", error);
+        toast.error("Could not jump to message");
+        dispatch(clearTargetMessage());
+        setIsJumpingToMessage(false);
+      }
+    };
+
+    jumpToMessage();
+  }, [targetMessage, chatId, dispatch, theme.PRIMARY_COLOR]);
 
   // Only redirect if it's a 404 error (chat not found), not on loading/network errors
   useEffect(() => {

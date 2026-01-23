@@ -93,4 +93,7 @@ schema.index({ chat: 1, createdAt: -1 });
 schema.index({ createdAt: -1 });
 schema.index({ sender: 1, createdAt: -1 });
 
+// Text index for efficient full-text search on message content
+schema.index({ content: "text" });
+
 export const Message = mongoose.models.Message || model("Message", schema);

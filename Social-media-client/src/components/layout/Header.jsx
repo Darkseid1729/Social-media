@@ -271,6 +271,11 @@ const Header = (props) => {
             {/* Desktop header actions */}
             <Box sx={{ display: { xs: "none", sm: "flex" } }}>
             <IconBtn
+              title={"Search Messages"}
+              icon={<SearchIcon />}
+              onClick={handleSearchMessagesOpen}
+            />
+            <IconBtn
               title={"Music Player"}
               icon={<MusicNoteIcon />}
               onClick={openMusicPlayer}
@@ -285,11 +290,6 @@ const Header = (props) => {
               icon={<CollectionsIcon />}
               onClick={handleMediaGalleryOpen}
             />
-              <IconBtn
-                title={"Search Messages"}
-                icon={<SearchIcon />}
-                onClick={handleSearchMessagesOpen}
-              />
               <IconBtn
                 title={"Search Users"}
                 icon={<PersonSearchIcon />}
@@ -330,7 +330,12 @@ const Header = (props) => {
               </Tooltip>
             </Box>
 
-            {/* Mobile header menu dropdown trigger */}
+            {/* Mobile header icons - always visible */}
+            <Box sx={{ display: { xs: "block", sm: "none" } }}>
+              <IconButton color="inherit" onClick={handleSearchMessagesOpen}>
+                <SearchIcon />
+              </IconButton>
+            </Box>
             <Box sx={{ display: { xs: "block", sm: "none" } }}>
               <IconButton color="inherit" onClick={openMusicPlayer}>
                 <MusicNoteIcon />

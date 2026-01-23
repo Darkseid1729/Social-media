@@ -21,6 +21,9 @@ import {
   getChatMedia,
   deleteMessage,
   forwardMessage,
+  searchMessages,
+  getMessagesAroundMessage,
+  getMoreMessages,
 } from "../controllers/chat.js";
 import { singleAvatar } from "../middlewares/multer.js";
 import {
@@ -69,6 +72,15 @@ app.post(
 
 // Get Messages
 app.get("/message/:id", chatIdValidator(), validateHandler, getMessages);
+
+// Get messages around a specific message (for jump-to-message feature)
+app.get("/messages/:chatId/around/:messageId", getMessagesAroundMessage);
+
+// Get more messages (older or newer) from a timestamp
+app.get("/messages/:chatId/more", getMoreMessages);
+
+// Search Messages
+app.get("/search/:id", chatIdValidator(), validateHandler, searchMessages);
 
 // Get Chat Media (photos and videos)
 app.get("/media/:id", chatIdValidator(), validateHandler, getChatMedia);
