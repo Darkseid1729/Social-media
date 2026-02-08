@@ -91,8 +91,26 @@ const pulse = keyframes`
   50% { transform: scale(1.3); }
 `;
 
+// Steeper, more direct upward animation
+const floatUpSteep = keyframes`
+  0% {
+    transform: translateY(100%) translateX(0) scale(0.3) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-150%) translateX(10px) scale(1.2) rotate(15deg);
+    opacity: 0;
+  }
+`;
+
 // Heart symbols to randomly pick from
-const HEART_CHARS = ['♥', '❤', '💕', '💗', '♡', '❣'];
+const HEART_CHARS = ['♥', '❤', '💕', '💗','💘','💞','❣️','🤍','💋','🌹','🌸' ];
 
 const FloatingHearts = ({ color = 'rgba(255,255,255,0.5)', count = 30 }) => {
   const hearts = useMemo(() => {
@@ -104,7 +122,8 @@ const FloatingHearts = ({ color = 'rgba(255,255,255,0.5)', count = 30 }) => {
       const driftDur = 3 + Math.random() * 4;
       const char = HEART_CHARS[Math.floor(Math.random() * HEART_CHARS.length)];
       const opacity = 0.15 + Math.random() * 0.4;
-      return { id: i, left, size, duration, delay, driftDur, char, opacity };
+      const useSteep = Math.random() > 0.6; // 40% chance for steep upward motion
+      return { id: i, left, size, duration, delay, driftDur, char, opacity, useSteep };
     });
   }, [count]);
 
@@ -124,11 +143,13 @@ const FloatingHearts = ({ color = 'rgba(255,255,255,0.5)', count = 30 }) => {
           sx={{
             position: 'absolute',
             left: `${h.left}%`,
-            bottom: '-10px',
+            bottom: '-6px',
             fontSize: `${h.size}px`,
             color,
             opacity: h.opacity,
-            animation: `${floatUp} ${h.duration}s ${h.delay}s ease-in infinite, ${drift} ${h.driftDur}s ${h.delay}s ease-in-out infinite`,
+            animation: h.useSteep 
+              ? `${floatUpSteep} ${h.duration}s ${h.delay}s ease-out infinite`
+              : `${floatUp} ${h.duration}s ${h.delay}s ease-in infinite, ${drift} ${h.driftDur}s ${h.delay}s ease-in-out infinite`,
             userSelect: 'none',
             filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.15))',
           }}
@@ -143,11 +164,11 @@ const FloatingHearts = ({ color = 'rgba(255,255,255,0.5)', count = 30 }) => {
           sx={{
             position: 'absolute',
             left: `${pos}%`,
-            top: `${20 + i * 15}%`,
-            fontSize: '8px',
+            top: `${25 + i * 15}%`,
+            fontSize: '10px',
             color,
             opacity: 0.35,
-            animation: `${pulse} ${2 + i * 0.5}s ease-in-out infinite`,
+            animation: `${pulse} ${6 + i * 0.5}s ease-in-out infinite`,
             userSelect: 'none',
           }}
         >
@@ -161,11 +182,11 @@ const FloatingHearts = ({ color = 'rgba(255,255,255,0.5)', count = 30 }) => {
 // Map theme names to heart overlay colors
 const getHeartColor = (themeName) => {
   switch (themeName) {
-    case 'dark': return 'rgba(0,255,200,0.45)';
-    case 'light': return 'rgba(255,105,135,0.5)';
+    case 'dark': return 'rgba(255, 0, 0, 0.45)';
+    case 'light': return 'hsla(348, 100%, 50%, 0.50)';
     case 'pink': return 'rgba(255,255,255,0.55)';
     case 'pinkDark': return 'rgba(255,182,193,0.5)';
-    case 'blue': return 'rgba(255,255,255,0.5)';
+    case 'blue': return 'rgb(30, 255, 0)';
     case 'blueDark': return 'rgba(144,202,249,0.45)';
     default: return 'rgba(255,255,255,0.45)';
   }
