@@ -212,19 +212,19 @@ const AppLayout = () => (WrappedComponent) => {
     const getProfileBackground = () => {
       switch(themeName) {
         case 'dark':
-          return 'url(/assets/symbol-scatter-haikei.svg)';
+          return 'url(/assets/hearts-background-dark.svg)';
         case 'light':
-          return 'url(/assets/symbol-scatter-haikei-light.svg)';
+          return 'url(/assets/hearts-background-light.svg)';
         case 'pink':
-          return 'url(/assets/symbol-scatter-haikei-pink.svg)';
+          return 'url(/assets/hearts-background-pink.svg)';
         case 'pinkDark':
-          return 'url(/assets/symbol-scatter-haikei-pinkDark.svg)';
+          return 'url(/assets/hearts-background-pinkDark.svg)';
         case 'blue':
-          return 'url(/assets/symbol-scatter-haikei-blue.svg)';
+          return 'url(/assets/hearts-background-blue.svg)';
         case 'blueDark':
-          return 'url(/assets/symbol-scatter-haikei-blueDark.svg)';
+          return 'url(/assets/hearts-background-blueDark.svg)';
         default:
-          return 'url(/assets/symbol-scatter-haikei-light.svg)';
+          return 'url(/assets/hearts-background-light.svg)';
       }
     };
     

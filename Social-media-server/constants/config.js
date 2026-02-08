@@ -1,14 +1,14 @@
 const corsOptions = {
   origin: [
     process.env.CLIENT_URL,
-    // "http://localhost:5173",
+    "http://localhost:5173",
+    "http://localhost:5000",
     "https://social-media-adi.vercel.app",
     // "https://scaling-waddle-x5x9x5pwpj5x2697r-5000.app.github.dev",
     // "https://scaling-waddle-x5x9x5pwpj5x2697r-5173.app.github.dev", // GitHub Codespaces frontend
     "capacitor://localhost",  // For Capacitor Android/iOS app
     "https://localhost",       // Alternative Capacitor origin
-    "ionic://localhost",       // Ionic apps (if needed)
-    // "http://localhost:5000"
+    "ionic://localhost"       // Ionic apps (if needed)
     // Add other allowed origins here
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],

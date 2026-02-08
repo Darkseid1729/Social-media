@@ -8,7 +8,8 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import React, { Suspense, lazy, useState } from "react";
+import React, { Suspense, lazy, useState, useMemo } from "react";
+import { keyframes } from "@mui/system";
 
 
 import { useTheme } from "../../context/ThemeContext";
@@ -58,6 +59,117 @@ import { AddBox } from "@mui/icons-material";
 const SearchDialog = lazy(() => import("../specific/Search"));
 const NotifcationDialog = lazy(() => import("../specific/Notifications"));
 const NewGroupDialog = lazy(() => import("../specific/NewGroup"));
+
+// Valentine's Day floating hearts animations
+const floatUp = keyframes`
+  0% {
+    transform: translateY(100%) scale(0.5) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-120%) scale(1.1) rotate(25deg);
+    opacity: 0;
+  }
+`;
+
+const drift = keyframes`
+  0% { transform: translateX(0px); }
+  25% { transform: translateX(6px); }
+  50% { transform: translateX(-4px); }
+  75% { transform: translateX(8px); }
+  100% { transform: translateX(0px); }
+`;
+
+const pulse = keyframes`
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+`;
+
+// Heart symbols to randomly pick from
+const HEART_CHARS = ['♥', '❤', '💕', '💗', '♡', '❣'];
+
+const FloatingHearts = ({ color = 'rgba(255,255,255,0.5)', count = 30 }) => {
+  const hearts = useMemo(() => {
+    return Array.from({ length: count }, (_, i) => {
+      const left = Math.random() * 100;
+      const size = 6 + Math.random() * 10;
+      const duration = 4 + Math.random() * 6;
+      const delay = Math.random() * 8;
+      const driftDur = 3 + Math.random() * 4;
+      const char = HEART_CHARS[Math.floor(Math.random() * HEART_CHARS.length)];
+      const opacity = 0.15 + Math.random() * 0.4;
+      return { id: i, left, size, duration, delay, driftDur, char, opacity };
+    });
+  }, [count]);
+
+  return (
+    <Box
+      sx={{
+        position: 'absolute',
+        inset: 0,
+        overflow: 'hidden',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}
+    >
+      {hearts.map((h) => (
+        <Box
+          key={h.id}
+          sx={{
+            position: 'absolute',
+            left: `${h.left}%`,
+            bottom: '-10px',
+            fontSize: `${h.size}px`,
+            color,
+            opacity: h.opacity,
+            animation: `${floatUp} ${h.duration}s ${h.delay}s ease-in infinite, ${drift} ${h.driftDur}s ${h.delay}s ease-in-out infinite`,
+            userSelect: 'none',
+            filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.15))',
+          }}
+        >
+          {h.char}
+        </Box>
+      ))}
+      {/* A few static glowing hearts for sparkle */}
+      {[15, 40, 65, 85].map((pos, i) => (
+        <Box
+          key={`static-${i}`}
+          sx={{
+            position: 'absolute',
+            left: `${pos}%`,
+            top: `${20 + i * 15}%`,
+            fontSize: '8px',
+            color,
+            opacity: 0.35,
+            animation: `${pulse} ${2 + i * 0.5}s ease-in-out infinite`,
+            userSelect: 'none',
+          }}
+        >
+          ♥
+        </Box>
+      ))}
+    </Box>
+  );
+};
+
+// Map theme names to heart overlay colors
+const getHeartColor = (themeName) => {
+  switch (themeName) {
+    case 'dark': return 'rgba(0,255,200,0.45)';
+    case 'light': return 'rgba(255,105,135,0.5)';
+    case 'pink': return 'rgba(255,255,255,0.55)';
+    case 'pinkDark': return 'rgba(255,182,193,0.5)';
+    case 'blue': return 'rgba(255,255,255,0.5)';
+    case 'blueDark': return 'rgba(144,202,249,0.45)';
+    default: return 'rgba(255,255,255,0.45)';
+  }
+};
 
 
 
@@ -227,9 +339,12 @@ const Header = (props) => {
           position="static"
           sx={{
             background: theme.BUTTON_ACCENT,
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
-          <Toolbar>
+          <FloatingHearts color={getHeartColor(themeName)} count={30} />
+          <Toolbar sx={{ position: 'relative', zIndex: 1 }}>
             <Typography
               variant="h6"
               sx={{
