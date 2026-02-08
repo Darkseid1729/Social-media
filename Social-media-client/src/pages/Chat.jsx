@@ -974,6 +974,12 @@ const Chat = ({ chatId, user }) => {
                 scrollbarWidth: 'thin',
                 scrollbarColor: `${theme.SUBTLE_BG_30} transparent`,
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  submitHandler(e);
+                }
+              }}
               onFocus={e => {
                 e.target.style.border = `2px solid ${theme.PRIMARY_COLOR}`;
                 e.target.style.minHeight = '6rem';
