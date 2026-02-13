@@ -111,7 +111,7 @@ const floatUpSteep = keyframes`
 
 // Heart symbols to randomly pick from
 // const HEART_CHARS = ['♥', '❤', '💕', '💗','💘','💞','❣️','🤍','💋','🌹','🌸' ];
-const HEART_CHARS = ['💋','💋','💋','💋','💋','💋','💋','💋','💋'];
+const HEART_CHARS = ['💋','💋','🫦','👄','😘','👨🏻‍❤️‍💋‍👩🏻','🙈'];
 const FloatingHearts = ({ color = 'rgba(255,255,255,0.5)', count = 30 }) => {
   const hearts = useMemo(() => {
     return Array.from({ length: count }, (_, i) => {

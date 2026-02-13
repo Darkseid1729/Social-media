@@ -40,3 +40,6 @@ IMPLEMENTATION_SUMMARY.md
 DEPLOYMENT_SUCCESS.md
 SETUP_CHECKLIST.md
 LINK_SHARING_GUIDE.md
+
+# Local helper to run both client and server (ignored to avoid accidental commits)
+run-all.bat
