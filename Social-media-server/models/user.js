@@ -35,6 +35,11 @@ const schema = new Schema(
       type: Date,
       default: Date.now,
     },
+    fcmTokens: [{
+      token: { type: String },
+      device: { type: String, default: 'android' },
+      updatedAt: { type: Date, default: Date.now },
+    }],
   },
   {
     timestamps: true,

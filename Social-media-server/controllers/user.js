@@ -356,6 +356,40 @@ const checkFriendStatus = TryCatch(async (req, res, next) => {
   });
 });
 
+// Save FCM token for push notifications (Android/iOS)
+const saveFcmToken = TryCatch(async (req, res, next) => {
+  const { fcmToken } = req.body;
+  if (!fcmToken) return next(new ErrorHandler("FCM token is required", 400));
+
+  const user = await User.findById(req.user);
+  if (!user) return next(new ErrorHandler("User not found", 404));
+
+  // Check if token already exists
+  const existingIndex = user.fcmTokens?.findIndex((t) => t.token === fcmToken);
+  if (existingIndex >= 0) {
+    // Update timestamp
+    user.fcmTokens[existingIndex].updatedAt = new Date();
+  } else {
+    // Add new token
+    if (!user.fcmTokens) user.fcmTokens = [];
+    user.fcmTokens.push({ token: fcmToken, device: 'android', updatedAt: new Date() });
+  }
+
+  await user.save();
+  res.status(200).json({ success: true, message: "FCM token saved" });
+});
+
+// Remove FCM token on logout
+const removeFcmToken = TryCatch(async (req, res, next) => {
+  const { fcmToken } = req.body;
+  
+  await User.findByIdAndUpdate(req.user, {
+    $pull: { fcmTokens: fcmToken ? { token: fcmToken } : {} },
+  });
+
+  res.status(200).json({ success: true, message: "FCM token removed" });
+});
+
 export {
   acceptFriendRequest,
   getMyFriends,
@@ -368,4 +402,6 @@ export {
   sendFriendRequest,
   getUserProfile,
   checkFriendStatus,
+  saveFcmToken,
+  removeFcmToken,
 };
