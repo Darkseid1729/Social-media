@@ -52,6 +52,14 @@ schema.pre("save", async function (next) {
   this.password = await hash(this.password, 10);
 });
 
+// Debug: Log whenever fcmTokens is modified
+schema.pre('save', function (next) {
+  if (this.isModified('fcmTokens')) {
+    console.log('🔔 [User Model] fcmTokens modified for user:', this.username, 'Tokens:', JSON.stringify(this.fcmTokens));
+  }
+  next();
+});
+
 // Add indexes for faster queries
 schema.index({ username: 1 });
 schema.index({ _id: 1, lastSeen: 1 });
