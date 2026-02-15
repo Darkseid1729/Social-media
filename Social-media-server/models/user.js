@@ -35,6 +35,11 @@ const schema = new Schema(
       type: Date,
       default: Date.now,
     },
+    fcmTokens: [{
+      token: { type: String },
+      device: { type: String, default: 'android' },
+      updatedAt: { type: Date, default: Date.now },
+    }],
   },
   {
     timestamps: true,
@@ -45,6 +50,14 @@ schema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
   this.password = await hash(this.password, 10);
+});
+
+// Debug: Log whenever fcmTokens is modified
+schema.pre('save', function (next) {
+  if (this.isModified('fcmTokens')) {
+    console.log('🔔 [User Model] fcmTokens modified for user:', this.username, 'Tokens:', JSON.stringify(this.fcmTokens));
+  }
+  next();
 });
 
 // Add indexes for faster queries

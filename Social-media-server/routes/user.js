@@ -11,6 +11,8 @@ import {
   newUser,
   searchUser,
   sendFriendRequest,
+  saveFcmToken,
+  removeFcmToken,
 } from "../controllers/user.js";
 import {
   acceptRequestValidator,
@@ -37,6 +39,9 @@ app.put("/avatar", singleAvatar, updateAvatar);
 
 app.get("/me", getMyProfile);
 
+// FCM token management for push notifications
+app.put("/fcm-token", saveFcmToken);
+app.delete("/fcm-token", removeFcmToken);
 
 
 app.get("/logout", logout);

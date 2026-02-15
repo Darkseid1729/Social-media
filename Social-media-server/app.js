@@ -38,6 +38,7 @@ import botRoute from "./routes/bot.js";
 import youtubeRoute from "./routes/youtube.js";
 import gifRoute from "./routes/gif.js";
 import { createBotUser } from "./seeders/bot.js";
+import { initializeFirebase, sendMessageNotification } from "./utils/firebase.js";
 
 const mongoURI = process.env.MONGO_URI;
 const port = process.env.PORT || 3000;
@@ -195,7 +196,25 @@ io.on("connection", (socket) => {
           chatId,
           message: messageForRealTime,
         });
-        io.to(membersSocket).emit(NEW_MESSAGE_ALERT, { chatId });
+        io.to(membersSocket).emit(NEW_MESSAGE_ALERT, {
+          chatId,
+          senderName: user.name,
+          message: message,
+          senderAvatar: user.avatar?.url || null,
+        });
+
+        // Send push notifications to members who are NOT connected via socket (offline)
+        const offlineMembers = members.filter(
+          (memberId) => !userSocketIDs.has(memberId.toString())
+        );
+        for (const memberId of offlineMembers) {
+          sendMessageNotification(
+            memberId,
+            user.name,
+            message,
+            chatId
+          ).catch((err) => console.error('Push notification error:', err));
+        }
 
       } catch (error) {
         console.error("Error creating message in database:", error.stack || error);
@@ -254,6 +273,9 @@ app.use(errorMiddleware);
 
 server.listen(port, async () => {
   console.log(`Server is running on port ${port} in ${envMode} Mode`);
+  
+  // Initialize Firebase for push notifications
+  initializeFirebase();
   
   // Initialize bot user on server start
   try {
