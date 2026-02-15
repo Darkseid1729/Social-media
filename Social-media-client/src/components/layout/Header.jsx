@@ -110,8 +110,8 @@ const floatUpSteep = keyframes`
 `;
 
 // Heart symbols to randomly pick from
-// const HEART_CHARS = ['♥', '❤', '💕', '💗','💘','💞','❣️','🤍','💋','🌹','🌸' ];
-const HEART_CHARS = ['💋','🫦','👄','Kiss me💋','👨🏻‍❤️‍💋‍👩🏻','🙈'];
+const HEART_CHARS = ['♥', '❤', '💕', '💗','💘','💞','❣️','Adi','💋','🌹','🌸' ];
+// const HEART_CHARS = ['💋','🫦','👄','Kiss me💋','👨🏻‍❤️‍💋‍👩🏻','🙈'];
 const FloatingHearts = ({ color = 'rgba(255,255,255,0.5)', count = 30 }) => {
   const hearts = useMemo(() => {
     return Array.from({ length: count }, (_, i) => {
