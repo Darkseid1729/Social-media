@@ -22,6 +22,7 @@ import {
   EmojiEmotions as EmojiEmotionsIcon,
 } from "@mui/icons-material";
 import { isOnlyEmoji, createEmojiExplosion, injectEmojiAnimationStyles } from "../utils/emojiEffect";
+import ComboAnimationLayer from "../components/comboAnimations/ComboAnimationLayer";
 
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 
@@ -1046,6 +1047,10 @@ const Chat = ({ chatId, user }) => {
       <StickerPicker open={stickerPickerOpen} onClose={() => setStickerPickerOpen(false)} onSelect={handleStickerSelect} />
       <GifPicker open={gifPickerOpen} onClose={() => setGifPickerOpen(false)} onSelect={handleGifSelect} />
       <YouTubeSearchDialog open={youtubePickerOpen} onClose={() => setYoutubePickerOpen(false)} onSelect={handleYouTubeSelect} />
+
+      {/* ── Emoji Combo Animations (fires only when both users send same emoji) ── */}
+      <ComboAnimationLayer chatId={chatId} />
+
     </Fragment>
   );
 };

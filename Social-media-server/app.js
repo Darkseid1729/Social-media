@@ -18,6 +18,7 @@ import {
   START_TYPING,
   STOP_TYPING,
   EMOJI_EFFECT,
+  EMOJI_COMBO,
 } from "./constants/events.js";
 import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
@@ -46,6 +47,21 @@ const envMode = (process.env.NODE_ENV?.trim() || "PRODUCTION");
 const adminSecretKey = process.env.ADMIN_SECRET_KEY;
 const userSocketIDs = new Map();
 const onlineUsers = new Set();
+
+// ── Emoji Combo Detection ──────────────────────────────────────────
+// In-memory store: chatId -> { emoji, userId, userName, ts }
+// Resets on server restart — intentionally ephemeral (no DB needed)
+const emojiComboCache = new Map();
+const COMBO_WINDOW_MS = 5000; // 5 second window for a match
+// Simple single-emoji check (covers most emoji including ZWJ sequences)
+const isSingleEmoji = (text) => {
+  if (!text) return false;
+  const t = text.trim();
+  // Strip variation selectors and ZWJ to get the visual emoji count
+  const segments = [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(t)];
+  return segments.length === 1 && /\p{Emoji}/u.test(t) && !/[a-zA-Z0-9]/u.test(t);
+};
+// ───────────────────────────────────────────────────────────────────
 
 // Helper function to validate ObjectId
 const isValidObjectId = (id) => {
@@ -202,6 +218,37 @@ io.on("connection", (socket) => {
           message: message,
           senderAvatar: user.avatar?.url || null,
         });
+
+        // ── Emoji Combo Detection ──────────────────────────────────
+        if (isSingleEmoji(message)) {
+          const emoji = message.trim();
+          const now  = Date.now();
+          const last = emojiComboCache.get(chatId);
+
+          if (
+            last &&
+            last.emoji   === emoji &&
+            last.userId  !== user._id.toString() &&
+            now - last.ts < COMBO_WINDOW_MS
+          ) {
+            // MATCH — emit special combo event to everyone in the room
+            io.to(membersSocket).emit(EMOJI_COMBO, {
+              chatId,
+              emoji,
+              users: [last.userName, user.name],
+            });
+            emojiComboCache.delete(chatId); // clear so it doesn't retrigger
+          } else {
+            // No match yet — store this as the "waiting" entry
+            emojiComboCache.set(chatId, {
+              emoji,
+              userId:   user._id.toString(),
+              userName: user.name,
+              ts:       now,
+            });
+          }
+        }
+        // ──────────────────────────────────────────────────────────
 
         // Send push notifications to members who are NOT connected via socket (offline)
         const offlineMembers = members.filter(

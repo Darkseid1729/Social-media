@@ -23,6 +23,9 @@ const MESSAGE_REPLY = "MESSAGE_REPLY";
 // Emoji effect event
 const EMOJI_EFFECT = "EMOJI_EFFECT";
 
+// Emoji combo event (both users sent the same emoji)
+const EMOJI_COMBO = "EMOJI_COMBO";
+
 // Delete message event
 const MESSAGE_DELETED = "MESSAGE_DELETED";
 
@@ -44,5 +47,6 @@ export {
   MESSAGE_REACTION_REMOVED,
   MESSAGE_REPLY,
   EMOJI_EFFECT,
+  EMOJI_COMBO,
   MESSAGE_DELETED,
 };

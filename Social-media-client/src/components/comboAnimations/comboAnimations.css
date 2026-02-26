@@ -1,0 +1,522 @@
+/*
+ * comboAnimations.css
+ * -------------------
+ * All CSS keyframes and shared styles for the emoji-combo animations.
+ * These only fire when TWO users send the exact same emoji.
+ */
+
+/* ── Shared overlay base ─────────────────────────────────────── */
+.combo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════════════
+   💍  WEDDING
+══════════════════════════════════════════════ */
+.combo-wedding-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  transition: background 0.6s ease;
+}
+.combo-wedding-bg.active { background: rgba(0, 0, 0, 0.82); }
+
+.combo-ring {
+  position: absolute;
+  font-size: 64px;
+  top: 22%;
+  filter: drop-shadow(0 0 18px gold);
+  opacity: 0;
+  transition: all 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.combo-ring.left  { left: -120px; }
+.combo-ring.right { right: -120px; }
+.combo-ring.left.fly  { left:  calc(50% - 76px); opacity: 1; }
+.combo-ring.right.fly { right: calc(50% - 76px); opacity: 1; }
+
+.combo-scroll {
+  position: absolute;
+  left: 50%; top: 58%;
+  transform: translate(-50%, -50%) scaleY(0);
+  transform-origin: top center;
+  background: linear-gradient(135deg, #fffde7, #fff8e1);
+  color: #4a3000;
+  padding: 20px 26px;
+  border-radius: 14px;
+  border: 3px solid gold;
+  text-align: center;
+  min-width: 270px;
+  box-shadow: 0 0 50px rgba(255, 215, 0, 0.45);
+  transition: transform 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.combo-scroll.open { transform: translate(-50%, -50%) scaleY(1); }
+.combo-scroll h2   { font-size: 11px; color: #8b6914; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.combo-scroll p    { font-size: 16px; font-weight: bold; color: #4a3000; margin-bottom: 6px; }
+.combo-scroll small { font-size: 11px; color: #8b6914; }
+
+@keyframes petalFall {
+  0%   { transform: translateY(-20px) rotate(0deg);    opacity: 1; }
+  100% { transform: translateY(110vh)  rotate(720deg);  opacity: 0; }
+}
+.combo-petal {
+  position: absolute;
+  top: -20px;
+  pointer-events: none;
+  animation: petalFall linear forwards;
+}
+
+@keyframes sparkleOut {
+  0%   { transform: translate(0, 0) scale(1);                   opacity: 1; }
+  100% { transform: translate(var(--sx), var(--sy)) scale(0);   opacity: 0; }
+}
+.combo-sparkle {
+  position: absolute;
+  pointer-events: none;
+  animation: sparkleOut ease-out forwards;
+}
+
+/* ══════════════════════════════════════════════
+   ❤️  HEART BLOOM
+══════════════════════════════════════════════ */
+@keyframes heartbeat3x {
+  0%   { transform: translate(-50%, -50%) scale(0);   opacity: 0; }
+  10%  { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+  20%  { transform: translate(-50%, -50%) scale(0.9); }
+  30%  { transform: translate(-50%, -50%) scale(1.2); }
+  40%  { transform: translate(-50%, -50%) scale(0.9); }
+  55%  { transform: translate(-50%, -50%) scale(1.5); }
+  70%  { transform: translate(-50%, -50%) scale(1.1); }
+  90%  { transform: translate(-50%, -50%) scale(0.2); opacity: 0.4; }
+  100% { transform: translate(-50%, -50%) scale(0);   opacity: 0; }
+}
+.combo-big-heart {
+  position: absolute;
+  left: 50%; top: 50%;
+  font-size: 130px;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 0 30px rgba(255, 71, 87, 0.9));
+  animation: heartbeat3x 2.8s ease-in-out forwards;
+}
+
+/* ══════════════════════════════════════════════
+   👀  EYES
+══════════════════════════════════════════════ */
+.combo-eyes-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  transition: background 1s ease;
+}
+.combo-eyes-bg.active { background: rgba(0, 0, 0, 0.88); }
+
+@keyframes eyePeek {
+  0%, 100% { opacity: 0; transform: scale(0.6); }
+  20%, 80% { opacity: 1; transform: scale(1);   }
+  50%      { opacity: 0.2; }
+  55%      { opacity: 1; }
+}
+.combo-eye-pair {
+  position: absolute;
+  font-size: 26px;
+  pointer-events: none;
+  animation: eyePeek 3.5s ease-in-out forwards;
+}
+
+@keyframes searchMove {
+  0%   { left: 25%; top: 35%; opacity: 0;   width: 60px;  height: 60px; }
+  20%  {                       opacity: 1;   width: 200px; height: 200px; }
+  50%  { left: 60%; top: 30%; }
+  80%  { left: 38%; top: 60%; }
+  100% {                       opacity: 0; }
+}
+.combo-searchlight {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 180, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+  animation: searchMove 3.5s ease-in-out forwards;
+}
+@keyframes weseeyou { 0%, 100% { opacity: 0; } 30%, 70% { opacity: 1; } }
+.combo-eyes-text {
+  position: absolute;
+  bottom: 22%;
+  width: 100%;
+  text-align: center;
+  color: rgba(255, 255, 180, 0.9);
+  font-size: 13px;
+  letter-spacing: 4px;
+  pointer-events: none;
+  animation: weseeyou 3.5s ease-in-out forwards;
+}
+
+/* ══════════════════════════════════════════════
+   😂  LAUGH
+══════════════════════════════════════════════ */
+@keyframes shakeCrazy {
+  0%,  100% { transform: rotate(0); }
+  10% { transform: rotate(-3deg) translateX(-5px); }
+  20% { transform: rotate(3deg)  translateX(5px);  }
+  30% { transform: rotate(-4deg) translateX(-8px); }
+  40% { transform: rotate(4deg)  translateX(8px);  }
+  50% { transform: rotate(-2deg) translateX(-4px); }
+  60% { transform: rotate(2deg)  translateX(4px);  }
+  70% { transform: rotate(-3deg) translateX(-6px); }
+  80% { transform: rotate(3deg)  translateX(6px);  }
+}
+.combo-laugh-shake { animation: shakeCrazy 0.85s ease-in-out; }
+
+@keyframes laughTextPop {
+  0%   { opacity: 0; transform: scale(0.5) rotate(-5deg); }
+  25%  { opacity: 1; transform: scale(1.2) rotate(3deg);  }
+  60%  { opacity: 1; transform: scale(1)   rotate(-1deg); }
+  100% { opacity: 0; transform: scale(0.8); }
+}
+.combo-laugh-text {
+  position: absolute;
+  top: 18%;
+  width: 100%;
+  text-align: center;
+  font-size: 28px;
+  font-weight: 900;
+  color: #ffd700;
+  pointer-events: none;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  animation: laughTextPop 3.5s ease-in-out forwards;
+}
+@keyframes laughRise {
+  0%   { transform: translateY(0)          scale(1)   rotate(0);            opacity: 1; }
+  100% { transform: translateY(var(--ly))  scale(0.4) rotate(var(--lr));    opacity: 0; }
+}
+.combo-laugh-particle {
+  position: absolute;
+  pointer-events: none;
+  animation: laughRise ease-out forwards;
+}
+
+/* ══════════════════════════════════════════════
+   🙈  PEEK
+══════════════════════════════════════════════ */
+.combo-paw {
+  position: absolute;
+  font-size: 80px;
+  width: 100%;
+  text-align: center;
+  opacity: 0;
+  transition: all 0.9s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.combo-paw-top    { top: -130px;  transform: rotate(180deg); }
+.combo-paw-bottom { bottom: -130px; }
+.combo-paw-top.in    { top: 2%;     opacity: 1; }
+.combo-paw-bottom.in { bottom: 2%;  opacity: 1; }
+.combo-paw-top.peek    { top: 16%; }
+.combo-paw-bottom.peek { bottom: 16%; }
+
+.combo-peek-card {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  padding: 12px 22px;
+  border-radius: 40px;
+  color: #eee;
+  font-size: 14px;
+  white-space: nowrap;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.combo-peek-card.in { transform: translate(-50%, -50%) scale(1); }
+
+/* ══════════════════════════════════════════════
+   😮‍💨  SIGH
+══════════════════════════════════════════════ */
+.combo-mist {
+  position: absolute;
+  bottom: -140px;
+  left: 0;
+  width: 100%;
+  height: 220px;
+  background: linear-gradient(to top, rgba(160, 185, 255, 0.4), transparent);
+  filter: blur(18px);
+  opacity: 0;
+  transition: bottom 2s ease-in-out, opacity 2s ease-in-out;
+}
+.combo-mist.up { bottom: 0; opacity: 1; }
+@keyframes sighFade { 0%, 100% { opacity: 0; transform: translateY(8px); } 40%, 70% { opacity: 1; transform: translateY(0); } }
+.combo-sigh-text {
+  position: absolute;
+  top: 38%;
+  width: 100%;
+  text-align: center;
+  color: rgba(180, 200, 255, 0.9);
+  font-size: 16px;
+  pointer-events: none;
+  animation: sighFade 4s ease-in-out forwards;
+}
+@keyframes sighFloat {
+  0%   { transform: translateY(0);      opacity: 1; }
+  100% { transform: translateY(-300px); opacity: 0; }
+}
+.combo-sigh-particle {
+  position: absolute;
+  pointer-events: none;
+  animation: sighFloat ease-out forwards;
+}
+
+/* ══════════════════════════════════════════════
+   🙂  SUNSHINE
+══════════════════════════════════════════════ */
+@keyframes sunRise {
+  from { bottom: -140px; }
+  to   { bottom: 18%; }
+}
+.combo-sun-face {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 90px;
+  line-height: 1;
+  filter: drop-shadow(0 0 30px rgba(255, 220, 50, 0.9));
+  animation: sunRise 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes rayPulse {
+  0%   { opacity: 0.3; transform: scale(0.8); }
+  100% { opacity: 1;   transform: scale(1.2); }
+}
+.combo-sun-ray {
+  position: absolute;
+  font-size: 16px;
+  pointer-events: none;
+  animation: rayPulse 0.9s ease-in-out infinite alternate;
+}
+@keyframes sunTextFloat {
+  0%, 100% { opacity: 0; transform: translateY(10px); }
+  30%, 70%  { opacity: 1; transform: translateY(0); }
+}
+.combo-sun-text {
+  position: absolute;
+  top: 18%;
+  width: 100%;
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffd700;
+  pointer-events: none;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.8);
+  animation: sunTextFloat 4.5s ease-in-out forwards;
+}
+
+/* ══════════════════════════════════════════════
+   💋  KISS STAMP
+══════════════════════════════════════════════ */
+@keyframes kissStampIn {
+  0%   { transform: translate(-50%, -50%) scale(0)   rotate(-20deg); opacity: 0; }
+  60%  { transform: translate(-50%, -50%) scale(1.15) rotate(-3deg); opacity: 1; }
+  80%  { transform: translate(-50%, -50%) scale(0.95) rotate(-6deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1)    rotate(-5deg); opacity: 0.88; }
+}
+@keyframes kissStampOff {
+  0%   { transform: translate(-50%, -50%) scale(1)   rotate(-5deg);  opacity: 0.88; }
+  100% { transform: translate(-50%,  160%) scale(0.4) rotate(12deg); opacity: 0; }
+}
+.combo-kiss-stamp {
+  position: absolute;
+  left: 50%; top: 50%;
+  font-size: 110px;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 0 22px rgba(255, 0, 100, 0.7));
+}
+.combo-kiss-stamp.stamp-in  { animation: kissStampIn  0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+.combo-kiss-stamp.stamp-off { animation: kissStampOff 1.8s ease-in forwards; }
+
+@keyframes kissGlow { 0%, 100% { opacity: 0; } 30%, 70% { opacity: 1; } }
+.combo-kiss-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 0, 80, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+  animation: kissGlow 3.2s ease-in-out forwards;
+}
+@keyframes kissTextPop { 0%, 100% { opacity: 0; transform: scale(0.8); } 25%, 75% { opacity: 1; transform: scale(1); } }
+.combo-kiss-text {
+  position: absolute;
+  top: 22%;
+  width: 100%;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #ff4da6;
+  pointer-events: none;
+  text-shadow: 0 0 15px rgba(255, 77, 166, 0.8);
+  animation: kissTextPop 3.5s ease-in-out forwards;
+}
+@keyframes kissHeartFly {
+  0%   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(var(--kx), var(--ky)) scale(0); opacity: 0; }
+}
+.combo-kiss-heart {
+  position: absolute;
+  pointer-events: none;
+  animation: kissHeartFly ease-out forwards;
+}
+
+/* ══════════════════════════════════════════════
+   🙂  POLITE SMILE (passive-aggressive)
+══════════════════════════════════════════════ */
+.combo-smile-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  transition: background 1.2s ease;
+}
+.combo-smile-bg.active { background: rgba(210, 170, 100, 0.10); }
+
+@keyframes smileFadeIn {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  40%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  70%  { transform: translate(-50%, -50%) scale(0.97); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.combo-smile-face {
+  position: absolute;
+  left: 50%; top: 50%;
+  font-size: 110px;
+  line-height: 1;
+  pointer-events: none;
+  /* no drop-shadow — it's deliberately understated */
+  animation: smileFadeIn 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Text types in one word at a time via delayed opacity steps */
+@keyframes smileWord1 { 0%,15% { opacity:0 } 25%,100% { opacity:1 } }
+@keyframes smileWord2 { 0%,38% { opacity:0 } 48%,100% { opacity:1 } }
+@keyframes smileWord3 { 0%,60% { opacity:0 } 70%,100% { opacity:1 } }
+@keyframes smileTextFadeOut { 0%,75% { opacity:1 } 100% { opacity:0 } }
+
+.combo-smile-text-wrap {
+  position: absolute;
+  bottom: 26%;
+  width: 100%;
+  text-align: center;
+  pointer-events: none;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: rgba(220, 200, 160, 0.95);
+  text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+  animation: smileTextFadeOut 5s ease-in-out forwards;
+}
+.combo-smile-text-wrap .w1 { animation: smileWord1 5s ease forwards; }
+.combo-smile-text-wrap .w2 { animation: smileWord2 5s ease forwards; }
+.combo-smile-text-wrap .w3 { animation: smileWord3 5s ease forwards; }
+
+/* Unbothered drifters */
+@keyframes smileDrift {
+  0%   { transform: translateX(0)   rotate(0deg);    opacity: 0; }
+  8%   { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateX(var(--dx)) rotate(var(--dr)); opacity: 0; }
+}
+.combo-smile-drifter {
+  position: absolute;
+  pointer-events: none;
+  font-size: 28px;
+  animation: smileDrift linear forwards;
+}
+
+/* ══════════════════════════════════════════════
+   💤  SNOOZE
+══════════════════════════════════════════════ */
+.combo-snooze-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  transition: background 1.4s ease;
+}
+.combo-snooze-bg.active { background: rgba(5, 10, 40, 0.88); }
+
+/* Moon slides in from top-right */
+@keyframes moonSlideIn {
+  0%   { transform: translate(80px, -80px) rotate(-20deg); opacity: 0; }
+  60%  { transform: translate(0, 0) rotate(0deg);          opacity: 1; }
+  85%  { transform: translate(0, 0) rotate(4deg);          opacity: 1; }
+  100% { transform: translate(0, 0) rotate(0deg);          opacity: 1; }
+}
+.combo-snooze-moon {
+  position: absolute;
+  top: 8%;
+  right: 12%;
+  font-size: 56px;
+  pointer-events: none;
+  animation: moonSlideIn 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Stars twinkle in */
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0;   transform: scale(0.5); }
+  50%       { opacity: 1;   transform: scale(1.2); }
+}
+.combo-snooze-star {
+  position: absolute;
+  pointer-events: none;
+  font-size: 14px;
+  animation: starTwinkle ease-in-out infinite;
+}
+
+/* Giant 💤 bobs gently at center */
+@keyframes snoozeBob {
+  0%   { transform: translate(-50%, -50%) scale(0) rotate(-8deg);  opacity: 0; }
+  30%  { transform: translate(-50%, -52%) scale(1.1) rotate(2deg); opacity: 1; }
+  55%  { transform: translate(-50%, -48%) scale(1) rotate(-2deg);  opacity: 1; }
+  80%  { transform: translate(-50%, -52%) scale(1.05) rotate(1deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0deg);   opacity: 1; }
+}
+.combo-snooze-face {
+  position: absolute;
+  left: 50%; top: 48%;
+  font-size: 100px;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 0 18px rgba(100, 120, 255, 0.5));
+  animation: snoozeBob 2s ease-in-out forwards;
+}
+
+/* Lazy floating Z's */
+@keyframes lazyZFloat {
+  0%   { transform: translateY(0)           rotate(var(--zr)) scale(1);   opacity: 0;   }
+  10%  { opacity: 1; }
+  85%  { opacity: 0.9; }
+  100% { transform: translateY(var(--zy))   rotate(var(--zr2)) scale(0.5); opacity: 0; }
+}
+.combo-snooze-z {
+  position: absolute;
+  pointer-events: none;
+  color: rgba(160, 180, 255, 0.95);
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(100, 120, 255, 0.6);
+  animation: lazyZFloat ease-in-out forwards;
+}
+
+/* Bottom text */
+@keyframes snoozeTextFade { 0%,100%{opacity:0} 35%,72%{opacity:1} }
+.combo-snooze-text {
+  position: absolute;
+  bottom: 14%;
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: rgba(160, 180, 255, 0.85);
+  pointer-events: none;
+  animation: snoozeTextFade 6s ease-in-out forwards;
+}
+
+/* ── Reduced motion: skip all combo animations ───────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .combo-overlay * { animation: none !important; transition: none !important; }
+}
