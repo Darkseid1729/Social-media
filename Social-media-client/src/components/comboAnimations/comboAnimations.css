@@ -793,6 +793,729 @@
   animation: twoheartsTextIn 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.4s both;
 }
 
+/* ── shared helpers ──────────────────────────────────────────── */
+@keyframes comboEmojiPop {
+  0%   { transform: scale(0) rotate(-10deg); opacity:0; }
+  60%  { transform: scale(1.3) rotate(4deg); opacity:1; }
+  100% { transform: scale(1)   rotate(0deg); opacity:1; }
+}
+@keyframes comboTextIn {
+  from { transform: scale(0.4); opacity:0; }
+  to   { transform: scale(1);   opacity:1; }
+}
+/* base bg helper */
+.combo-face-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-face-text {
+  font-size: clamp(1rem,3.5vw,1.7rem); font-weight:700;
+  background:rgba(255,255,255,0.6); padding:0.35rem 1.2rem; border-radius:2rem;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  animation: comboTextIn 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;
+}
+
+/* ── 😉 WINK ─────────────────────────────────────────────────── */
+.combo-wink-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(30,30,60,0.0);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-wink-lid {
+  position:absolute; top:0; left:0; right:0;
+  height:55vh; background:#0a0a0a;
+  animation: winkLid 3s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes winkLid {
+  0%  { transform:scaleY(0); transform-origin:top; }
+  20% { transform:scaleY(1); transform-origin:top; }
+  50% { transform:scaleY(1); transform-origin:top; }
+  70% { transform:scaleY(0); transform-origin:top; }
+  100%{ transform:scaleY(0); transform-origin:top; }
+}
+.combo-wink-emoji {
+  position:relative; z-index:1; font-size:5rem;
+  animation: comboEmojiPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.6s both;
+}
+.combo-wink-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#222; background:rgba(255,255,255,0.6); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); animation: comboTextIn 0.5s cubic-bezier(0.34,1.56,0.64,1) 1.2s both; }
+
+/* ── 😎 COOL ─────────────────────────────────────────────────── */
+.combo-cool-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:linear-gradient(160deg,#0f0f1a 0%,#1a1a2e 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-cool-ray {
+  position:absolute; top:50%; left:50%; width:2px; height:50vh;
+  background:linear-gradient(to bottom,rgba(100,200,255,0.7),transparent);
+  transform-origin:top center;
+  transform:rotate(calc(var(--ri)*30deg)) translateX(-50%);
+  animation: coolRay 2s ease-out forwards;
+  animation-delay:calc(var(--ri)*60ms);
+}
+@keyframes coolRay {
+  from { opacity:0; transform:scaleY(0); }
+  30%  { opacity:1; transform:scaleY(1); }
+  100% { opacity:0; transform:scaleY(1); }
+}
+.combo-cool-glasses { font-size:5.5rem; animation: coolGlassesDrop 0.7s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes coolGlassesDrop {
+  from { transform:translateY(-120px) scale(0.5); opacity:0; }
+  to   { transform:translateY(0) scale(1); opacity:1; }
+}
+.combo-cool-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#7cf; text-shadow:0 0 12px rgba(100,200,255,0.8); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 🥲 BITTERSWEET ──────────────────────────────────────────── */
+.combo-bittersweet-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,230,100,0.3) 50%,rgba(100,150,255,0.3) 50%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-bittersweet-emoji { font-size:5rem; animation: comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-bittersweet-confetti { position:absolute; top:-60px; animation:bittersweetFall 2.5s ease-in forwards; }
+.combo-bittersweet-tear     { position:absolute; top:-60px; animation:bittersweetTearFall 2.2s ease-in forwards; }
+@keyframes bittersweetFall     { to { transform:translateY(120vh) rotate(360deg); } }
+@keyframes bittersweetTearFall { to { transform:translateY(120vh);               } }
+.combo-bittersweet-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#555; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 😙 GENTLE KISS ──────────────────────────────────────────── */
+.combo-gentlekiss-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 60%,rgba(255,210,230,0.5) 0%,rgba(255,180,200,0.2) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-gentlekiss-emoji { font-size:5rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-gentlekiss-heart { position:absolute; bottom:-70px; animation:gentleKissRise 2.5s ease-in forwards; }
+@keyframes gentleKissRise { to { transform:translateY(-120vh) scale(1.3); opacity:0; } }
+.combo-gentlekiss-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#b5005b; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 😗 PUCKER ───────────────────────────────────────────────── */
+.combo-pucker-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,180,200,0.4) 0%,rgba(255,220,230,0.15) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-pucker-ring {
+  position:absolute; top:50%; left:50%;
+  width:80px; height:80px; border:3px solid rgba(220,90,120,0.6); border-radius:50%;
+  transform:translate(-50%,-50%);
+  animation:puckerRing 1.2s ease-out infinite;
+  animation-delay:calc(var(--ri)*0.3s);
+}
+@keyframes puckerRing { to { transform:translate(-50%,-50%) scale(6); opacity:0; } }
+.combo-pucker-emoji { position:relative; z-index:1; font-size:5rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-pucker-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#b5005b; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 🥰 SMILING HEARTS ───────────────────────────────────────── */
+.combo-smilinghearts-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,200,230,0.45) 0%,rgba(220,180,255,0.2) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-smilinghearts-emoji { font-size:5.5rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-smilinghearts-float { position:absolute; bottom:-60px; animation:smilingHeartsRise 3s ease-in forwards; }
+@keyframes smilingHeartsRise { to { transform:translateY(-120vh) rotate(20deg); opacity:0; } }
+.combo-smilinghearts-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#a0005a; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 😘 BLOW KISS ────────────────────────────────────────────── */
+.combo-blowkiss-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 30% 50%,rgba(255,200,220,0.4) 0%,rgba(255,230,240,0.15) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-blowkiss-face { font-size:4rem; position:absolute; left:12%; top:42%; animation:blowKissFaceIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes blowKissFaceIn { from { transform:scale(0); } to { transform:scale(1); } }
+.combo-blowkiss-heart {
+  font-size:3.5rem; position:absolute; top:38%;
+  animation:blowKissFly 2s cubic-bezier(0.4,0,0.2,1) 0.5s forwards;
+}
+@keyframes blowKissFly {
+  from { left:22%; opacity:0; transform:scale(0.5); }
+  20%  { opacity:1; }
+  to   { left:82%; transform:scale(2.5); opacity:0; }
+}
+.combo-blowkiss-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#b5005b; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.3s both; }
+
+/* ── 😍 HEART EYES ───────────────────────────────────────────── */
+.combo-hearteyes-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,0,80,0.25) 0%,rgba(255,100,130,0.1) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-hearteyes-glow {
+  position:absolute; top:30%; left:50%; transform:translateX(-50%);
+  width:280px; height:280px; border-radius:50%;
+  background:radial-gradient(circle,rgba(255,50,80,0.5) 0%,transparent 70%);
+  animation:heartEyesGlow 1s ease-in-out infinite alternate;
+}
+@keyframes heartEyesGlow { from { transform:translateX(-50%) scale(1); } to { transform:translateX(-50%) scale(1.4); } }
+.combo-hearteyes-emoji { font-size:5.5rem; position:relative; z-index:1; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-hearteyes-eyes { display:flex; gap:0.5rem; }
+.combo-hearteyes-eye { font-size:2.5rem; animation:heartEyesPulse 0.6s ease-in-out infinite alternate; }
+.combo-hearteyes-eye:nth-child(2) { animation-delay:0.1s; }
+@keyframes heartEyesPulse { from { transform:scale(1); } to { transform:scale(1.5); } }
+.combo-hearteyes-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#900020; background:rgba(255,255,255,0.7); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 😅 AWKWARD ──────────────────────────────────────────────── */
+.combo-awkward-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(255,240,160,0.3);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+  animation:awkwardShake 0.4s ease-in-out 0.5s 4;
+}
+@keyframes awkwardShake {
+  0%,100%{ transform:translateX(0); }
+  25%    { transform:translateX(-6px); }
+  75%    { transform:translateX(6px); }
+}
+.combo-awkward-emoji { font-size:5rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-awkward-drop { position:absolute; top:-40px; animation:awkwardDrop 1.8s ease-in forwards; }
+@keyframes awkwardDrop { to { transform:translateY(110vh); } }
+.combo-awkward-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#6b5000; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 😆 GIGGLING ─────────────────────────────────────────────── */
+.combo-giggling-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(255,230,100,0.3);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+  animation:gigglingBounce 0.15s ease-in-out infinite alternate;
+}
+@keyframes gigglingBounce { from { transform:rotate(-1.5deg) scale(1); } to { transform:rotate(1.5deg) scale(1.02); } }
+.combo-giggling-emoji { font-size:6rem; animation:comboEmojiPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-giggling-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#5a3a00; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.3s both; }
+
+/* ── 😁 BEAMING ──────────────────────────────────────────────── */
+.combo-beaming-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(255,255,200,0.2);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-beaming-flash {
+  position:absolute; inset:0;
+  background:rgba(255,255,255,0.95);
+  animation:beamingFlash 1.2s ease-out forwards;
+}
+@keyframes beamingFlash {
+  0%   { opacity:1; }
+  40%  { opacity:0.2; }
+  60%  { opacity:0.8; }
+  100% { opacity:0; }
+}
+.combo-beaming-emoji { position:relative; z-index:1; font-size:5.5rem; animation:comboEmojiPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.4s both; }
+.combo-beaming-text  { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#5a3a00; background:rgba(255,255,255,0.7); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.7s both; }
+
+/* ── 😀 GRIN ─────────────────────────────────────────────────── */
+.combo-grin-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(255,220,50,0.25);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-grin-center { font-size:5rem; position:relative; z-index:1; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-grin-orbit {
+  position:absolute; top:50%; left:50%; font-size:1.8rem;
+  transform-origin:0 0;
+  animation:grinOrbit 2s linear infinite;
+  animation-delay:calc(var(--gi)*0.33s);
+}
+@keyframes grinOrbit {
+  from { transform:translate(-50%,-50%) rotate(calc(var(--gi)*60deg)) translateY(-90px); }
+  to   { transform:translate(-50%,-50%) rotate(calc(var(--gi)*60deg + 360deg)) translateY(-90px); }
+}
+.combo-grin-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#5a3a00; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 🤗 HUG ──────────────────────────────────────────────────── */
+.combo-hug-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,210,180,0.45) 0%,rgba(255,230,200,0.15) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-hug-emoji { font-size:5.5rem; position:relative; z-index:1; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-hug-arm { font-size:3.5rem; position:absolute; top:42%; opacity:0.5; }
+.combo-hug-arm-l { animation:hugArmL 2s ease-in-out 0.3s infinite alternate; }
+.combo-hug-arm-r { animation:hugArmR 2s ease-in-out 0.3s infinite alternate; }
+@keyframes hugArmL { from { left:-20%; opacity:0; } to { left:10%; opacity:0.7; } }
+@keyframes hugArmR { from { right:-20%; opacity:0; } to { right:10%; opacity:0.7; } }
+.combo-hug-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#7a3a00; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 🥱 YAWN ─────────────────────────────────────────────────── */
+.combo-yawn-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(200,200,220,0.3);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-yawn-emoji { font-size:5rem; animation:yawnDroop 3s ease-in-out both; }
+@keyframes yawnDroop { 0%,100%{transform:scale(1) rotate(0);} 50%{transform:scale(1.2) rotate(-4deg);} }
+.combo-yawn-wave {
+  position:absolute; left:-5%; right:-5%;
+  height:3px; background:rgba(150,150,180,0.5); border-radius:50%;
+  top:calc(30% + var(--wi)*12%);
+  animation:yawnWaveProp 1.8s ease-in-out infinite;
+  animation-delay:calc(var(--wi)*0.25s);
+}
+@keyframes yawnWaveProp {
+  0%,100%{ transform:scaleY(1) translateX(0); }
+  50%    { transform:scaleY(4) translateX(3%); }
+}
+.combo-yawn-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#555; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 😴 DEEP SLEEP ───────────────────────────────────────────── */
+.combo-deepsleep-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:linear-gradient(180deg,#0d0d1a 0%,#1a1a30 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-deepsleep-face { font-size:5.5rem; animation:comboEmojiPop 0.7s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-deepsleep-z {
+  position:absolute; left:55%; font-family:serif; font-weight:900; color:rgba(150,180,255,0.8);
+  animation:deepsleepZ 2.5s ease-out forwards;
+}
+@keyframes deepsleepZ {
+  0%   { transform:translateY(0) translateX(0) scale(0.5); opacity:0; }
+  20%  { opacity:1; }
+  100% { transform:translateY(var(--dzy,-80px)) translateX(30px) scale(1.3); opacity:0; }
+}
+.combo-deepsleep-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:rgba(200,220,255,0.85); background:rgba(20,20,50,0.55); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 😶‍🌫️ CLOUD HEAD ──────────────────────────────────────────── */
+.combo-cloudhead-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(220,230,250,0.6);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+  animation:cloudHeadFog 5s ease both;
+}
+@keyframes cloudHeadFog { 0%{backdrop-filter:blur(0);} 30%{backdrop-filter:blur(8px);} 100%{backdrop-filter:blur(0);} }
+.combo-cloudhead-emoji { font-size:5rem; position:relative; z-index:1; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-cloudhead-cloud {
+  position:absolute; left:-20%; user-select:none;
+  animation:cloudDrift 4s ease-in-out forwards;
+  animation-direction: calc(var(--dir,1));
+}
+@keyframes cloudDrift {
+  from { transform:translateX(calc(var(--dir,1)*-10%)); opacity:0; }
+  20%  { opacity:0.85; }
+  to   { transform:translateX(calc(var(--dir,1)*120%)); opacity:0; }
+}
+.combo-cloudhead-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#445; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.6s both; }
+
+/* ── 🙄 EYE ROLL ─────────────────────────────────────────────── */
+.combo-eyeroll-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(200,200,200,0.25);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-eyeroll-eye { font-size:6rem; animation:eyeRollSpin 2s ease-in-out both; }
+@keyframes eyeRollSpin {
+  0%  { transform:scale(0.5) rotate(0); opacity:0; }
+  20% { transform:scale(1.2) rotate(180deg); opacity:1; }
+  60% { transform:scale(1)   rotate(360deg); opacity:1; }
+  80% { transform:scale(1)   rotate(360deg) translateY(-12px); opacity:1; }
+  100%{ transform:scale(1)   rotate(360deg) translateY(0); opacity:1; }
+}
+.combo-eyeroll-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#444; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 1.2s both; }
+
+/* ── 😏 SMIRK ────────────────────────────────────────────────── */
+.combo-smirk-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:linear-gradient(135deg,rgba(20,0,40,0.7) 0%,rgba(40,0,80,0.5) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-smirk-emoji { font-size:5.5rem; animation:smirkSlide 0.8s cubic-bezier(0.25,1.5,0.5,1) both; }
+@keyframes smirkSlide {
+  from { transform:translateX(-60px) rotate(-12deg) scale(0.5); opacity:0; }
+  to   { transform:translateX(0) rotate(-5deg) scale(1); opacity:1; }
+}
+.combo-smirk-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#cc99ff; background:rgba(20,0,40,0.55); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.6s both; }
+
+/* ── 😣 STRAIN ───────────────────────────────────────────────── */
+.combo-strain-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(255,160,100,0.25);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-strain-emoji { font-size:5rem; position:relative; z-index:1; animation:strainShake 0.1s linear infinite; }
+@keyframes strainShake { 0%,100%{transform:translateX(0);} 50%{transform:translateX(4px);} }
+.combo-strain-line {
+  position:absolute; top:50%; left:50%; width:2px; height:40vh;
+  background:rgba(200,100,0,0.5); transform-origin:top;
+  transform:rotate(calc(var(--sli)*45deg));
+  animation:strainBurst 1s ease-out forwards;
+  animation-delay:calc(var(--sli)*40ms);
+}
+@keyframes strainBurst {
+  from { height:0; opacity:1; }
+  to   { height:50vh; opacity:0; }
+}
+.combo-strain-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#7a2000; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 😥 GLOOM ────────────────────────────────────────────────── */
+.combo-gloom-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(100,120,160,0.35); filter:saturate(0.6);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-gloom-emoji { font-size:5rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-gloom-teardrop { font-size:3.5rem; animation:gloomTearFall 2s ease-in 0.8s forwards; opacity:0; }
+@keyframes gloomTearFall { 0%{opacity:1;transform:translateY(0);} 100%{opacity:0;transform:translateY(80px);} }
+.combo-gloom-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#334; background:rgba(255,255,255,0.55); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 😮 WOW ──────────────────────────────────────────────────── */
+.combo-wow-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(255,240,180,0.3);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-wow-emoji { font-size:5.5rem; position:relative; z-index:1; animation:comboEmojiPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-wow-ring {
+  position:absolute; top:50%; left:50%;
+  width:60px; height:60px; border:3px solid rgba(255,180,0,0.7); border-radius:50%;
+  transform:translate(-50%,-50%);
+  animation:wowRing 1s ease-out infinite;
+  animation-delay:calc(var(--wri)*0.2s);
+}
+@keyframes wowRing { to { transform:translate(-50%,-50%) scale(8); opacity:0; } }
+.combo-wow-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#7a4000; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 🤐 ZIP ───────────────────────────────────────────────────── */
+.combo-zip-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(50,50,60,0.5);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.5rem;
+}
+.combo-zip-line {
+  position:absolute; top:50%; left:0; height:4px; width:0;
+  background:linear-gradient(90deg,#888,#ccc,#888);
+  animation:zipDraw 1.2s ease-out 0.2s forwards;
+}
+@keyframes zipDraw { to { width:100%; } }
+.combo-zip-pull {
+  font-size:4rem; position:absolute; top:40%;
+  animation:zipPullerMove 1.2s ease-out 0.2s both;
+}
+@keyframes zipPullerMove { from{left:0;} to{left:calc(100% - 4rem);} }
+.combo-zip-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#ddd; background:rgba(30,30,30,0.65); padding:0.35rem 1.2rem; border-radius:2rem; animation:comboTextIn 0.5s ease 1s both; }
+
+/* ── 😯 HUSHED ───────────────────────────────────────────────── */
+.combo-hushed-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(200,210,230,0.4);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+  animation:hushedFadeIn 0.5s ease both;
+}
+@keyframes hushedFadeIn { from{opacity:0;} to{opacity:1;} }
+.combo-hushed-emoji { font-size:5.5rem; animation:hushedAppear 0.8s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes hushedAppear { from{transform:scale(2);opacity:0;} to{transform:scale(1);opacity:1;} }
+.combo-hushed-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:600; color:#445; letter-spacing:0.3em; background:rgba(255,255,255,0.6); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.6s both; }
+
+/* ── 😌 SERENITY ─────────────────────────────────────────────── */
+.combo-serenity-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:linear-gradient(180deg,rgba(180,220,255,0.45) 0%,rgba(200,240,220,0.3) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-serenity-emoji { font-size:5rem; position:relative; z-index:1; animation:comboEmojiPop 0.7s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-serenity-wave {
+  position:absolute; left:-5%; right:-5%; height:2px;
+  background:rgba(100,180,200,0.4); border-radius:50%;
+  top:calc(20% + var(--sei)*15%);
+  animation:serenityWave 3s ease-in-out infinite;
+  animation-delay:calc(var(--sei)*0.4s);
+}
+@keyframes serenityWave { 0%,100%{transform:translateY(0) scaleY(1);} 50%{transform:translateY(8px) scaleY(3);} }
+.combo-serenity-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#2a5a6a; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 😛 TONGUE ───────────────────────────────────────────────── */
+.combo-tongue-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(255,220,230,0.3);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-tongue-emoji { font-size:6rem; animation:tongueWag 0.3s ease-in-out infinite alternate; }
+@keyframes tongueWag { from{transform:rotate(-8deg);} to{transform:rotate(8deg);} }
+.combo-tongue-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#9a1a40; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.3s both; }
+
+/* ── 😓 COLD SWEAT ───────────────────────────────────────────── */
+.combo-coldsweat-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(180,210,240,0.35);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-coldsweat-emoji { font-size:5rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-coldsweat-drop { position:absolute; top:-40px; animation:coldSweatFall 1.6s ease-in forwards; }
+@keyframes coldSweatFall { to { transform:translateY(110vh); } }
+.combo-coldsweat-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#004a6a; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 😔 MOOD DROP ────────────────────────────────────────────── */
+.combo-mooddrop-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(150,150,160,0.45); filter:saturate(0.4);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-mooddrop-emoji { font-size:5rem; animation:moodDropSag 1s ease-in-out 0.2s both; }
+@keyframes moodDropSag { from{transform:translateY(-30px);opacity:0;} to{transform:translateY(0);opacity:1;} }
+.combo-mooddrop-rain { position:absolute; top:-30px; color:rgba(100,120,150,0.6); animation:moodDropRain 1.4s ease-in infinite; }
+@keyframes moodDropRain { to { transform:translateY(110vh); } }
+.combo-mooddrop-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#333; background:rgba(255,255,255,0.55); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 🫵 POINT AT YOU ─────────────────────────────────────────── */
+.combo-pointatyou-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 60%,rgba(255,200,50,0.5) 0%,rgba(255,240,100,0.2) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.5rem;
+}
+.combo-pointatyou-finger {
+  font-size:7rem;
+  animation:pointFingerIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both,
+            pointFingerPoke 0.5s ease-in-out 0.8s 4 alternate;
+}
+@keyframes pointFingerIn   { from{transform:scale(0) translateY(-60px);opacity:0;} to{transform:scale(1) translateY(0);opacity:1;} }
+@keyframes pointFingerPoke { from{transform:scale(1);} to{transform:scale(1.2) translateY(-8px);} }
+.combo-pointatyou-text { font-size:clamp(1.2rem,5vw,2.5rem); font-weight:900; color:#000; letter-spacing:0.15em; background:rgba(255,220,50,0.8); padding:0.4rem 1.4rem; border-radius:0.5rem; animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 💀 SKULL ────────────────────────────────────────────────── */
+.combo-skull-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:linear-gradient(180deg,#000 0%,#1a0000 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-skull-center { font-size:6rem; animation:skullcenterpop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes skullcenterpop { from{transform:scale(0);} to{transform:scale(1);} }
+.combo-skull-fall { position:absolute; top:-60px; animation:skullFall 2s ease-in forwards; }
+@keyframes skullFall { to { transform:translateY(120vh) rotate(var(--rot,180deg)); } }
+.combo-skull-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#fff; background:rgba(30,0,0,0.65); padding:0.35rem 1.2rem; border-radius:2rem; animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 💩 POOP DROP ─────────────────────────────────────────────── */
+.combo-poop-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(100,60,30,0.3);
+  display:flex; align-items:flex-end; justify-content:center; padding-bottom:12%;
+}
+.combo-poop-fall { position:absolute; top:-80px; animation:poopFall 2s ease-in forwards; }
+@keyframes poopFall { to{ transform:translateY(120vh) rotate(var(--pr,180deg)); } }
+.combo-poop-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#5a2a00; background:rgba(255,230,200,0.8); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.3s both; }
+
+/* ── 👌 OKAY ──────────────────────────────────────────────────── */
+.combo-okay-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 50%,rgba(0,200,100,0.3) 0%,rgba(100,255,150,0.1) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-okay-check { font-size:6rem; animation:okayCheck 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes okayCheck { from{transform:scale(0) rotate(-90deg);} to{transform:scale(1) rotate(0);} }
+.combo-okay-emoji { font-size:4rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.3s both; }
+.combo-okay-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#004a20; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 🤌 CHEF KISS ─────────────────────────────────────────────── */
+.combo-chefkiss-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,220,100,0.45) 0%,rgba(255,200,50,0.2) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-chefkiss-emoji { font-size:6rem; animation:chefKissGesture 1s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes chefKissGesture {
+  0%  { transform:scale(0) rotate(-20deg); opacity:0; }
+  60% { transform:scale(1.3) rotate(5deg); opacity:1; }
+  100%{ transform:scale(1) rotate(-8deg); opacity:1; }
+}
+.combo-chefkiss-spark {
+  position:absolute; top:38%; left:50%;
+  animation:chefKissSpark 1.2s ease-out forwards;
+  animation-delay:calc(var(--cki)*80ms);
+}
+@keyframes chefKissSpark {
+  from { transform:translate(-50%,-50%) rotate(calc(var(--cki)*45deg)) translateX(0); opacity:1; }
+  to   { transform:translate(-50%,-50%) rotate(calc(var(--cki)*45deg)) translateX(100px); opacity:0; }
+}
+.combo-chefkiss-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#5a3a00; background:rgba(255,255,255,0.7); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.6s both; }
+
+/* ── 🫶 HEART HANDS ───────────────────────────────────────────── */
+.combo-hearthands-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,100,150,0.4) 0%,rgba(255,150,200,0.15) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-hearthands-glow {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:250px; height:250px; border-radius:50%;
+  background:radial-gradient(circle,rgba(255,80,130,0.6) 0%,transparent 70%);
+  animation:heartHandsGlow 1.2s ease-in-out infinite alternate;
+}
+@keyframes heartHandsGlow { from{transform:translate(-50%,-50%) scale(1);} to{transform:translate(-50%,-50%) scale(1.6);} }
+.combo-hearthands-emoji { position:relative; z-index:1; font-size:6rem; animation:comboEmojiPop 0.7s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-hearthands-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#8b0030; background:rgba(255,255,255,0.7); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.4s both; }
+
+/* ── 💅 SASSY ─────────────────────────────────────────────────── */
+.combo-sassy-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:linear-gradient(135deg,rgba(255,100,200,0.35) 0%,rgba(200,100,255,0.25) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-sassy-emoji { font-size:5.5rem; animation:sassyFlip 0.8s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes sassyFlip { from{transform:scale(0) rotateY(90deg);} to{transform:scale(1) rotateY(0);} }
+.combo-sassy-sparkle { position:absolute; animation:sassySparkle 1.5s ease-out forwards; }
+@keyframes sassySparkle { 0%{transform:scale(0);opacity:1;} 100%{transform:scale(1.5);opacity:0;} }
+.combo-sassy-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#800060; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 🖕 RAGE ──────────────────────────────────────────────────── */
+.combo-rage-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(20,0,0,0.7);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-rage-flash {
+  position:absolute; inset:0;
+  background:rgba(220,0,0,0.8);
+  animation:rageFlash 0.8s ease-out forwards;
+}
+@keyframes rageFlash {
+  0%   { opacity:1; }
+  25%  { opacity:0.4; }
+  50%  { opacity:0.9; }
+  100% { opacity:0; }
+}
+.combo-rage-emoji { position:relative; z-index:1; font-size:6rem; animation:rageAppear 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.3s both; }
+@keyframes rageAppear { from{transform:scale(3) rotate(15deg);opacity:0;} to{transform:scale(1) rotate(0);opacity:1;} }
+.combo-rage-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#ff4444; background:rgba(20,0,0,0.7); padding:0.35rem 1.2rem; border-radius:2rem; animation:comboTextIn 0.5s ease 0.7s both; }
+
+/* ── 🫂 PEOPLE HUG ───────────────────────────────────────────── */
+.combo-peoplehug-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 55%, rgba(255,200,150,0.5) 0%, rgba(255,230,200,0.2) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.4rem;
+}
+.combo-peoplehug-warmth {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:300px; height:300px; border-radius:50%;
+  background:radial-gradient(circle, rgba(255,160,80,0.4) 0%, transparent 70%);
+  animation:peopleHugWarmth 2s ease-in-out infinite alternate;
+}
+@keyframes peopleHugWarmth {
+  from { transform:translate(-50%,-50%) scale(1); opacity:0.6; }
+  to   { transform:translate(-50%,-50%) scale(1.5); opacity:1; }
+}
+.combo-peoplehug-scene {
+  position:relative; z-index:1;
+  display:flex; align-items:center; gap:0;
+}
+.combo-peoplehug-left  { font-size:3.5rem; animation:peopleHugWalkL 1.2s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-peoplehug-right { font-size:3.5rem; animation:peopleHugWalkR 1.2s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-peoplehug-center { font-size:5rem; animation:peopleHugCenter 0.6s cubic-bezier(0.34,1.56,0.64,1) 1s both; opacity:0; }
+@keyframes peopleHugWalkL {
+  from { transform:translateX(-160px); opacity:0; }
+  80%  { transform:translateX(0); opacity:1; }
+  to   { transform:translateX(22px); opacity:0; }
+}
+@keyframes peopleHugWalkR {
+  from { transform:translateX(160px); opacity:0; }
+  80%  { transform:translateX(0); opacity:1; }
+  to   { transform:translateX(-22px); opacity:0; }
+}
+@keyframes peopleHugCenter {
+  from { transform:scale(0); opacity:0; }
+  to   { transform:scale(1); opacity:1; }
+}
+.combo-peoplehug-text {
+  position:relative; z-index:1;
+  font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#7a3a00;
+  background:rgba(255,255,255,0.7); padding:0.35rem 1.2rem; border-radius:2rem;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  animation:comboTextIn 0.5s ease 1.4s both;
+}
+
+/* ── 🙂‍↕️ NOD ─────────────────────────────────────────────────── */
+.combo-nod-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(200,240,200,0.3);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-nod-emoji {
+  font-size:5.5rem;
+  animation:nodBob 0.4s ease-in-out infinite alternate;
+}
+@keyframes nodBob {
+  from { transform:translateY(-18px); }
+  to   { transform:translateY(18px);  }
+}
+.combo-nod-arrows {
+  display:flex; flex-direction:column; align-items:center; gap:0.2rem;
+  font-size:2rem; font-weight:900; color:rgba(0,120,0,0.7);
+}
+.combo-nod-arrow-up   { animation:nodArrowU 0.4s ease-in-out infinite alternate; }
+.combo-nod-arrow-down { animation:nodArrowD 0.4s ease-in-out infinite alternate 0.2s; }
+@keyframes nodArrowU { from{opacity:1;transform:translateY(0);} to{opacity:0.2;transform:translateY(-8px);} }
+@keyframes nodArrowD { from{opacity:0.2;transform:translateY(0);} to{opacity:1;transform:translateY(8px);} }
+.combo-nod-text {
+  font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#1a5a00;
+  background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  animation:comboTextIn 0.5s ease 0.3s both;
+}
+
+/* ── 🙂‍↔️ SHAKE HEAD ──────────────────────────────────────────── */
+.combo-shakehead-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(255,220,200,0.3);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-shakehead-emoji {
+  font-size:5.5rem;
+  animation:shakeHeadSwing 0.35s ease-in-out infinite alternate;
+}
+@keyframes shakeHeadSwing {
+  from { transform:translateX(-22px) rotate(-5deg); }
+  to   { transform:translateX(22px)  rotate(5deg);  }
+}
+.combo-shakehead-arrows {
+  display:flex; align-items:center; gap:1.5rem;
+  font-size:2rem; font-weight:900; color:rgba(180,60,0,0.7);
+}
+.combo-shakehead-arrow-l { animation:shakeArrowL 0.35s ease-in-out infinite alternate; }
+.combo-shakehead-arrow-r { animation:shakeArrowR 0.35s ease-in-out infinite alternate 0.175s; }
+@keyframes shakeArrowL { from{opacity:1;transform:translateX(0);} to{opacity:0.2;transform:translateX(-8px);} }
+@keyframes shakeArrowR { from{opacity:0.2;transform:translateX(0);} to{opacity:1;transform:translateX(8px);} }
+.combo-shakehead-text {
+  font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#7a2000;
+  background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  animation:comboTextIn 0.5s ease 0.3s both;
+}
+
+/* ── 🌚 DARK MOON ────────────────────────────────────────────── */
+.combo-darkmoon-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:linear-gradient(180deg, #000005 0%, #050010 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.4rem;
+}
+.combo-darkmoon-star {
+  position:absolute;
+  color:rgba(200,200,255,0.7);
+  font-family:serif;
+  animation:darkMoonTwinkle 1.5s ease-in-out infinite alternate;
+}
+@keyframes darkMoonTwinkle {
+  from { opacity:0.1; transform:scale(0.7); }
+  to   { opacity:1;   transform:scale(1.3); }
+}
+.combo-darkmoon-moon {
+  font-size:6rem; position:relative; z-index:1;
+  animation:darkMoonRise 1.2s cubic-bezier(0.34,1.56,0.64,1) both,
+            darkMoonLoom 2s ease-in-out 1.2s infinite alternate;
+}
+@keyframes darkMoonRise {
+  from { transform:translateY(80px) scale(0.3); opacity:0; }
+  to   { transform:translateY(0)    scale(1);   opacity:1; }
+}
+@keyframes darkMoonLoom {
+  from { transform:scale(1); filter:drop-shadow(0 0 10px rgba(80,0,80,0.6)); }
+  to   { transform:scale(1.15); filter:drop-shadow(0 0 30px rgba(120,0,120,0.9)); }
+}
+.combo-darkmoon-text {
+  position:relative; z-index:1;
+  font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:rgba(180,140,255,0.9);
+  background:rgba(10,0,20,0.65); padding:0.35rem 1.2rem; border-radius:2rem;
+  text-shadow:0 0 10px rgba(140,80,255,0.8);
+  animation:comboTextIn 0.5s ease 1s both;
+}
+
 /* ── Reduced motion: skip all combo animations ───────────────── */
 @media (prefers-reduced-motion: reduce) {
   .combo-overlay * { animation: none !important; transition: none !important; }

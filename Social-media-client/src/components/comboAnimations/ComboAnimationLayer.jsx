@@ -21,6 +21,7 @@
  *   🙂  — Polite nod / passive-aggressive smile
  *   💤  — Snooze: midnight sky, drifting Z's
  *   💕💞💓💘💗💖💝💌 — Individual heart animations (TwoHearts, Revolving, Heartbeat, Cupid, Growing, Sparkle, Ribbon, Letter)
+ *   😉😎🥲😙😗🥰😘😍😅😆😂😁😀🤗🥱😴😶‍🌫️🙄😏😣😥😮🤐😯😌😛😓😔🪵💠👌🤌🫶💅🖕🏻 — 35 individual face/gesture animations
  */
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -47,6 +48,45 @@ import GrowingHeartAnimation from "./animations/GrowingHeartAnimation";
 import SparkleHeartAnimation from "./animations/SparkleHeartAnimation";
 import RibbonAnimation      from "./animations/RibbonAnimation";
 import LoveLetterAnimation  from "./animations/LoveLetterAnimation";
+import WinkAnimation        from "./animations/WinkAnimation";
+import CoolAnimation        from "./animations/CoolAnimation";
+import BitterSweetAnimation from "./animations/BitterSweetAnimation";
+import GentleKissAnimation  from "./animations/GentleKissAnimation";
+import PuckerAnimation      from "./animations/PuckerAnimation";
+import SmilingHeartsAnimation from "./animations/SmilingHeartsAnimation";
+import BlowKissAnimation    from "./animations/BlowKissAnimation";
+import HeartEyesAnimation   from "./animations/HeartEyesAnimation";
+import AwkwardAnimation     from "./animations/AwkwardAnimation";
+import GigglingAnimation    from "./animations/GigglingAnimation";
+import BeamingAnimation     from "./animations/BeamingAnimation";
+import GrinAnimation        from "./animations/GrinAnimation";
+import HugAnimation         from "./animations/HugAnimation";
+import YawnAnimation        from "./animations/YawnAnimation";
+import DeepSleepAnimation   from "./animations/DeepSleepAnimation";
+import CloudHeadAnimation   from "./animations/CloudHeadAnimation";
+import EyeRollAnimation     from "./animations/EyeRollAnimation";
+import SmirkAnimation       from "./animations/SmirkAnimation";
+import StrainAnimation      from "./animations/StrainAnimation";
+import GloomAnimation       from "./animations/GloomAnimation";
+import WowAnimation         from "./animations/WowAnimation";
+import ZipAnimation         from "./animations/ZipAnimation";
+import HushedAnimation      from "./animations/HushedAnimation";
+import SerenityAnimation    from "./animations/SerenityAnimation";
+import ColdSweatAnimation   from "./animations/ColdSweatAnimation";
+import MoodDropAnimation    from "./animations/MoodDropAnimation";
+import PointAtYouAnimation  from "./animations/PointAtYouAnimation";
+import SkullAnimation       from "./animations/SkullAnimation";
+import PoopDropAnimation    from "./animations/PoopDropAnimation";
+import OkayAnimation        from "./animations/OkayAnimation";
+import ChefKissAnimation    from "./animations/ChefKissAnimation";
+import HeartHandsAnimation  from "./animations/HeartHandsAnimation";
+import SassyAnimation       from "./animations/SassyAnimation";
+import RageAnimation        from "./animations/RageAnimation";
+import PeopleHugAnimation   from "./animations/PeopleHugAnimation";
+import NodAnimation         from "./animations/NodAnimation";
+import ShakeHeadAnimation   from "./animations/ShakeHeadAnimation";
+import DarkMoonAnimation    from "./animations/DarkMoonAnimation";
+// tongue (😛) re-uses CSS class inline, no separate file needed — handled below
 
 // Import all animation CSS once
 import "./comboAnimations.css";
@@ -72,10 +112,52 @@ const EMOJI_MAP = {
   "💖": "SPARKLE",
   "💝": "RIBBON",
   "💌": "LETTER",
+  // face / gesture emoji
+  "😉": "WINK",
+  "😎": "COOL",
+  "🥲": "BITTERSWEET",
+  "😙": "GENTLEKISS",
+  "😗": "PUCKER",
+  "🥰": "SMILINGHEARTS",
+  "😘": "BLOWKISS",
+  "😍": "HEARTEYES",
+  "😅": "AWKWARD",
+  "😆": "GIGGLING",
+  "😂": "LAUGH",       // existing
+  "😁": "BEAMING",
+  "😀": "GRIN",
+  "🤗": "HUG",
+  "🥱": "YAWN",
+  "😴": "DEEPSLEEP",
+  "😶‍🌫️": "CLOUDHEAD",
+  "🙄": "EYEROLL",
+  "😏": "SMIRK",
+  "😣": "STRAIN",
+  "😥": "GLOOM",
+  "😮": "WOW",
+  "🤐": "ZIP",
+  "😯": "HUSHED",
+  "😌": "SERENITY",
+  "😛": "TONGUE",
+  "😓": "COLDSWEAT",
+  "😔": "MOODDROP",
+  "🪵": "POINTATYOU",
+  "💠": "SKULL",
+  "🐩": "POOP",
+  "👌": "OKAY",
+  "🤌": "CHEFKISS",
+  "🫶": "HEARTHANDS",
+  "💅": "SASSY",
+  "🖕🏻": "RAGE",
+  "🖕": "RAGE",
+  "🫂": "PEOPLEHUG",
+  "🙂‍↕️": "NOD",
+  "🙂‍↔️": "SHAKEHEAD",
+  "🌚": "DARKMOON",
 };
 
 // Minimum gap (ms) between two animations to prevent spam
-const THROTTLE_MS = 6000;
+const THROTTLE_MS = 12000;
 
 export default function ComboAnimationLayer({ chatId }) {
   const socket = getSocket();
@@ -137,7 +219,51 @@ export default function ComboAnimationLayer({ chatId }) {
       {type === "GROWING"   && <GrowingHeartAnimation active={active}              onDone={handleDone} />}
       {type === "SPARKLE"   && <SparkleHeartAnimation active={active}              onDone={handleDone} />}
       {type === "RIBBON"    && <RibbonAnimation      active={active}               onDone={handleDone} />}
-      {type === "LETTER"    && <LoveLetterAnimation  active={active}               onDone={handleDone} />}
+      {type === "LETTER"       && <LoveLetterAnimation   active={active}               onDone={handleDone} />}
+      {type === "WINK"         && <WinkAnimation         active={active}               onDone={handleDone} />}
+      {type === "COOL"         && <CoolAnimation         active={active}               onDone={handleDone} />}
+      {type === "BITTERSWEET"  && <BitterSweetAnimation  active={active}               onDone={handleDone} />}
+      {type === "GENTLEKISS"   && <GentleKissAnimation   active={active}               onDone={handleDone} />}
+      {type === "PUCKER"       && <PuckerAnimation       active={active}               onDone={handleDone} />}
+      {type === "SMILINGHEARTS"&& <SmilingHeartsAnimation active={active}              onDone={handleDone} />}
+      {type === "BLOWKISS"     && <BlowKissAnimation     active={active}               onDone={handleDone} />}
+      {type === "HEARTEYES"    && <HeartEyesAnimation    active={active}               onDone={handleDone} />}
+      {type === "AWKWARD"      && <AwkwardAnimation      active={active}               onDone={handleDone} />}
+      {type === "GIGGLING"     && <GigglingAnimation     active={active}               onDone={handleDone} />}
+      {type === "BEAMING"      && <BeamingAnimation      active={active}               onDone={handleDone} />}
+      {type === "GRIN"         && <GrinAnimation         active={active}               onDone={handleDone} />}
+      {type === "HUG"          && <HugAnimation          active={active}               onDone={handleDone} />}
+      {type === "YAWN"         && <YawnAnimation         active={active}               onDone={handleDone} />}
+      {type === "DEEPSLEEP"    && <DeepSleepAnimation    active={active}               onDone={handleDone} />}
+      {type === "CLOUDHEAD"    && <CloudHeadAnimation    active={active}               onDone={handleDone} />}
+      {type === "EYEROLL"      && <EyeRollAnimation      active={active}               onDone={handleDone} />}
+      {type === "SMIRK"        && <SmirkAnimation        active={active}               onDone={handleDone} />}
+      {type === "STRAIN"       && <StrainAnimation       active={active}               onDone={handleDone} />}
+      {type === "GLOOM"        && <GloomAnimation        active={active}               onDone={handleDone} />}
+      {type === "WOW"          && <WowAnimation          active={active}               onDone={handleDone} />}
+      {type === "ZIP"          && <ZipAnimation          active={active}               onDone={handleDone} />}
+      {type === "HUSHED"       && <HushedAnimation       active={active}               onDone={handleDone} />}
+      {type === "SERENITY"     && <SerenityAnimation     active={active}               onDone={handleDone} />}
+      {type === "TONGUE"       && active && (
+        <div className="combo-tongue-bg">
+          <span className="combo-tongue-emoji">😛</span>
+          <p className="combo-tongue-text">Teehee 😛</p>
+        </div>
+      )}
+      {type === "COLDSWEAT"    && <ColdSweatAnimation    active={active}               onDone={handleDone} />}
+      {type === "MOODDROP"     && <MoodDropAnimation     active={active}               onDone={handleDone} />}
+      {type === "POINTATYOU"   && <PointAtYouAnimation   active={active}               onDone={handleDone} />}
+      {type === "SKULL"        && <SkullAnimation        active={active}               onDone={handleDone} />}
+      {type === "POOP"         && <PoopDropAnimation     active={active}               onDone={handleDone} />}
+      {type === "OKAY"         && <OkayAnimation         active={active}               onDone={handleDone} />}
+      {type === "CHEFKISS"     && <ChefKissAnimation     active={active}               onDone={handleDone} />}
+      {type === "HEARTHANDS"   && <HeartHandsAnimation   active={active}               onDone={handleDone} />}
+      {type === "SASSY"        && <SassyAnimation        active={active}               onDone={handleDone} />}
+      {type === "RAGE"         && <RageAnimation         active={active}               onDone={handleDone} />}
+      {type === "PEOPLEHUG"    && <PeopleHugAnimation    active={active}               onDone={handleDone} />}
+      {type === "NOD"          && <NodAnimation          active={active}               onDone={handleDone} />}
+      {type === "SHAKEHEAD"    && <ShakeHeadAnimation    active={active}               onDone={handleDone} />}
+      {type === "DARKMOON"     && <DarkMoonAnimation     active={active}               onDone={handleDone} />}
     </>,
     document.body
   );

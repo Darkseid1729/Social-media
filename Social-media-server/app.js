@@ -52,7 +52,7 @@ const onlineUsers = new Set();
 // In-memory store: chatId -> { emoji, userId, userName, ts }
 // Resets on server restart — intentionally ephemeral (no DB needed)
 const emojiComboCache = new Map();
-const COMBO_WINDOW_MS = 5000; // 5 second window for a match
+const COMBO_WINDOW_MS = 10000; // 10 second window for a match
 // Simple single-emoji check (covers most emoji including ZWJ sequences)
 const isSingleEmoji = (text) => {
   if (!text) return false;

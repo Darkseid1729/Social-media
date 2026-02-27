@@ -57,11 +57,11 @@ const BOT_CONFIG = {
   maxTokens: 500,
   temperature: 0.8,
   contextMessages: 15,
-  bufferTime: 3000, // 3 seconds to wait for more messages
-  extendedBufferTime: 5000, // 5 seconds for short messages
-  minBufferTime: 2000, // 2 seconds for long messages
-  typingExtensionTime: 2000, // Extend buffer if user is typing
-  messageSplitDelay: 800, // Delay between multiple bot messages
+  bufferTime: 1500, // 1.5 seconds to wait for more messages
+  extendedBufferTime: 2500, // 2.5 seconds for short messages
+  minBufferTime: 1000, // 1 second for long messages
+  typingExtensionTime: 1000, // Extend buffer if user is typing
+  messageSplitDelay: 400, // Delay between multiple bot messages
   errorMessages: [
     "Sorry I'm really tired rn 😵‍💫 can we talk later please uk🥹",
     "Aish my brain isn't working rn 😣 give me a sec?",
