@@ -20,6 +20,7 @@
  *   ☀️  — Sunshine rise  (actual sun emoji)
  *   🙂  — Polite nod / passive-aggressive smile
  *   💤  — Snooze: midnight sky, drifting Z's
+ *   💕💞💓💘💗💖💝💌 — Individual heart animations (TwoHearts, Revolving, Heartbeat, Cupid, Growing, Sparkle, Ribbon, Letter)
  */
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -37,7 +38,15 @@ import PeekAnimation    from "./animations/PeekAnimation";
 import SighAnimation    from "./animations/SighAnimation";
 import SunAnimation     from "./animations/SunAnimation";
 import SmileAnimation   from "./animations/SmileAnimation";
-import SnoozeAnimation  from "./animations/SnoozeAnimation";
+import SnoozeAnimation      from "./animations/SnoozeAnimation";
+import TwoHeartsAnimation   from "./animations/TwoHeartsAnimation";
+import RevolvingAnimation   from "./animations/RevolvingAnimation";
+import HeartbeatAnimation   from "./animations/HeartbeatAnimation";
+import CupidAnimation       from "./animations/CupidAnimation";
+import GrowingHeartAnimation from "./animations/GrowingHeartAnimation";
+import SparkleHeartAnimation from "./animations/SparkleHeartAnimation";
+import RibbonAnimation      from "./animations/RibbonAnimation";
+import LoveLetterAnimation  from "./animations/LoveLetterAnimation";
 
 // Import all animation CSS once
 import "./comboAnimations.css";
@@ -54,6 +63,15 @@ const EMOJI_MAP = {
   "☀️": "SUN",   // actual sun emoji
   "🙂": "SMILE", // polite / passive-aggressive smile
   "💤": "SNOOZE", // sleeping z's
+  // heart variants → each has its own unique animation
+  "💕": "TWOHEARTS",
+  "💞": "REVOLVING",
+  "💓": "HEARTBEAT",
+  "💘": "CUPID",
+  "💗": "GROWING",
+  "💖": "SPARKLE",
+  "💝": "RIBBON",
+  "💌": "LETTER",
 };
 
 // Minimum gap (ms) between two animations to prevent spam
@@ -111,7 +129,15 @@ export default function ComboAnimationLayer({ chatId }) {
       {type === "SIGH"    && <SighAnimation    active={active}               onDone={handleDone} />}
       {type === "SUN"     && <SunAnimation     active={active}               onDone={handleDone} />}
       {type === "SMILE"   && <SmileAnimation   active={active}               onDone={handleDone} />}
-      {type === "SNOOZE"  && <SnoozeAnimation  active={active}               onDone={handleDone} />}
+      {type === "SNOOZE"    && <SnoozeAnimation      active={active}               onDone={handleDone} />}
+      {type === "TWOHEARTS" && <TwoHeartsAnimation   active={active}               onDone={handleDone} />}
+      {type === "REVOLVING" && <RevolvingAnimation   active={active}               onDone={handleDone} />}
+      {type === "HEARTBEAT" && <HeartbeatAnimation   active={active}               onDone={handleDone} />}
+      {type === "CUPID"     && <CupidAnimation       active={active}               onDone={handleDone} />}
+      {type === "GROWING"   && <GrowingHeartAnimation active={active}              onDone={handleDone} />}
+      {type === "SPARKLE"   && <SparkleHeartAnimation active={active}              onDone={handleDone} />}
+      {type === "RIBBON"    && <RibbonAnimation      active={active}               onDone={handleDone} />}
+      {type === "LETTER"    && <LoveLetterAnimation  active={active}               onDone={handleDone} />}
     </>,
     document.body
   );

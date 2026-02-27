@@ -516,6 +516,283 @@
   animation: snoozeTextFade 6s ease-in-out forwards;
 }
 
+/* ── shared text appear keyframe (reused by multiple heart animations) ── */
+@keyframes twoheartsTextIn {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ── 💕 TWOHEARTS ───────────────────────────────────────────── */
+.combo-twohearts-bg {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255,182,200,0.5) 0%, rgba(255,100,130,0.2) 100%);
+  z-index: 9999; pointer-events: none; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem;
+}
+.combo-twohearts-stage { position: relative; width: 180px; height: 180px; }
+.combo-twohearts-a,
+.combo-twohearts-b {
+  position: absolute; top: 50%; left: 50%;
+  font-size: 3.5rem; line-height: 1; user-select: none; pointer-events: none;
+}
+.combo-twohearts-a { animation: twoheartsOrbitA 2.4s ease-in-out infinite; }
+.combo-twohearts-b { animation: twoheartsOrbitB 2.4s ease-in-out infinite; }
+@keyframes twoheartsOrbitA {
+  0%   { transform: translate(calc(-50% + 70px), -50%); }
+  25%  { transform: translate(-50%, calc(-50% - 70px)); }
+  50%  { transform: translate(calc(-50% - 70px), -50%); }
+  75%  { transform: translate(-50%, calc(-50% + 70px)); }
+  100% { transform: translate(calc(-50% + 70px), -50%); }
+}
+@keyframes twoheartsOrbitB {
+  0%   { transform: translate(calc(-50% - 70px), -50%); }
+  25%  { transform: translate(-50%, calc(-50% + 70px)); }
+  50%  { transform: translate(calc(-50% + 70px), -50%); }
+  75%  { transform: translate(-50%, calc(-50% - 70px)); }
+  100% { transform: translate(calc(-50% - 70px), -50%); }
+}
+.combo-twohearts-trail {
+  position: absolute; bottom: -50px;
+  user-select: none; pointer-events: none;
+  animation: twoheartsTrail 3s ease-in-out forwards;
+}
+@keyframes twoheartsTrail {
+  0%   { transform: translateY(0)     scale(0.5); opacity: 0; }
+  20%  { opacity: 0.7; }
+  100% { transform: translateY(-90vh) scale(1.2); opacity: 0; }
+}
+.combo-twohearts-text {
+  font-size: clamp(1.1rem, 3.5vw, 1.8rem); font-weight: 700; color: #c0005a;
+  background: rgba(255,255,255,0.6); padding: 0.4rem 1.4rem; border-radius: 2rem;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  text-shadow: 0 2px 6px rgba(255,255,255,0.9);
+  animation: twoheartsTextIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* ── 💞 REVOLVING ───────────────────────────────────────────── */
+.combo-revolving-bg {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(180,120,255,0.35) 0%, rgba(255,100,180,0.18) 100%);
+  z-index: 9999; pointer-events: none; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem;
+}
+.combo-revolving-ring {
+  position: relative; width: 200px; height: 200px;
+  animation: revolvingSpin 3s linear infinite;
+}
+.combo-revolving-heart {
+  position: absolute; top: 50%; left: 50%;
+  font-size: 2.2rem;
+  transform: rotate(calc(var(--idx) * 45deg)) translateY(-90px) translate(-50%, -50%);
+  animation: revolvingPulse 0.9s ease-in-out infinite alternate;
+  animation-delay: calc(var(--idx) * 112ms);
+}
+@keyframes revolvingSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes revolvingPulse {
+  from { opacity: 0.6; font-size: 1.6rem; }
+  to   { opacity: 1;   font-size: 2.6rem; }
+}
+.combo-revolving-text {
+  font-size: clamp(1.1rem, 3.5vw, 1.8rem); font-weight: 700; color: #7b00cc;
+  background: rgba(255,255,255,0.6); padding: 0.4rem 1.4rem; border-radius: 2rem;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: twoheartsTextIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* ── 💓 HEARTBEAT ───────────────────────────────────────────── */
+.combo-heartbeat-bg {
+  position: fixed; inset: 0; background: rgba(180,0,30,0.12);
+  z-index: 9999; pointer-events: none; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem;
+}
+.combo-heartbeat-ripple {
+  position: absolute; top: 50%; left: 50%;
+  width: 80px; height: 80px;
+  border: 3px solid rgba(220,20,60,0.7); border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: heartbeatRipple 1.4s ease-out infinite;
+  animation-delay: calc(var(--ri) * 0.35s);
+}
+@keyframes heartbeatRipple {
+  0%   { transform: translate(-50%,-50%) scale(1); opacity: 0.8; }
+  100% { transform: translate(-50%,-50%) scale(7); opacity: 0; }
+}
+.combo-heartbeat-heart {
+  position: relative; z-index: 1;
+  font-size: 6rem; user-select: none; pointer-events: none;
+  animation: heartbeatPulse 0.75s ease-in-out infinite;
+}
+@keyframes heartbeatPulse {
+  0%, 100% { transform: scale(1);    }
+  15%       { transform: scale(1.45); }
+  30%       { transform: scale(1.1);  }
+  45%       { transform: scale(1.38); }
+  60%       { transform: scale(1);    }
+}
+.combo-heartbeat-text {
+  position: relative; z-index: 1;
+  font-size: clamp(1.1rem, 3.5vw, 1.8rem); font-weight: 700; color: #8b0000;
+  background: rgba(255,255,255,0.65); padding: 0.4rem 1.4rem; border-radius: 2rem;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: twoheartsTextIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* ── 💘 CUPID ───────────────────────────────────────────────── */
+.combo-cupid-bg {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255,240,150,0.45) 0%, rgba(255,200,100,0.2) 100%);
+  z-index: 9999; pointer-events: none; overflow: hidden;
+}
+.combo-cupid-arrow {
+  position: absolute; font-size: 4rem; user-select: none; pointer-events: none;
+  animation: cupidFly 2s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
+}
+@keyframes cupidFly {
+  0%   { left: -10%; top: 30%; transform: rotate(-25deg) scale(0.5); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { left: 50%;  top: 44%; transform: rotate(0deg)   scale(1.8); opacity: 1; }
+}
+.combo-cupid-burst {
+  position: absolute; top: 50%; left: 50%;
+  user-select: none; pointer-events: none;
+  animation: cupidBurst 1.6s ease-out forwards;
+}
+@keyframes cupidBurst {
+  0%   { transform: translate(-50%,-50%) rotate(var(--angle)) translateX(0)           scale(0); opacity: 1; }
+  100% { transform: translate(-50%,-50%) rotate(var(--angle)) translateX(var(--dist)) scale(1); opacity: 0; }
+}
+.combo-cupid-text {
+  position: absolute; bottom: 14%; width: 100%; text-align: center;
+  font-size: clamp(1.1rem, 3.5vw, 1.8rem); font-weight: 700; color: #7a4f00;
+  pointer-events: none;
+  animation: snoozeTextFade 5s ease-in-out forwards;
+}
+
+/* ── 💗 GROWING ─────────────────────────────────────────────── */
+.combo-growing-bg {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 80%, rgba(255,150,180,0.45) 0%, rgba(255,200,220,0.2) 100%);
+  z-index: 9999; pointer-events: none; overflow: hidden;
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 14%;
+}
+.combo-growing-heart {
+  position: absolute; bottom: -80px;
+  user-select: none; pointer-events: none;
+  animation: growingRise 2.8s ease-out forwards;
+}
+@keyframes growingRise {
+  0%   { transform: translateY(0)      scale(0.2); opacity: 0; }
+  15%  { opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translateY(-115vh) scale(1.4); opacity: 0; }
+}
+.combo-growing-text {
+  position: relative; z-index: 1;
+  font-size: clamp(1.1rem, 3.5vw, 1.8rem); font-weight: 700; color: #b5005b;
+  background: rgba(255,255,255,0.6); padding: 0.4rem 1.4rem; border-radius: 2rem;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: twoheartsTextIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* ── 💖 SPARKLE ─────────────────────────────────────────────── */
+.combo-sparkle-bg {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(80,0,120,0.55) 0%, rgba(150,0,200,0.25) 100%);
+  z-index: 9999; pointer-events: none; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem;
+}
+.combo-sparkle-center {
+  position: relative; z-index: 1;
+  font-size: 6rem; user-select: none; pointer-events: none;
+  animation: sparkleBob 0.5s ease-in-out infinite alternate;
+}
+@keyframes sparkleBob {
+  from { transform: scale(1); }
+  to   { transform: scale(1.25); filter: drop-shadow(0 0 20px rgba(255,100,200,0.9)); }
+}
+.combo-sparkle-particle {
+  position: absolute; top: 50%; left: 50%;
+  user-select: none; pointer-events: none;
+  animation: sparkleBurst 1.4s ease-out forwards;
+}
+@keyframes sparkleBurst {
+  0%   { transform: translate(-50%,-50%) rotate(var(--angle)) translateX(0)           scale(1.5); opacity: 1; }
+  100% { transform: translate(-50%,-50%) rotate(var(--angle)) translateX(var(--dist)) scale(0.4); opacity: 0; }
+}
+.combo-sparkle-text {
+  position: relative; z-index: 1;
+  font-size: clamp(1.1rem, 3.5vw, 1.8rem); font-weight: 700; color: #fff;
+  background: rgba(100,0,160,0.55); padding: 0.4rem 1.4rem; border-radius: 2rem;
+  text-shadow: 0 2px 8px rgba(200,100,255,0.9);
+  animation: twoheartsTextIn 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.3s both;
+}
+
+/* ── 💝 RIBBON ──────────────────────────────────────────────── */
+.combo-ribbon-bg {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255,200,220,0.5) 0%, rgba(255,240,250,0.2) 100%);
+  z-index: 9999; pointer-events: none; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.combo-ribbon-heart {
+  position: absolute; top: -80px;
+  user-select: none; pointer-events: none;
+  animation: ribbonFall 3s ease-in forwards;
+}
+@keyframes ribbonFall {
+  0%   { transform: translateY(0)     rotate(0deg);              opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translateY(115vh) rotate(var(--rot,360deg)); opacity: 0.7; }
+}
+.combo-ribbon-text {
+  position: relative; z-index: 1;
+  font-size: clamp(1.1rem, 3.5vw, 1.8rem); font-weight: 700; color: #a0004a;
+  background: rgba(255,255,255,0.65); padding: 0.4rem 1.4rem; border-radius: 2rem;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: twoheartsTextIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* ── 💌 LOVE LETTER ─────────────────────────────────────────── */
+.combo-letter-bg {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 55%, rgba(255,240,200,0.6) 0%, rgba(255,220,180,0.25) 100%);
+  z-index: 9999; pointer-events: none; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem;
+}
+.combo-letter-envelope { animation: letterBounceIn 0.8s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-letter-emoji {
+  display: block; font-size: 6rem; user-select: none; pointer-events: none;
+  animation: letterBreath 1.5s ease-in-out 0.8s infinite alternate;
+}
+@keyframes letterBounceIn {
+  from { transform: scale(0) rotate(-20deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg);   opacity: 1; }
+}
+@keyframes letterBreath {
+  from { transform: scale(1); }
+  to   { transform: scale(1.12); filter: drop-shadow(0 0 18px rgba(200,120,0,0.5)); }
+}
+.combo-letter-heart {
+  position: absolute; top: 50%; left: 50%;
+  user-select: none; pointer-events: none;
+  animation: letterHeartFly 2s ease-out forwards;
+}
+@keyframes letterHeartFly {
+  0%   { transform: translate(calc(-50% + var(--lx,0vw)), -50%)             scale(0);   opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--lx,0vw)), calc(-50% - 80vh)) scale(1.2); opacity: 0; }
+}
+.combo-letter-text {
+  position: relative; z-index: 1;
+  font-size: clamp(1.1rem, 3.5vw, 1.8rem); font-weight: 700; color: #7a4000;
+  background: rgba(255,255,255,0.65); padding: 0.4rem 1.4rem; border-radius: 2rem;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: twoheartsTextIn 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.4s both;
+}
+
 /* ── Reduced motion: skip all combo animations ───────────────── */
 @media (prefers-reduced-motion: reduce) {
   .combo-overlay * { animation: none !important; transition: none !important; }
