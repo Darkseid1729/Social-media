@@ -19,6 +19,7 @@ import {
   STOP_TYPING,
   EMOJI_EFFECT,
   EMOJI_COMBO,
+  EMOJI_ANIMATION,
 } from "./constants/events.js";
 import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
@@ -287,6 +288,11 @@ io.on("connection", (socket) => {
   socket.on(EMOJI_EFFECT, ({ members, chatId, emoji }) => {
     const membersSockets = getSockets(members);
     io.to(membersSockets).emit(EMOJI_EFFECT, { chatId, emoji });
+  });
+
+  socket.on(EMOJI_ANIMATION, ({ members, chatId, emoji }) => {
+    const membersSockets = getSockets(members);
+    io.to(membersSockets).emit(EMOJI_ANIMATION, { chatId, emoji });
   });
 
   socket.on(CHAT_JOINED, ({ userId, members }) => {

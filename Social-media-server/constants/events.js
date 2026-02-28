@@ -26,6 +26,9 @@ const EMOJI_EFFECT = "EMOJI_EFFECT";
 // Emoji combo event (both users sent the same emoji)
 const EMOJI_COMBO = "EMOJI_COMBO";
 
+// Emoji animation event (user triggered animation from picker)
+const EMOJI_ANIMATION = "EMOJI_ANIMATION";
+
 // Delete message event
 const MESSAGE_DELETED = "MESSAGE_DELETED";
 
@@ -48,5 +51,6 @@ export {
   MESSAGE_REPLY,
   EMOJI_EFFECT,
   EMOJI_COMBO,
+  EMOJI_ANIMATION,
   MESSAGE_DELETED,
 };

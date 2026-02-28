@@ -44,6 +44,7 @@ import {
   MESSAGE_REACTION_REMOVED,
   MESSAGE_REPLY,
   EMOJI_EFFECT,
+  EMOJI_ANIMATION,
   MESSAGE_DELETED,
 } from "../constants/events";
 import { useChatDetailsQuery, useGetMessagesQuery } from "../redux/api/api";
@@ -1054,7 +1055,12 @@ const Chat = ({ chatId, user }) => {
       <EmojiAnimationPicker
         open={animationPickerOpen}
         onClose={() => setAnimationPickerOpen(false)}
-        onSelect={(emoji) => comboAnimationRef.current?.triggerAnimation(emoji)}
+        onSelect={(emoji) => {
+          comboAnimationRef.current?.triggerAnimation(emoji);
+          if (socket && chatId && members) {
+            socket.emit(EMOJI_ANIMATION, { chatId, members, emoji });
+          }
+        }}
       />
 
       {/* ── Emoji Combo Animations (fires only when both users send same emoji) ── */}

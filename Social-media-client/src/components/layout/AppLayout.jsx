@@ -74,7 +74,7 @@ const AppLayout = () => (WrappedComponent) => {
     };
     const { newMessagesAlert } = useSelector((state) => state.chat);
 
-    const { isLoading, data, isError, error, refetch } = useMyChatsQuery("", {
+    const { isLoading, isUninitialized, data, isError, error, refetch } = useMyChatsQuery("", {
       refetchOnMountOrArgChange: 30, // Only refetch if data is older than 30 seconds
     });
 
@@ -113,8 +113,8 @@ const AppLayout = () => (WrappedComponent) => {
     }, [dispatch]);
 
     const refetchListener = useCallback(() => {
-      // Only refetch if query is not currently loading
-      if (!isLoading && data) {
+      // Only refetch if query is not currently loading and has been started
+      if (!isLoading && !isUninitialized && data) {
         refetch();
       }
       // Only navigate to home if not currently in a chat
@@ -122,7 +122,7 @@ const AppLayout = () => (WrappedComponent) => {
       if (!chatId) {
         navigate("/");
       }
-    }, [refetch, navigate, chatId, isLoading, data]);
+    }, [refetch, navigate, chatId, isLoading, isUninitialized, data]);
 
     const onlineUsersListener = useCallback((data) => {
       setOnlineUsers(data);
@@ -146,7 +146,7 @@ const AppLayout = () => (WrappedComponent) => {
           socket.connect();
         }
         // Refetch chats to get latest data (only if query has been started)
-        if (!isLoading && data) {
+        if (!isLoading && !isUninitialized && data) {
           refetch();
         }
       },

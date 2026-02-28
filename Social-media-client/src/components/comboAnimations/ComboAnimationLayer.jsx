@@ -27,7 +27,7 @@
 import React, { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { getSocket } from "../../socket";
-import { EMOJI_COMBO } from "../../constants/events";
+import { EMOJI_COMBO, EMOJI_ANIMATION } from "../../constants/events";
 
 // Animation components (each handles its own CSS classes)
 import WeddingAnimation from "./animations/WeddingAnimation";
@@ -401,6 +401,26 @@ export default forwardRef(function ComboAnimationLayer({ chatId }, ref) {
     socket.on(EMOJI_COMBO, handleCombo);
     return () => { socket.off(EMOJI_COMBO, handleCombo); };
   }, [socket, handleCombo]);
+
+  // Listen for direct emoji animation triggers from other users
+  const handleAnimation = useCallback(
+    (data) => {
+      if (data.chatId && chatId && data.chatId !== chatId) return;
+      const type = EMOJI_MAP[data.emoji];
+      if (!type) return;
+      const now = Date.now();
+      if (now - lastFiredRef.current < 2000) return;
+      lastFiredRef.current = now;
+      setEffect({ type, users: [], active: true });
+    },
+    [chatId]
+  );
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(EMOJI_ANIMATION, handleAnimation);
+    return () => { socket.off(EMOJI_ANIMATION, handleAnimation); };
+  }, [socket, handleAnimation]);
 
   const handleDone = useCallback(() => {
     setEffect(null);
