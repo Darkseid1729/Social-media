@@ -8,13 +8,14 @@ import {
   UploadFile as UploadFileIcon,
   VideoFile as VideoFileIcon,
   YouTube as YouTubeIcon,
+  AutoAwesome as AutoAwesomeIcon,
 } from "@mui/icons-material";
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import toast from "react-hot-toast";
 import { useSendAttachmentsMutation } from "../../redux/api/api";
 
 const FileMenu = (props) => {
-  const { anchorE1, chatId, onGifClick, onYouTubeClick } = props;
+  const { anchorE1, chatId, onGifClick, onYouTubeClick, onAnimationClick } = props;
   const { isFileMenu } = useSelector((state) => state.misc);
 
   const dispatch = useDispatch();
@@ -184,6 +185,14 @@ const FileMenu = (props) => {
               <YouTubeIcon />
             </Tooltip>
             <ListItemText style={{ marginLeft: "0.5rem" }}>YouTube</ListItemText>
+          </MenuItem>
+
+          {/* Emoji Animations Option */}
+          <MenuItem onClick={() => { closeFileMenu(); if (onAnimationClick) onAnimationClick(); }}>
+            <Tooltip title="Animations">
+              <AutoAwesomeIcon />
+            </Tooltip>
+            <ListItemText style={{ marginLeft: "0.5rem" }}>Animations</ListItemText>
           </MenuItem>
 
           <MenuItem onClick={selectAudio}>

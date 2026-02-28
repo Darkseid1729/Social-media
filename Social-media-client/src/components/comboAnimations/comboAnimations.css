@@ -1516,6 +1516,381 @@
   animation:comboTextIn 0.5s ease 1s both;
 }
 
+/* ── 😹 CAT LAUGH ────────────────────────────────────────────── */
+.combo-catlaugh-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 55%,rgba(255,240,100,0.35) 0%,rgba(255,200,50,0.1) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-catlaugh-emoji { font-size:5.5rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both, catLaughShake 0.3s ease-in-out 0.6s 6 alternate; }
+@keyframes catLaughShake { from{transform:rotate(-8deg);} to{transform:rotate(8deg);} }
+.combo-catlaugh-tear { position:absolute; top:-40px; animation:catLaughFall 2s ease-in forwards; }
+@keyframes catLaughFall { to { transform:translateY(110vh) rotate(720deg); opacity:0; } }
+.combo-catlaugh-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#6a5000; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 😻 CAT HEART ────────────────────────────────────────────── */
+.combo-catheart-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 60%,rgba(255,180,210,0.4) 0%,rgba(255,150,180,0.15) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-catheart-emoji { font-size:5.5rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both, catHeartPulse 0.8s ease-in-out 0.6s 4 alternate; }
+@keyframes catHeartPulse { from{transform:scale(1);} to{transform:scale(1.2);} }
+.combo-catheart-float { position:absolute; bottom:-40px; animation:catHeartRise 2.5s ease-out forwards; }
+@keyframes catHeartRise { to { transform:translateY(-110vh) scale(1.5) rotate(20deg); opacity:0; } }
+.combo-catheart-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#a30050; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 😼 CAT WRY ──────────────────────────────────────────────── */
+.combo-catwry-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:linear-gradient(180deg,rgba(60,50,80,0.5) 0%,rgba(30,25,50,0.6) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-catwry-shadow {
+  position:absolute; width:160px; height:160px; border-radius:50%;
+  background:radial-gradient(circle,rgba(180,130,255,0.25) 0%,transparent 70%);
+  animation:catWryShadow 2s ease-in-out infinite alternate;
+}
+@keyframes catWryShadow { from{transform:scale(1);opacity:0.6;} to{transform:scale(1.8);opacity:0.2;} }
+.combo-catwry-emoji { font-size:5.5rem; position:relative; z-index:1; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both, catWryTilt 1.5s ease-in-out 0.6s 2 alternate; }
+@keyframes catWryTilt { from{transform:rotate(-5deg);} to{transform:rotate(5deg);} }
+.combo-catwry-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#c9a0ff; background:rgba(30,20,50,0.65); padding:0.35rem 1.2rem; border-radius:2rem; animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 😽 CAT KISS ─────────────────────────────────────────────── */
+.combo-catkiss-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,200,220,0.4) 0%,rgba(255,170,200,0.15) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-catkiss-emoji { font-size:5.5rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-catkiss-mark { position:absolute; opacity:0; animation:catKissAppear 1.5s ease-out forwards; }
+@keyframes catKissAppear { 0%{opacity:0;transform:scale(0.3);} 40%{opacity:1;transform:scale(1.2);} 100%{opacity:0;transform:scale(0.8) translateY(-30px);} }
+.combo-catkiss-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#b5005b; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 🙀 CAT SCARED ──────────────────────────────────────────── */
+.combo-catscared-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:rgba(20,15,30,0.6);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+  animation:catScaredFlash 0.15s ease-in-out 0.3s 3 alternate;
+}
+@keyframes catScaredFlash { from{background:rgba(20,15,30,0.6);} to{background:rgba(255,255,200,0.5);} }
+.combo-catscared-bolt { position:absolute; font-size:2.5rem; opacity:0; animation:catScaredBolt 0.6s ease-out forwards; }
+@keyframes catScaredBolt { 0%{opacity:0;transform:scale(0.3);} 30%{opacity:1;transform:scale(1.5);} 100%{opacity:0;transform:scale(0.5);} }
+.combo-catscared-emoji { font-size:5.5rem; position:relative; z-index:1; animation:comboEmojiPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both, catScaredTremble 0.1s ease-in-out 0.5s 15 alternate; }
+@keyframes catScaredTremble { from{transform:translateX(-4px);} to{transform:translateX(4px);} }
+.combo-catscared-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#ffe080; background:rgba(30,20,50,0.65); padding:0.35rem 1.2rem; border-radius:2rem; text-shadow:0 0 8px rgba(255,220,100,0.6); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 😿 CAT CRY ──────────────────────────────────────────────── */
+.combo-catcry-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:linear-gradient(180deg,rgba(140,160,200,0.3) 0%,rgba(100,130,180,0.4) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-catcry-emoji { font-size:5.5rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.combo-catcry-drop { position:absolute; top:-30px; animation:catCryFall 2.2s ease-in forwards; }
+@keyframes catCryFall { to { transform:translateY(110vh); opacity:0; } }
+.combo-catcry-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#334; background:rgba(255,255,255,0.55); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 😾 CAT ANGRY ────────────────────────────────────────────── */
+.combo-catangry-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 50%,rgba(200,50,50,0.3) 0%,rgba(80,20,20,0.4) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-catangry-emoji { font-size:5.5rem; position:relative; z-index:1; animation:comboEmojiPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both, catAngryShake 0.12s ease-in-out 0.5s 12 alternate; }
+@keyframes catAngryShake { from{transform:translateX(-5px) rotate(-3deg);} to{transform:translateX(5px) rotate(3deg);} }
+.combo-catangry-spark { position:absolute; font-size:2rem; opacity:0; animation:catAngrySpark 0.8s ease-out forwards; }
+@keyframes catAngrySpark { 0%{opacity:0;transform:scale(0.3);} 40%{opacity:1;transform:scale(1.3);} 100%{opacity:0;transform:scale(0.5) translateY(-20px);} }
+.combo-catangry-text { position:relative; z-index:1; font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#ff6060; background:rgba(40,10,10,0.65); padding:0.35rem 1.2rem; border-radius:2rem; text-shadow:0 0 8px rgba(255,80,80,0.6); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ── 🐱 CAT FACE ────────────────────────────────────────────── */
+.combo-catface-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 55%,rgba(255,210,130,0.35) 0%,rgba(255,180,80,0.15) 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.combo-catface-emoji { font-size:5.5rem; animation:comboEmojiPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both, catFaceBounce 0.6s ease-in-out 0.6s 3; }
+@keyframes catFaceBounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-20px);} }
+.combo-catface-paw { position:absolute; top:-30px; animation:catFacePawFall 2.5s ease-in forwards; }
+@keyframes catFacePawFall { to { transform:translateY(110vh) rotate(360deg); opacity:0; } }
+.combo-catface-text { font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700; color:#8a5500; background:rgba(255,255,255,0.65); padding:0.35rem 1.2rem; border-radius:2rem; backdrop-filter:blur(6px); animation:comboTextIn 0.5s ease 0.5s both; }
+
+/* ═══════════════════════════════════════════════════════════════
+   GENERIC EMOJI ANIMATION SYSTEM  (v2 — maximum variety)
+   Reusable base classes + keyframes for template-driven animations
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Base container ──────────────────────────────────────────── */
+.gen-anim-bg {
+  position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2rem;
+}
+.gen-anim-emoji { position:relative; z-index:1; line-height:1; }
+.gen-anim-text {
+  position:relative; z-index:1;
+  font-size:clamp(1rem,3.5vw,1.7rem); font-weight:700;
+  padding:0.35rem 1.2rem; border-radius:2rem;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  animation:comboTextIn 0.5s ease 0.5s both;
+}
+.gen-particle { pointer-events:none; }
+
+/* ── Multi-emoji row ─────────────────────────────────────────── */
+.gen-multi-row {
+  display:flex; gap:0.6rem; position:relative; z-index:1;
+}
+.gen-multi-item {
+  line-height:1;
+  animation:genPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* ── Secondary emoji ─────────────────────────────────────────── */
+.gen-secondary {
+  position:absolute; font-size:2.8rem; z-index:2; pointer-events:none;
+}
+.gen-secondary-orbit {
+  top:50%; left:50%;
+  animation:genSecondaryOrbit 2.5s linear 0.5s infinite;
+}
+.gen-secondary-peek {
+  bottom:8%; right:8%;
+  opacity:0;
+  animation:genSecondaryPeek 3s ease 0.8s both;
+}
+.gen-secondary-corner {
+  top:10%; left:10%;
+  opacity:0;
+  animation:genSecondaryCorner 2.5s ease 0.6s both;
+}
+@keyframes genSecondaryOrbit {
+  from { transform:translate(-50%,-50%) rotate(0deg) translateX(90px) rotate(0deg); }
+  to   { transform:translate(-50%,-50%) rotate(360deg) translateX(90px) rotate(-360deg); }
+}
+@keyframes genSecondaryPeek {
+  0%   { opacity:0; transform:translateY(40px) scale(0.3); }
+  30%  { opacity:1; transform:translateY(0) scale(1.1); }
+  80%  { opacity:1; transform:translateY(-5px) scale(1); }
+  100% { opacity:0; transform:translateY(-20px) scale(0.5); }
+}
+@keyframes genSecondaryCorner {
+  0%   { opacity:0; transform:scale(0) rotate(-90deg); }
+  40%  { opacity:1; transform:scale(1.2) rotate(10deg); }
+  70%  { opacity:1; transform:scale(1) rotate(0deg); }
+  100% { opacity:0; transform:scale(0.3) rotate(90deg); }
+}
+
+/* ── Background animations ───────────────────────────────────── */
+.gen-bg-pulse  { animation:genBgPulse 1.5s ease-in-out 0.3s 3 alternate !important; }
+.gen-bg-shift  { animation:genBgShift 3s ease-in-out both !important; }
+.gen-bg-breathe{ animation:genBgBreathe 2s ease-in-out 0.2s 2 alternate !important; }
+@keyframes genBgPulse {
+  from { filter:brightness(1); }
+  to   { filter:brightness(1.4) saturate(1.3); }
+}
+@keyframes genBgShift {
+  0%   { filter:hue-rotate(0deg); }
+  50%  { filter:hue-rotate(40deg) brightness(1.1); }
+  100% { filter:hue-rotate(0deg); }
+}
+@keyframes genBgBreathe {
+  from { transform:scale(1); }
+  to   { transform:scale(1.03); filter:brightness(1.15); }
+}
+
+/* ── Continuous emoji animations (after entry) ───────────────── */
+.gen-emoji-float    { animation:genPop 0.5s ease both, genCFloat 2s ease-in-out 0.6s infinite alternate !important; }
+.gen-emoji-rotate   { animation:genPop 0.5s ease both, genCRotate 3s linear 0.5s infinite !important; }
+.gen-emoji-heartbeat{ animation:genPop 0.5s ease both, genCHeartbeat 0.6s ease-in-out 0.5s infinite !important; }
+.gen-emoji-bounce   { animation:genPop 0.5s ease both, genCBounce 0.8s ease-in-out 0.5s infinite !important; }
+.gen-emoji-pendulum { animation:genPop 0.5s ease both, genCPendulum 1.2s ease-in-out 0.5s infinite alternate !important; }
+.gen-emoji-glow     { animation:genPop 0.5s ease both, genCGlow 1s ease-in-out 0.5s infinite alternate !important; }
+@keyframes genCFloat    { from{transform:translateY(0)}   to{transform:translateY(-18px)} }
+@keyframes genCRotate   { from{transform:rotate(0)}       to{transform:rotate(360deg)} }
+@keyframes genCHeartbeat{ 0%{transform:scale(1)} 15%{transform:scale(1.25)} 30%{transform:scale(1)} 45%{transform:scale(1.15)} 60%{transform:scale(1)} }
+@keyframes genCBounce   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-22px)} }
+@keyframes genCPendulum { from{transform:rotate(-15deg)} to{transform:rotate(15deg)} }
+@keyframes genCGlow     { from{filter:brightness(1) drop-shadow(0 0 8px rgba(255,255,255,0.3))} to{filter:brightness(1.3) drop-shadow(0 0 24px rgba(255,255,255,0.7))} }
+
+/* ══════════════════════════════════════════════════════════════
+   ENTRY ANIMATIONS
+   ══════════════════════════════════════════════════════════════ */
+@keyframes genPop {
+  from { transform:scale(0); opacity:0; }
+  to   { transform:scale(1); opacity:1; }
+}
+@keyframes genDrop {
+  from { transform:translateY(-120px) scale(0.5); opacity:0; }
+  to   { transform:translateY(0) scale(1); opacity:1; }
+}
+@keyframes genSpin {
+  from { transform:rotate(-360deg) scale(0); opacity:0; }
+  to   { transform:rotate(0) scale(1); opacity:1; }
+}
+@keyframes genBounce {
+  0%   { transform:translateY(-80px) scale(0.6); opacity:0; }
+  50%  { transform:translateY(10px) scale(1.1); opacity:1; }
+  70%  { transform:translateY(-8px) scale(0.95); }
+  100% { transform:translateY(0) scale(1); opacity:1; }
+}
+@keyframes genShake {
+  from { transform:translateX(-6px) rotate(-3deg); }
+  to   { transform:translateX(6px) rotate(3deg); }
+}
+@keyframes genTremble {
+  from { transform:translateX(-3px); }
+  to   { transform:translateX(3px); }
+}
+@keyframes genFlip {
+  from { transform:rotateY(180deg) scale(0); opacity:0; }
+  to   { transform:rotateY(0) scale(1); opacity:1; }
+}
+@keyframes genPulse {
+  from { transform:scale(1); }
+  to   { transform:scale(1.25); }
+}
+@keyframes genElastic {
+  0%   { transform:scale(0); opacity:0; }
+  40%  { transform:scale(1.3); opacity:1; }
+  60%  { transform:scale(0.85); }
+  80%  { transform:scale(1.1); }
+  100% { transform:scale(1); opacity:1; }
+}
+@keyframes genSwing {
+  0%   { transform:rotate(0deg) scale(0); opacity:0; transform-origin:top center; }
+  30%  { transform:rotate(15deg) scale(1); opacity:1; }
+  50%  { transform:rotate(-10deg) scale(1); }
+  70%  { transform:rotate(5deg) scale(1); }
+  100% { transform:rotate(0deg) scale(1); opacity:1; }
+}
+@keyframes genJello {
+  0%   { transform:skewX(0deg) skewY(0deg); }
+  12%  { transform:skewX(-8deg) skewY(-8deg); }
+  25%  { transform:skewX(6deg) skewY(6deg); }
+  37%  { transform:skewX(-4deg) skewY(-4deg); }
+  50%  { transform:skewX(2deg) skewY(2deg); }
+  62%  { transform:skewX(-1deg) skewY(-1deg); }
+  100% { transform:skewX(0deg) skewY(0deg); }
+}
+@keyframes genTada {
+  0%   { transform:scale(0.3) rotate(0deg); opacity:0; }
+  20%  { transform:scale(0.9) rotate(-3deg); opacity:1; }
+  30%  { transform:scale(1.1) rotate(3deg); }
+  40%  { transform:scale(1.1) rotate(-3deg); }
+  50%  { transform:scale(1.1) rotate(3deg); }
+  60%  { transform:scale(1.1) rotate(-3deg); }
+  70%  { transform:scale(1.1) rotate(3deg); }
+  80%  { transform:scale(1) rotate(-1deg); }
+  100% { transform:scale(1) rotate(0); opacity:1; }
+}
+@keyframes genWobble {
+  0%   { transform:translateX(0) rotate(0); }
+  15%  { transform:translateX(-25px) rotate(-5deg); }
+  30%  { transform:translateX(20px) rotate(3deg); }
+  45%  { transform:translateX(-15px) rotate(-3deg); }
+  60%  { transform:translateX(10px) rotate(2deg); }
+  75%  { transform:translateX(-5px) rotate(-1deg); }
+  100% { transform:translateX(0) rotate(0); }
+}
+@keyframes genGlitch {
+  0%   { transform:translate(0); opacity:0; clip-path:inset(50% 0 50% 0); }
+  16%  { transform:translate(-5px,3px); opacity:1; clip-path:inset(20% 0 30% 0); }
+  33%  { transform:translate(5px,-3px); clip-path:inset(60% 0 10% 0); }
+  50%  { transform:translate(-3px,5px); clip-path:inset(10% 0 60% 0); }
+  66%  { transform:translate(3px,-5px); clip-path:inset(40% 0 20% 0); }
+  83%  { transform:translate(-2px,2px); clip-path:inset(5% 0 5% 0); }
+  100% { transform:translate(0); opacity:1; clip-path:inset(0 0 0 0); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PARTICLE ANIMATIONS
+   ══════════════════════════════════════════════════════════════ */
+@keyframes genFall {
+  0%   { opacity:0; transform:translateY(0) rotate(0deg); }
+  10%  { opacity:1; }
+  100% { opacity:0; transform:translateY(105vh) rotate(360deg); }
+}
+@keyframes genRise {
+  0%   { opacity:0; transform:translateY(0) scale(0.5); }
+  15%  { opacity:1; }
+  100% { opacity:0; transform:translateY(-105vh) scale(1.3) rotate(20deg); }
+}
+@keyframes genBurst {
+  0%   { opacity:0; transform:translate(0,0) scale(0.3); }
+  30%  { opacity:1; transform:translate(calc(var(--bx)*0.3),calc(var(--by)*0.3)) scale(1.2); }
+  100% { opacity:0; transform:translate(var(--bx),var(--by)) scale(0.5); }
+}
+@keyframes genSwirl {
+  0%   { opacity:0; transform:rotate(var(--sa)) translateX(0) scale(0.3); }
+  30%  { opacity:1; }
+  100% { opacity:0; transform:rotate(calc(var(--sa) + 360deg)) translateX(140px) scale(0.6); }
+}
+@keyframes genZigzag {
+  0%   { opacity:0; transform:translateY(0) translateX(0); }
+  10%  { opacity:1; }
+  25%  { transform:translateY(25vh) translateX(calc(var(--zd) * 60px)); }
+  50%  { transform:translateY(50vh) translateX(calc(var(--zd) * -60px)); }
+  75%  { transform:translateY(75vh) translateX(calc(var(--zd) * 40px)); }
+  100% { opacity:0; transform:translateY(105vh) translateX(calc(var(--zd) * -40px)); }
+}
+@keyframes genSpiral {
+  0%   { opacity:0; transform:rotate(var(--spa)) translateX(0) scale(0.2); }
+  20%  { opacity:1; }
+  100% { opacity:0; transform:rotate(calc(var(--spa) + 720deg)) translateX(200px) scale(0.8); }
+}
+@keyframes genRain {
+  0%   { opacity:0; transform:translateY(0); }
+  5%   { opacity:0.8; }
+  100% { opacity:0; transform:translateY(110vh); }
+}
+@keyframes genFirework {
+  0%   { opacity:0; transform:translate(0,0) scale(0.2); }
+  20%  { opacity:1; transform:translate(0,-80px) scale(0.8); }
+  40%  { opacity:1; transform:translate(calc(var(--fx)*0.3),calc(var(--fy)*0.3)) scale(1.2); }
+  100% { opacity:0; transform:translate(var(--fx),var(--fy)) scale(0.3); }
+}
+@keyframes genOrbit {
+  0%   { opacity:0; transform:rotate(var(--oa)) translateX(60px) scale(0.3); }
+  20%  { opacity:1; }
+  100% { opacity:0; transform:rotate(calc(var(--oa) + 540deg)) translateX(120px) scale(0.5); }
+}
+@keyframes genScatter {
+  0%   { opacity:0; transform:translate(0,0) scale(0.2) rotate(0deg); }
+  25%  { opacity:1; transform:translate(calc(var(--sx)*0.3),calc(var(--sy)*0.3)) scale(1.3) rotate(90deg); }
+  100% { opacity:0; transform:translate(var(--sx),var(--sy)) scale(0.4) rotate(360deg); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SCREEN EFFECTS
+   ══════════════════════════════════════════════════════════════ */
+@keyframes genFlash {
+  from { filter:brightness(1); }
+  to   { filter:brightness(2); }
+}
+@keyframes genScreenShake {
+  0%,100% { transform:translateX(0); }
+  25%     { transform:translateX(-6px); }
+  75%     { transform:translateX(6px); }
+}
+@keyframes genVignette {
+  from { box-shadow:inset 0 0 80px 20px rgba(0,0,0,0); }
+  to   { box-shadow:inset 0 0 80px 20px rgba(0,0,0,0.5); }
+}
+@keyframes genColorShift {
+  0%   { filter:hue-rotate(0deg); }
+  33%  { filter:hue-rotate(60deg); }
+  66%  { filter:hue-rotate(-60deg); }
+  100% { filter:hue-rotate(0deg); }
+}
+@keyframes genZoom {
+  from { transform:scale(1); }
+  to   { transform:scale(1.06); }
+}
+@keyframes genPulseScreen {
+  from { opacity:1; }
+  to   { opacity:0.75; }
+}
+
 /* ── Reduced motion: skip all combo animations ───────────────── */
 @media (prefers-reduced-motion: reduce) {
   .combo-overlay * { animation: none !important; transition: none !important; }

@@ -24,7 +24,7 @@
  *   😉😎🥲😙😗🥰😘😍😅😆😂😁😀🤗🥱😴😶‍🌫️🙄😏😣😥😮🤐😯😌😛😓😔🪵💠👌🤌🫶💅🖕🏻 — 35 individual face/gesture animations
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { getSocket } from "../../socket";
 import { EMOJI_COMBO } from "../../constants/events";
@@ -86,13 +86,23 @@ import PeopleHugAnimation   from "./animations/PeopleHugAnimation";
 import NodAnimation         from "./animations/NodAnimation";
 import ShakeHeadAnimation   from "./animations/ShakeHeadAnimation";
 import DarkMoonAnimation    from "./animations/DarkMoonAnimation";
+import CatLaughAnimation    from "./animations/CatLaughAnimation";
+import CatHeartAnimation    from "./animations/CatHeartAnimation";
+import CatWryAnimation      from "./animations/CatWryAnimation";
+import CatKissAnimation     from "./animations/CatKissAnimation";
+import CatScaredAnimation   from "./animations/CatScaredAnimation";
+import CatCryAnimation      from "./animations/CatCryAnimation";
+import CatAngryAnimation    from "./animations/CatAngryAnimation";
+import CatFaceAnimation     from "./animations/CatFaceAnimation";
+import GenericEmojiAnimation from "./animations/GenericEmojiAnimation";
 // tongue (😛) re-uses CSS class inline, no separate file needed — handled below
 
 // Import all animation CSS once
 import "./comboAnimations.css";
+import GENERIC_EMOJI_CONFIGS from "./allEmojiAnimationConfigs";
 
 // Map emoji → which animation component to render
-const EMOJI_MAP = {
+export const EMOJI_MAP = {
   "💍": "WEDDING",
   "💋": "KISS",
   "❤️": "HEART",
@@ -154,18 +164,219 @@ const EMOJI_MAP = {
   "🙂‍↕️": "NOD",
   "🙂‍↔️": "SHAKEHEAD",
   "🌚": "DARKMOON",
+  // cat emoji
+  "😹": "CATLAUGH",
+  "😻": "CATHEART",
+  "😼": "CATWRY",
+  "😽": "CATKISS",
+  "🙀": "CATSCARED",
+  "😿": "CATCRY",
+  "😾": "CATANGRY",
+  "🐱": "CATFACE",
+  // ─── Generic emoji animations (template-driven) ───
+  // Smileys
+  "😃": "HAPPY",
+  "😄": "BIGGRIN",
+  "🤣": "ROFL",
+  "😊": "BLUSH",
+  "😋": "YUMMY",
+  "🤩": "STARSTRUCK",
+  "🤔": "THINKING",
+  "🤨": "RAISEBROW",
+  "😐": "NEUTRAL",
+  "😑": "EXPRESSIONLESS",
+  "😶": "MUTE",
+  "😪": "SLEEPY",
+  "😫": "TIRED",
+  "😜": "WINKTONGUE",
+  "😝": "SQUINTTONGUE",
+  "🤤": "DROOL",
+  "😒": "UNAMUSED",
+  "😕": "CONFUSED",
+  "🙃": "UPSIDEDOWN",
+  "🤑": "MONEY",
+  "😲": "ASTONISHED",
+  "🙁": "SLIGHTSAD",
+  "☹️": "FROWN",
+  "😖": "CONFOUNDED",
+  "😞": "DISAPPOINTED",
+  "😟": "WORRIED",
+  "😤": "HUFFING",
+  "😢": "CRY",
+  "😭": "SOBBING",
+  "😦": "FROWNOPEN",
+  "😧": "ANGUISHED",
+  "😨": "FEARFUL",
+  "😩": "WEARY",
+  "🤯": "EXPLODE",
+  "😬": "GRIMACE",
+  "😰": "ANXIOUS",
+  "😱": "SCREAM",
+  "🥵": "HOTFACE",
+  "🥶": "COLDFACE",
+  "😳": "FLUSHED",
+  "🤪": "ZANY",
+  "😵": "DIZZY",
+  "😵‍💫": "SPIRALEYES",
+  "🥴": "WOOZY",
+  "😠": "ANGRY",
+  "😡": "POUTING",
+  "🤬": "CURSING",
+  "😈": "DEVIL",
+  "👿": "IMP",
+  "🫠": "MELTING",
+  "🫡": "SALUTE",
+  "🤭": "GIGGLE",
+  "🤫": "SHUSH",
+  "🫣": "PEEKING",
+  "🥹": "HOLDTEARS",
+  "🫥": "INVISIBLE",
+  "🤥": "LIAR",
+  "🤧": "SNEEZE",
+  "🤮": "VOMIT",
+  "🤒": "SICK",
+  "😷": "MASK",
+  "🤓": "NERD",
+  "🥸": "DISGUISE",
+  // Gestures
+  "👍": "THUMBSUP",
+  "👎": "THUMBSDOWN",
+  "👊": "FISTBUMP",
+  "✊": "RAISEDFIST",
+  "🤛": "LEFTFIST",
+  "🤜": "RIGHTFIST",
+  "👏": "CLAP",
+  "🙌": "RAISEDHANDS",
+  "👐": "OPENHANDS",
+  "🤲": "PALMSUP",
+  "🤝": "HANDSHAKE",
+  "🙏": "PRAY",
+  "✌️": "VICTORY",
+  "🤞": "CROSSFINGERS",
+  "🤟": "LOVEYOU",
+  "🤘": "ROCKON",
+  "👈": "POINTLEFT",
+  "👉": "POINTRIGHT",
+  "👆": "POINTUP",
+  "👇": "POINTDOWN",
+  "☝️": "INDEXUP",
+  "✋": "STOP",
+  "👋": "WAVE",
+  "💪": "FLEX",
+  "🖖": "VULCAN",
+  // Hearts & Symbols
+  "🧡": "ORANGEHEART",
+  "💛": "YELLOWHEART",
+  "💚": "GREENHEART",
+  "💙": "BLUEHEART",
+  "💜": "PURPLEHEART",
+  "🖤": "BLACKHEART",
+  "🤍": "WHITEHEART",
+  "🤎": "BROWNHEART",
+  "💔": "BROKENHEART",
+  "❣️": "HEARTEXCLAIM",
+  "💯": "HUNDRED",
+  "🔥": "FIRE",
+  "⭐": "STAR",
+  "💫": "DIZZYSTAR",
+  "✨": "SPARKLES",
+  "💥": "COLLISION",
+  "💨": "DASH",
+  "🎉": "PARTY",
+  "🎊": "CONFETTI",
+  // Animals
+  "🐶": "DOG",
+  "🐭": "MOUSE",
+  "🐹": "HAMSTER",
+  "🐰": "BUNNY",
+  "🦊": "FOX",
+  "🐻": "BEAR",
+  "🐼": "PANDA",
+  "🐨": "KOALA",
+  "🐯": "TIGER",
+  "🦁": "LION",
+  "🐮": "COW",
+  "🐷": "PIG",
+  "🐸": "FROG",
+  "🐵": "MONKEY",
+  "🙉": "HEARNOEVIL",
+  "🙊": "SPEAKNOEVIL",
+  "🐔": "CHICKEN",
+  "🐧": "PENGUIN",
+  "🦅": "EAGLE",
+  "🦉": "OWL",
+  "🐺": "WOLF",
+  "🐴": "HORSE",
+  "🦄": "UNICORN",
+  "🐝": "BEE",
+  "🦋": "BUTTERFLY",
+  "🐌": "SNAIL",
+  "🐞": "LADYBUG",
+  "🐍": "SNAKE",
+  // Food & Drink
+  "🍕": "PIZZA",
+  "🍔": "BURGER",
+  "🍟": "FRIES",
+  "🎂": "CAKE",
+  "🍩": "DONUT",
+  "🍺": "BEER",
+  "🥂": "CHEERS",
+  "☕": "COFFEE",
+  // Spooky & Special
+  "💀": "REALSKULL",
+  "👻": "GHOST",
+  "👽": "ALIEN",
+  "🤖": "ROBOT",
+  "💩": "REALPOOP",
+  "🎃": "PUMPKIN",
+  // Misc Popular
+  "🏆": "TROPHY",
+  "🥇": "GOLD",
+  "🎮": "GAMING",
+  "🎵": "MUSICNOTE",
+  "🎶": "MUSICNOTES",
+  "🌹": "ROSE",
+  "🌸": "BLOSSOM",
+  "💎": "GEM",
+  "👑": "CROWN",
+  "🎁": "GIFT",
+  "🚀": "ROCKET",
+  "🌈": "RAINBOW",
+  "🌙": "MOON",
+  "❄️": "SNOWFLAKE",
+  "🎈": "BALLOON",
+  "🎯": "BULLSEYE",
+  "⚽": "SOCCER",
+  "🏀": "BASKETBALL",
+  "💐": "BOUQUET",
+  "🕊️": "DOVE",
+  "🍀": "CLOVER",
+  "🌻": "SUNFLOWER",
 };
 
 // Minimum gap (ms) between two animations to prevent spam
 const THROTTLE_MS = 12000;
 
-export default function ComboAnimationLayer({ chatId }) {
+export default forwardRef(function ComboAnimationLayer({ chatId }, ref) {
   const socket = getSocket();
 
   const [effect, setEffect] = useState(null);
   // effect shape: { type: string, users: string[], active: boolean }
 
   const lastFiredRef = React.useRef(0);
+
+  // Expose triggerAnimation so external code (e.g. EmojiAnimationPicker) can fire animations
+  const triggerAnimation = useCallback((emoji) => {
+    const type = EMOJI_MAP[emoji];
+    if (!type) return;
+    // Skip throttle for manual preview triggers (use a shorter 2s cooldown)
+    const now = Date.now();
+    if (now - lastFiredRef.current < 2000) return;
+    lastFiredRef.current = now;
+    setEffect({ type, users: [], active: true });
+  }, []);
+
+  useImperativeHandle(ref, () => ({ triggerAnimation }), [triggerAnimation]);
 
   const handleCombo = useCallback(
     (data) => {
@@ -264,7 +475,17 @@ export default function ComboAnimationLayer({ chatId }) {
       {type === "NOD"          && <NodAnimation          active={active}               onDone={handleDone} />}
       {type === "SHAKEHEAD"    && <ShakeHeadAnimation    active={active}               onDone={handleDone} />}
       {type === "DARKMOON"     && <DarkMoonAnimation     active={active}               onDone={handleDone} />}
+      {type === "CATLAUGH"     && <CatLaughAnimation     active={active}               onDone={handleDone} />}
+      {type === "CATHEART"     && <CatHeartAnimation     active={active}               onDone={handleDone} />}
+      {type === "CATWRY"       && <CatWryAnimation       active={active}               onDone={handleDone} />}
+      {type === "CATKISS"      && <CatKissAnimation      active={active}               onDone={handleDone} />}
+      {type === "CATSCARED"    && <CatScaredAnimation    active={active}               onDone={handleDone} />}
+      {type === "CATCRY"       && <CatCryAnimation       active={active}               onDone={handleDone} />}
+      {type === "CATANGRY"     && <CatAngryAnimation     active={active}               onDone={handleDone} />}
+      {type === "CATFACE"      && <CatFaceAnimation      active={active}               onDone={handleDone} />}
+      {/* Generic template-driven animations (covers all new emojis) */}
+      {GENERIC_EMOJI_CONFIGS[type] && <GenericEmojiAnimation config={GENERIC_EMOJI_CONFIGS[type]} active={active} onDone={handleDone} />}
     </>,
     document.body
   );
-}
+})

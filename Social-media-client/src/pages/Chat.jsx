@@ -23,6 +23,7 @@ import {
 } from "@mui/icons-material";
 import { isOnlyEmoji, createEmojiExplosion, injectEmojiAnimationStyles } from "../utils/emojiEffect";
 import ComboAnimationLayer from "../components/comboAnimations/ComboAnimationLayer";
+import EmojiAnimationPicker from "../components/dialogs/EmojiAnimationPicker";
 
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 
@@ -102,6 +103,8 @@ const Chat = ({ chatId, user }) => {
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [youtubePickerOpen, setYoutubePickerOpen] = useState(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
+  const [animationPickerOpen, setAnimationPickerOpen] = useState(false);
+  const comboAnimationRef = useRef(null);
   const [replyToMessage, setReplyToMessage] = useState(null);
   const [selectedYouTubeVideo, setSelectedYouTubeVideo] = useState(null);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
@@ -1042,14 +1045,20 @@ const Chat = ({ chatId, user }) => {
         chatId={chatId} 
         onGifClick={() => setGifPickerOpen(true)}
         onYouTubeClick={() => setYoutubePickerOpen(true)}
+        onAnimationClick={() => setAnimationPickerOpen(true)}
       />
       {/* Sticker Picker Dialog */}
       <StickerPicker open={stickerPickerOpen} onClose={() => setStickerPickerOpen(false)} onSelect={handleStickerSelect} />
       <GifPicker open={gifPickerOpen} onClose={() => setGifPickerOpen(false)} onSelect={handleGifSelect} />
       <YouTubeSearchDialog open={youtubePickerOpen} onClose={() => setYoutubePickerOpen(false)} onSelect={handleYouTubeSelect} />
+      <EmojiAnimationPicker
+        open={animationPickerOpen}
+        onClose={() => setAnimationPickerOpen(false)}
+        onSelect={(emoji) => comboAnimationRef.current?.triggerAnimation(emoji)}
+      />
 
       {/* ── Emoji Combo Animations (fires only when both users send same emoji) ── */}
-      <ComboAnimationLayer chatId={chatId} />
+      <ComboAnimationLayer ref={comboAnimationRef} chatId={chatId} />
 
     </Fragment>
   );
