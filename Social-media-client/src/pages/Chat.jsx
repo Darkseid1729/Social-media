@@ -108,7 +108,13 @@ const Chat = ({ chatId, user }) => {
   const [youtubePickerOpen, setYoutubePickerOpen] = useState(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
   const [animationPickerOpen, setAnimationPickerOpen] = useState(false);
-  const [giftCardOpen, setGiftCardOpen] = useState(false);
+  const [giftCardOpen, setGiftCardOpen] = useState(() => {
+    try { return localStorage.getItem("giftCardOpen") === "true"; } catch { return false; }
+  });
+  const setGiftCardOpenPersist = (val) => {
+    try { localStorage.setItem("giftCardOpen", val ? "true" : "false"); } catch {}
+    setGiftCardOpen(val);
+  };
   const comboAnimationRef = useRef(null);
   const [replyToMessage, setReplyToMessage] = useState(null);
   const [selectedYouTubeVideo, setSelectedYouTubeVideo] = useState(null);
@@ -799,13 +805,7 @@ const Chat = ({ chatId, user }) => {
   const messageAnimationListener = useCallback(
     (data) => {
       if (data.chatId !== chatId) return;
-      // Persist revealed state to localStorage
-      try {
-        const key = `gc_revealed_${chatId}`;
-        const set = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
-        set.add(data.messageId);
-        localStorage.setItem(key, JSON.stringify([...set]));
-      } catch {}
+      // Mark message as revealed in-memory (do not persist across refresh)
       const applyReveal = (msg) =>
         msg._id === data.messageId
           ? { ...msg, animation: data.animation, animationRevealed: true }
@@ -842,14 +842,8 @@ const Chat = ({ chatId, user }) => {
   useErrors(errors);
 
   const allMessages = useMemo(() => {
-    let revealedSet = new Set();
-    try { revealedSet = new Set(JSON.parse(localStorage.getItem(`gc_revealed_${chatId}`) || "[]"));} catch {}
-    return [...oldMessages, ...messages].map((msg) =>
-      !msg.animationRevealed && revealedSet.has(msg._id)
-        ? { ...msg, animationRevealed: true }
-        : msg
-    );
-  }, [oldMessages, messages, chatId]);
+    return [...oldMessages, ...messages];
+  }, [oldMessages, messages]);
 
   // Additional scroll logic: directly scroll container when messages load
   useEffect(() => {
@@ -943,25 +937,18 @@ const Chat = ({ chatId, user }) => {
             onScrollToMessage={handleScrollToMessage}
             onDelete={handleDeleteMessage}
             onGiftCardReveal={(messageId, animation) => {
-              // Persist revealed state to localStorage so it survives page refresh
-              try {
-                const key = `gc_revealed_${chatId}`;
-                const set = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
-                set.add(messageId);
-                localStorage.setItem(key, JSON.stringify([...set]));
-              } catch {}
-              // Mark revealed in both states (message may be in oldMessages or messages)
-              const applyReveal = (msg) =>
-                msg._id === messageId ? { ...msg, animation, animationRevealed: true } : msg;
-              setMessages((prev) => prev.map(applyReveal));
-              setOldMessages((prev) => prev.map(applyReveal));
-              // Fire the full-screen animation for the local user
-              if (animation && comboAnimationRef.current) {
-                comboAnimationRef.current.triggerAnimation(animation);
-              }
-              // Broadcast to other members so they also see the reveal + animation
-              socket.emit(MESSAGE_ANIMATION, { chatId, members, messageId, animation });
-            }}
+                // Mark revealed in-memory (do not persist across refresh)
+                const applyReveal = (msg) =>
+                  msg._id === messageId ? { ...msg, animation, animationRevealed: true } : msg;
+                setMessages((prev) => prev.map(applyReveal));
+                setOldMessages((prev) => prev.map(applyReveal));
+                // Fire the full-screen animation for the local user
+                if (animation && comboAnimationRef.current) {
+                  comboAnimationRef.current.triggerAnimation(animation);
+                }
+                // Broadcast to other members so they also see the reveal + animation
+                socket.emit(MESSAGE_ANIMATION, { chatId, members, messageId, animation });
+              }}
           />
         ))}
 
@@ -1111,7 +1098,7 @@ const Chat = ({ chatId, user }) => {
         onGifClick={() => setGifPickerOpen(true)}
         onYouTubeClick={() => setYoutubePickerOpen(true)}
         onAnimationClick={() => setAnimationPickerOpen(true)}
-        onGiftCardClick={() => setGiftCardOpen(true)}
+        onGiftCardClick={() => setGiftCardOpenPersist(true)}
       />
       {/* Sticker Picker Dialog */}
       <StickerPicker open={stickerPickerOpen} onClose={() => setStickerPickerOpen(false)} onSelect={handleStickerSelect} />
@@ -1131,7 +1118,7 @@ const Chat = ({ chatId, user }) => {
       {/* Gift Card Creator Dialog */}
       <GiftCardDialog
         open={giftCardOpen}
-        onClose={() => setGiftCardOpen(false)}
+        onClose={() => setGiftCardOpenPersist(false)}
         onSend={handleGiftCardSend}
         senderName={user?.name}
       />
