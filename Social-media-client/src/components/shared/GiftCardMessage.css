@@ -69,6 +69,11 @@
   text-transform: uppercase;
 }
 
+/* Tighten back-card height when there's no amount */
+.gift-card-scene {
+  height: 190px;
+}
+
 /* Shimmer pulse on front */
 .gift-card-front::after {
   content: "";
@@ -134,27 +139,37 @@
   opacity: 0.8;
 }
 
-.gift-card-back .gc-amount {
-  font-size: 36px;
-  font-weight: 900;
+/* Large animation emoji shown front-and-centre on reveal */
+.gift-card-back .gc-animation-badge {
+  font-size: 40px;
   line-height: 1;
-  letter-spacing: -1px;
+  text-align: center;
+  margin: 2px 0 4px;
+  animation: gc-badge-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes gc-badge-pop {
+  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg);  opacity: 1; }
+}
+
+/* Message — the hero content on the back */
+.gift-card-back .gc-message-reveal {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  word-break: break-word;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.18);
 }
 
 .gift-card-back .gc-from {
   font-size: 11px;
   opacity: 0.8;
-}
-
-.gift-card-back .gc-msg {
-  font-size: 12px;
-  font-style: italic;
-  opacity: 0.9;
   margin-top: 4px;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
 .gift-card-back .gc-footer {
@@ -162,6 +177,7 @@
   padding-top: 7px;
   font-size: 9px;
   opacity: 0.55;
+  margin-top: auto;
 }
 
 /* Confetti burst on reveal */

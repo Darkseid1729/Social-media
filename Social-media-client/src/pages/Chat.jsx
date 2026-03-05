@@ -47,8 +47,7 @@ import {
   EMOJI_EFFECT,
   EMOJI_ANIMATION,
   MESSAGE_DELETED,
-  GIFT_CARD_SEND,
-  GIFT_CARD_REVEAL,
+  MESSAGE_ANIMATION,
 } from "../constants/events";
 import { useChatDetailsQuery, useGetMessagesQuery } from "../redux/api/api";
 import { useErrors, useSocketEvents } from "../hooks/hook";
@@ -795,17 +794,21 @@ const Chat = ({ chatId, user }) => {
     [chatId]
   );
 
-  // Gift card reveal listener — marks a card as revealed for everyone in the chat
-  const giftCardRevealListener = useCallback(
+  // Message animation listener — marks a message as animated and fires the full-screen animation
+  const messageAnimationListener = useCallback(
     (data) => {
       if (data.chatId !== chatId) return;
       setMessages((prev) =>
         prev.map((msg) =>
           msg._id === data.messageId
-            ? { ...msg, giftCardRevealed: true }
+            ? { ...msg, animation: data.animation, animationRevealed: true }
             : msg
         )
       );
+      // Fire the full-screen animation for the remote user
+      if (data.animation && comboAnimationRef.current) {
+        comboAnimationRef.current.triggerAnimation(data.animation);
+      }
     },
     [chatId]
   );
@@ -824,7 +827,7 @@ const Chat = ({ chatId, user }) => {
     [MESSAGE_REACTION_REMOVED]: reactionRemovedListener,
     [EMOJI_EFFECT]: emojiEffectListener,
     [MESSAGE_DELETED]: messageDeletedListener,
-    [GIFT_CARD_REVEAL]: giftCardRevealListener,
+    [MESSAGE_ANIMATION]: messageAnimationListener,
   };
 
   useSocketEvents(socket, eventHandler);
@@ -924,15 +927,19 @@ const Chat = ({ chatId, user }) => {
             onReply={handleReply}
             onScrollToMessage={handleScrollToMessage}
             onDelete={handleDeleteMessage}
-            onGiftCardReveal={(messageId) => {
-              // Mark revealed locally immediately
+            onGiftCardReveal={(messageId, animation) => {
+              // Mark revealed locally
               setMessages((prev) =>
                 prev.map((msg) =>
-                  msg._id === messageId ? { ...msg, giftCardRevealed: true } : msg
+                  msg._id === messageId ? { ...msg, animation, animationRevealed: true } : msg
                 )
               );
-              // Broadcast to other members so they also see the reveal
-              socket.emit(GIFT_CARD_REVEAL, { chatId, members, messageId });
+              // Fire the full-screen animation for the local user
+              if (animation && comboAnimationRef.current) {
+                comboAnimationRef.current.triggerAnimation(animation);
+              }
+              // Broadcast to other members so they also see the reveal + animation
+              socket.emit(MESSAGE_ANIMATION, { chatId, members, messageId, animation });
             }}
           />
         ))}

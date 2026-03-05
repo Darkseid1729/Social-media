@@ -11,20 +11,31 @@ const cookieOptions = {
   secure: true,
 };
 
-const connectDB = (uri) => {
-  mongoose
-    .connect(uri, { 
-      dbName: "my-social-media",
-      serverSelectionTimeoutMS: 5000,    // Timeout after 5s instead of hanging
-      socketTimeoutMS: 45000,             // Close sockets after 45s of inactivity  
-      maxPoolSize: 10,                    // Limit connection pool size
-      minPoolSize: 2,                     // Keep minimum connections ready
-      connectTimeoutMS: 10000,            // Initial connection timeout
-    })
-    .then((data) => console.log(`Connected to DB: ${data.connection.host}`))
-    .catch((err) => {
-      throw err;
-    });
+const connectDB = (uri, retries = 5, delayMs = 3000) => {
+  const attempt = (remaining) => {
+    mongoose
+      .connect(uri, {
+        dbName: "my-social-media",
+        serverSelectionTimeoutMS: 30000,  // 30 s — gives Atlas time to elect a primary
+        socketTimeoutMS: 45000,
+        maxPoolSize: 10,
+        minPoolSize: 2,
+        connectTimeoutMS: 30000,
+        retryWrites: true,
+        retryReads: true,
+      })
+      .then((data) => console.log(`Connected to DB: ${data.connection.host}`))
+      .catch((err) => {
+        if (remaining > 0) {
+          console.error(`DB connection failed (${err.message}). Retrying in ${delayMs / 1000}s… (${remaining} attempt(s) left)`);
+          setTimeout(() => attempt(remaining - 1), delayMs);
+        } else {
+          console.error("Could not connect to MongoDB after several retries. Check your Atlas cluster (may be paused) and network access settings.");
+          throw err;
+        }
+      });
+  };
+  attempt(retries);
 };
 
 const sendToken = (res, user, code, message) => {

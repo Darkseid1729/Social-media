@@ -35,9 +35,9 @@ const GiftCardBubble = ({ data, revealed, onReveal }) => {
 
   const handleClick = () => {
     if (revealed) return;
-    // Spawn confetti
+    // Spawn confetti burst on the card itself
     if (confettiRef.current) {
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 14; i++) {
         const piece = document.createElement("div");
         piece.className = "gc-confetti-piece";
         piece.style.left = `${Math.random() * 90}%`;
@@ -48,7 +48,7 @@ const GiftCardBubble = ({ data, revealed, onReveal }) => {
         setTimeout(() => piece.remove(), 1000);
       }
     }
-    onReveal?.();
+    onReveal?.(data.animation);
   };
 
   return (
@@ -59,24 +59,26 @@ const GiftCardBubble = ({ data, revealed, onReveal }) => {
         title={revealed ? "" : "Tap to reveal your gift!"}
       >
         <div className="gift-card-flipper">
-          {/* Front */}
+          {/* Front — sealed gift */}
           <div className="gift-card-front">
             <div className="gc-ribbon">{data.emoji || "🎁"}</div>
-            <div className="gc-label">Gift Card</div>
+            <div className="gc-label">Gift Message</div>
             <div className="gc-tap-hint">Tap to reveal ✨</div>
           </div>
-          {/* Back */}
+          {/* Back — message + animation */}
           <div className="gift-card-back" style={{ background: themeObj.bg, color: themeObj.text }}>
             <div className="gc-deco-circle gc-deco-circle-1" />
             <div className="gc-deco-circle gc-deco-circle-2" />
             <div className="gc-top">
               <span className="gc-icon">{data.emoji || "🎁"}</span>
-              <span className="gc-sublabel">Gift Card</span>
+              <span className="gc-sublabel">Gift Message</span>
             </div>
-            <div className="gc-amount">{data.currency}{data.amount}</div>
+            {revealed && (
+              <div className="gc-animation-badge">{data.animation || "🎉"}</div>
+            )}
+            <div className="gc-message-reveal">{data.message || ""}</div>
             {data.from && <div className="gc-from">From: {data.from}</div>}
-            {data.message && <div className="gc-msg">"{data.message}"</div>}
-            <div className="gc-footer">Tap to flip back • Sent with ❤️ via Chat</div>
+            <div className="gc-footer">Tap to flip back • Sent with ❤️</div>
           </div>
         </div>
       </div>
@@ -112,7 +114,7 @@ const getUserColorShade = (userId, baseColor) => {
 
 const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete, onGiftCardReveal }) => {
   // console.log('MessageComponent message:', message); // Debug line
-  const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId, replyTo, isForwarded, giftCardRevealed } = message;
+  const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId, replyTo, isForwarded, animationRevealed } = message;
   const { theme } = useTheme();
   const [contextMenu, setContextMenu] = useState(null);
   const [reactionPickerAnchor, setReactionPickerAnchor] = useState(null);
@@ -299,8 +301,8 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete,
         return cardData ? (
           <GiftCardBubble
             data={cardData}
-            revealed={!!giftCardRevealed}
-            onReveal={() => onGiftCardReveal?.(messageId)}
+            revealed={!!animationRevealed}
+            onReveal={(anim) => onGiftCardReveal?.(messageId, anim)}
           />
         ) : null;
       })() : (

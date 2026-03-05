@@ -34,9 +34,8 @@ const EMOJI_ANIMATION = "EMOJI_ANIMATION";
 // Delete message event
 const MESSAGE_DELETED = "MESSAGE_DELETED";
 
-// Gift card events
-const GIFT_CARD_SEND   = "GIFT_CARD_SEND";
-const GIFT_CARD_REVEAL = "GIFT_CARD_REVEAL";
+// Message animation event (used to trigger animations tied to messages)
+const MESSAGE_ANIMATION = "MESSAGE_ANIMATION";
 
 export {
   ALERT,
@@ -56,7 +55,6 @@ export {
   EMOJI_EFFECT,
   EMOJI_COMBO,
   EMOJI_ANIMATION,
+  MESSAGE_ANIMATION,
   MESSAGE_DELETED,
-  GIFT_CARD_SEND,
-  GIFT_CARD_REVEAL,
 };
