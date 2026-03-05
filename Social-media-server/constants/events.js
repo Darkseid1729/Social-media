@@ -32,6 +32,10 @@ const EMOJI_ANIMATION = "EMOJI_ANIMATION";
 // Delete message event
 const MESSAGE_DELETED = "MESSAGE_DELETED";
 
+// Gift card events
+const GIFT_CARD_SEND   = "GIFT_CARD_SEND";
+const GIFT_CARD_REVEAL = "GIFT_CARD_REVEAL";
+
 const ONLINE_USERS = "ONLINE_USERS";
 
 export {
@@ -53,4 +57,6 @@ export {
   EMOJI_COMBO,
   EMOJI_ANIMATION,
   MESSAGE_DELETED,
+  GIFT_CARD_SEND,
+  GIFT_CARD_REVEAL,
 };

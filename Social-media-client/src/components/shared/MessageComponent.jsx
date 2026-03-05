@@ -1,5 +1,5 @@
 import { Box, Typography, Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material";
-import React, { memo, useState, useMemo } from "react";
+import React, { memo, useState, useMemo, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import moment from "moment";
 import "moment-timezone";
@@ -15,6 +15,74 @@ import { useAddMessageReactionMutation, useRemoveMessageReactionMutation, useDel
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import ForwardDialog from "../dialogs/ForwardDialog";
+import "./GiftCardMessage.css";
+
+// ── Gift Card theme map (mirrors GiftCardDialog THEMES) ──────────────
+const GIFT_THEMES = {
+  gold:   { bg: "linear-gradient(135deg,#f7c948 0%,#f0a500 100%)",  text: "#5a3a00" },
+  rose:   { bg: "linear-gradient(135deg,#ff6b9d 0%,#c83b6e 100%)", text: "#fff" },
+  ocean:  { bg: "linear-gradient(135deg,#43b0f1 0%,#1565c0 100%)", text: "#fff" },
+  forest: { bg: "linear-gradient(135deg,#56ab2f 0%,#1b6a2a 100%)", text: "#fff" },
+  sunset: { bg: "linear-gradient(135deg,#ff6e40 0%,#c62828 100%)", text: "#fff" },
+  violet: { bg: "linear-gradient(135deg,#a855f7 0%,#6b21a8 100%)", text: "#fff" },
+};
+
+const CONFETTI_COLORS = ["#f7c948","#ff6b9d","#43b0f1","#56ab2f","#a855f7","#ff6e40","#fff"];
+
+const GiftCardBubble = ({ data, revealed, onReveal }) => {
+  const themeObj = GIFT_THEMES[data.theme] || GIFT_THEMES.gold;
+  const confettiRef = useRef(null);
+
+  const handleClick = () => {
+    if (revealed) return;
+    // Spawn confetti
+    if (confettiRef.current) {
+      for (let i = 0; i < 12; i++) {
+        const piece = document.createElement("div");
+        piece.className = "gc-confetti-piece";
+        piece.style.left = `${Math.random() * 90}%`;
+        piece.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+        piece.style.animationDelay = `${Math.random() * 0.3}s`;
+        piece.style.transform = `rotate(${Math.random() * 60}deg)`;
+        confettiRef.current.appendChild(piece);
+        setTimeout(() => piece.remove(), 1000);
+      }
+    }
+    onReveal?.();
+  };
+
+  return (
+    <div ref={confettiRef} style={{ position: "relative" }}>
+      <div
+        className={`gift-card-scene${revealed ? " revealed" : ""}`}
+        onClick={handleClick}
+        title={revealed ? "" : "Tap to reveal your gift!"}
+      >
+        <div className="gift-card-flipper">
+          {/* Front */}
+          <div className="gift-card-front">
+            <div className="gc-ribbon">{data.emoji || "🎁"}</div>
+            <div className="gc-label">Gift Card</div>
+            <div className="gc-tap-hint">Tap to reveal ✨</div>
+          </div>
+          {/* Back */}
+          <div className="gift-card-back" style={{ background: themeObj.bg, color: themeObj.text }}>
+            <div className="gc-deco-circle gc-deco-circle-1" />
+            <div className="gc-deco-circle gc-deco-circle-2" />
+            <div className="gc-top">
+              <span className="gc-icon">{data.emoji || "🎁"}</span>
+              <span className="gc-sublabel">Gift Card</span>
+            </div>
+            <div className="gc-amount">{data.currency}{data.amount}</div>
+            {data.from && <div className="gc-from">From: {data.from}</div>}
+            {data.message && <div className="gc-msg">"{data.message}"</div>}
+            <div className="gc-footer">Tap to flip back • Sent with ❤️ via Chat</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Generate a consistent color shade based on userId (using last 5 characters for better distribution)
 const getUserColorShade = (userId, baseColor) => {
@@ -42,9 +110,9 @@ const getUserColorShade = (userId, baseColor) => {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };
 
-const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete }) => {
+const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete, onGiftCardReveal }) => {
   // console.log('MessageComponent message:', message); // Debug line
-  const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId, replyTo, isForwarded } = message;
+  const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId, replyTo, isForwarded, giftCardRevealed } = message;
   const { theme } = useTheme();
   const [contextMenu, setContextMenu] = useState(null);
   const [reactionPickerAnchor, setReactionPickerAnchor] = useState(null);
@@ -224,8 +292,20 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete 
           {sender?.name}
         </Typography>
       )}
-      {/* Render sticker or GIF/image if content is a sticker path or image URL */}
-      {content &&
+      {/* ── Gift Card ── */}
+      {content && content.startsWith("__GIFT_CARD__:") ? (() => {
+        let cardData = null;
+        try { cardData = JSON.parse(content.slice("__GIFT_CARD__:".length)); } catch {}
+        return cardData ? (
+          <GiftCardBubble
+            data={cardData}
+            revealed={!!giftCardRevealed}
+            onReveal={() => onGiftCardReveal?.(messageId)}
+          />
+        ) : null;
+      })() : (
+      /* Render sticker or GIF/image if content is a sticker path or image URL */
+      content &&
         ((/^\/StickersGenshin\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content)) ||
          /^https?:\/\/res\.cloudinary\.com\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content)) ? (
           <Box sx={{ display: 'flex', justifyContent: sameSender ? 'flex-end' : 'flex-start', mb: 1 }}>
@@ -264,7 +344,7 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete 
           </Box>
         ) : content && (
           <TextWithLinks text={content} showPreviews={true} />
-        )}
+        ))}
 
       {attachments.length > 0 && (() => {
         const imageAttachments = attachments.filter(a => fileFormat(a.url) === 'image');

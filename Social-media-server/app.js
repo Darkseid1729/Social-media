@@ -20,6 +20,7 @@ import {
   EMOJI_EFFECT,
   EMOJI_COMBO,
   EMOJI_ANIMATION,
+  GIFT_CARD_REVEAL,
 } from "./constants/events.js";
 import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
@@ -293,6 +294,12 @@ io.on("connection", (socket) => {
   socket.on(EMOJI_ANIMATION, ({ members, chatId, emoji }) => {
     const membersSockets = getSockets(members);
     io.to(membersSockets).emit(EMOJI_ANIMATION, { chatId, emoji });
+  });
+
+  // Broadcast gift card reveal to all chat members
+  socket.on(GIFT_CARD_REVEAL, ({ members, chatId, messageId }) => {
+    const membersSockets = getSockets(members);
+    io.to(membersSockets).emit(GIFT_CARD_REVEAL, { chatId, messageId });
   });
 
   socket.on(CHAT_JOINED, ({ userId, members }) => {

@@ -9,13 +9,14 @@ import {
   VideoFile as VideoFileIcon,
   YouTube as YouTubeIcon,
   AutoAwesome as AutoAwesomeIcon,
+  CardGiftcard as GiftCardIcon,
 } from "@mui/icons-material";
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import toast from "react-hot-toast";
 import { useSendAttachmentsMutation } from "../../redux/api/api";
 
 const FileMenu = (props) => {
-  const { anchorE1, chatId, onGifClick, onYouTubeClick, onAnimationClick } = props;
+  const { anchorE1, chatId, onGifClick, onYouTubeClick, onAnimationClick, onGiftCardClick } = props;
   const { isFileMenu } = useSelector((state) => state.misc);
 
   const dispatch = useDispatch();
@@ -193,6 +194,14 @@ const FileMenu = (props) => {
               <AutoAwesomeIcon />
             </Tooltip>
             <ListItemText style={{ marginLeft: "0.5rem" }}>Animations</ListItemText>
+          </MenuItem>
+
+          {/* Gift Card Option */}
+          <MenuItem onClick={() => { closeFileMenu(); if (onGiftCardClick) onGiftCardClick(); }}>
+            <Tooltip title="Gift Card">
+              <GiftCardIcon sx={{ color: "#f7c948" }} />
+            </Tooltip>
+            <ListItemText style={{ marginLeft: "0.5rem" }}>Gift Card</ListItemText>
           </MenuItem>
 
           <MenuItem onClick={selectAudio}>
