@@ -26,6 +26,7 @@ const THEMES = [
 
 // Curated emojis that have full-screen animations in ComboAnimationLayer
 const ANIMATION_OPTIONS = [
+  // ── Love & Romance ──
   { emoji: "🎉", label: "Party" },
   { emoji: "🎊", label: "Confetti" },
   { emoji: "❤️", label: "Heart" },
@@ -33,15 +34,39 @@ const ANIMATION_OPTIONS = [
   { emoji: "🥰", label: "In Love" },
   { emoji: "💌", label: "Love Letter" },
   { emoji: "💕", label: "Two Hearts" },
+  { emoji: "💖", label: "Sparkle Heart" },
+  { emoji: "💗", label: "Growing Heart" },
+  { emoji: "💓", label: "Heartbeat" },
+  { emoji: "💞", label: "Revolving Hearts" },
+  { emoji: "💘", label: "Heart with Arrow" },
+  { emoji: "😍", label: "Heart Eyes" },
+  { emoji: "😘", label: "Blow Kiss" },
+  { emoji: "🫶", label: "Heart Hands" },
+  // ── Celebration ──
   { emoji: "✨", label: "Sparkles" },
   { emoji: "⭐", label: "Star" },
-  { emoji: "🎂", label: "Birthday" },
-  { emoji: "🫶", label: "Heart Hands" },
-  { emoji: "😍", label: "Heart Eyes" },
   { emoji: "💫", label: "Dizzy Star" },
+  { emoji: "🌟", label: "Glowing Star" },
   { emoji: "🎈", label: "Balloon" },
-  { emoji: "😘", label: "Blow Kiss" },
-  { emoji: "💖", label: "Sparkle Heart" },
+  { emoji: "🎂", label: "Birthday" },
+  { emoji: "🏆", label: "Trophy" },
+  { emoji: "👑", label: "Crown" },
+  { emoji: "🎁", label: "Gift" },
+  // ── Fun & Vibes ──
+  { emoji: "🔥", label: "Fire" },
+  { emoji: "🤩", label: "Star-Struck" },
+  { emoji: "😊", label: "Smiling" },
+  { emoji: "🤗", label: "Hug" },
+  { emoji: "😂", label: "Laughing" },
+  { emoji: "🥳", label: "Party Face" },
+  { emoji: "💯", label: "100%" },
+  { emoji: "👏", label: "Clapping" },
+  { emoji: "🙌", label: "Raise Hands" },
+  { emoji: "💪", label: "Strong" },
+  { emoji: "🌸", label: "Cherry Blossom" },
+  { emoji: "🌈", label: "Rainbow" },
+  { emoji: "🦋", label: "Butterfly" },
+  { emoji: "💎", label: "Diamond" },
 ];
 
 const CARD_EMOJIS = ["🎁", "🎂", "🎉", "💝", "🌹", "⭐", "🏆", "❤️", "🥳", "🎊"];

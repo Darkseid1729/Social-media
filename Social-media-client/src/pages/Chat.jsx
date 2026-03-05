@@ -6,6 +6,7 @@ import React, {
   Fragment,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -798,13 +799,19 @@ const Chat = ({ chatId, user }) => {
   const messageAnimationListener = useCallback(
     (data) => {
       if (data.chatId !== chatId) return;
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === data.messageId
-            ? { ...msg, animation: data.animation, animationRevealed: true }
-            : msg
-        )
-      );
+      // Persist revealed state to localStorage
+      try {
+        const key = `gc_revealed_${chatId}`;
+        const set = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
+        set.add(data.messageId);
+        localStorage.setItem(key, JSON.stringify([...set]));
+      } catch {}
+      const applyReveal = (msg) =>
+        msg._id === data.messageId
+          ? { ...msg, animation: data.animation, animationRevealed: true }
+          : msg;
+      setMessages((prev) => prev.map(applyReveal));
+      setOldMessages((prev) => prev.map(applyReveal));
       // Fire the full-screen animation for the remote user
       if (data.animation && comboAnimationRef.current) {
         comboAnimationRef.current.triggerAnimation(data.animation);
@@ -834,7 +841,15 @@ const Chat = ({ chatId, user }) => {
 
   useErrors(errors);
 
-  const allMessages = [...oldMessages, ...messages];
+  const allMessages = useMemo(() => {
+    let revealedSet = new Set();
+    try { revealedSet = new Set(JSON.parse(localStorage.getItem(`gc_revealed_${chatId}`) || "[]"));} catch {}
+    return [...oldMessages, ...messages].map((msg) =>
+      !msg.animationRevealed && revealedSet.has(msg._id)
+        ? { ...msg, animationRevealed: true }
+        : msg
+    );
+  }, [oldMessages, messages, chatId]);
 
   // Additional scroll logic: directly scroll container when messages load
   useEffect(() => {
@@ -928,12 +943,18 @@ const Chat = ({ chatId, user }) => {
             onScrollToMessage={handleScrollToMessage}
             onDelete={handleDeleteMessage}
             onGiftCardReveal={(messageId, animation) => {
-              // Mark revealed locally
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg._id === messageId ? { ...msg, animation, animationRevealed: true } : msg
-                )
-              );
+              // Persist revealed state to localStorage so it survives page refresh
+              try {
+                const key = `gc_revealed_${chatId}`;
+                const set = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
+                set.add(messageId);
+                localStorage.setItem(key, JSON.stringify([...set]));
+              } catch {}
+              // Mark revealed in both states (message may be in oldMessages or messages)
+              const applyReveal = (msg) =>
+                msg._id === messageId ? { ...msg, animation, animationRevealed: true } : msg;
+              setMessages((prev) => prev.map(applyReveal));
+              setOldMessages((prev) => prev.map(applyReveal));
               // Fire the full-screen animation for the local user
               if (animation && comboAnimationRef.current) {
                 comboAnimationRef.current.triggerAnimation(animation);
