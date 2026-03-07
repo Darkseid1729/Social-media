@@ -251,6 +251,7 @@ export const EMOJI_MAP = {
   "🤲": "PALMSUP",
   "🤝": "HANDSHAKE",
   "🙏": "PRAY",
+  "🙇": "SORRY",
   "✌️": "VICTORY",
   "🤞": "CROSSFINGERS",
   "🤟": "LOVEYOU",

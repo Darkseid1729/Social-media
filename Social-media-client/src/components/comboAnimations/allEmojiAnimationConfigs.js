@@ -566,6 +566,14 @@ const C = {
     particles: { items: ["✨","🙏","☀️","💛"], count: 10, type: "rise" }, duration: 5000,
   },
 
+  // 🙇 I Am Sorry / Deep Bow
+  SORRY: {
+    emoji: "🙇", bg: "linear-gradient(180deg,rgba(180,200,230,0.35) 0%,rgba(140,160,200,0.45) 100%)",
+    entry: "drop", text: "I'm so sorry 🙇", textColor: "#334", textBg: "rgba(255,255,255,0.65)",
+    emojiShadow: "rgba(120,140,200,0.4)",
+    particles: { items: ["🙇","💧","🌸","💜","✨"], count: 12, type: "fall" }, duration: 5000,
+  },
+
   // ✌️ Victory
   VICTORY: {
     emoji: "✌️", bg: "radial-gradient(ellipse at 50% 50%,rgba(200,230,255,0.35) 0%,rgba(170,200,240,0.15) 100%)",

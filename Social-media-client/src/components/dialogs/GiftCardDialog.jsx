@@ -67,6 +67,7 @@ const ANIMATION_OPTIONS = [
   { emoji: "🌈", label: "Rainbow" },
   { emoji: "🦋", label: "Butterfly" },
   { emoji: "💎", label: "Diamond" },
+  { emoji: "🙇", label: "I'm Sorry" },
 ];
 
 const CARD_EMOJIS = ["🎁", "🎂", "🎉", "💝", "🌹", "⭐", "🏆", "❤️", "🥳", "🎊"];
