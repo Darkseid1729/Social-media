@@ -427,6 +427,8 @@ export const useAudioCall = () => {
   const [participants, setParticipants] = useState([]);
   const [muted, setMuted] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(true);
+  const speakerOnRef = useRef(true);
+  useEffect(() => { speakerOnRef.current = speakerOn; }, [speakerOn]);
   const [callEndReason, setCallEndReason] = useState(null); // "offline" | "rejected" | "ended" | "no_members" | etc.
 
   // ── Refs to avoid stale closures inside socket handlers ─────────
@@ -452,6 +454,19 @@ export const useAudioCall = () => {
     loadIceServers().then((servers) => { iceServersRef.current = servers; });
   }, []);
 
+  // Re-route audio if a Bluetooth device is connected / disconnected mid-call
+  useEffect(() => {
+    const handleDeviceChange = () => {
+      resolveSinkId(speakerOnRef.current).then((sinkId) =>
+        applySinkIdRef.current(sinkId)
+      );
+    };
+    navigator.mediaDevices?.addEventListener("devicechange", handleDeviceChange);
+    return () => {
+      navigator.mediaDevices?.removeEventListener("devicechange", handleDeviceChange);
+    };
+  }, [resolveSinkId]);
+
   // ── Mute toggle ─────────────────────────────────────────────────
   const toggleMute = useCallback(() => {
     setMuted((prev) => {
@@ -465,20 +480,55 @@ export const useAudioCall = () => {
     });
   }, []);
 
+  // ── Apply a sinkId to all active remote audio elements ───────────
+  const applySinkId = useCallback(async (sinkId) => {
+    const promises = [];
+    remoteAudiosRef.current.forEach((audioEl) => {
+      if (typeof audioEl.setSinkId === "function") {
+        promises.push(audioEl.setSinkId(sinkId).catch(() => {}));
+      }
+    });
+    await Promise.all(promises);
+  }, []);
+  const applySinkIdRef = useRef(applySinkId);
+  applySinkIdRef.current = applySinkId;
+
+  // ── Resolve the best sinkId for the desired output mode ──────────
+  // On mobile browsers setSinkId may not exist, but when it does:
+  // - speaker ON  → prefer Bluetooth/headset if connected, else 'default'
+  // - speaker OFF → prefer earpiece ('communications'), else 'default'
+  const resolveSinkId = useCallback(async (wantSpeaker) => {
+    if (!navigator.mediaDevices?.enumerateDevices) return wantSpeaker ? "default" : "communications";
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const outputs = devices.filter((d) => d.kind === "audiooutput");
+      if (wantSpeaker) {
+        // Prefer any Bluetooth or headset device
+        const bt = outputs.find((d) =>
+          /bluetooth|headset|airpod|headphone|earphone|wireless/i.test(d.label)
+        );
+        return bt ? bt.deviceId : "default";
+      } else {
+        // Prefer earpiece
+        const ear = outputs.find((d) =>
+          /earpiece|receiver|ear speaker/i.test(d.label)
+        );
+        return ear ? ear.deviceId : "communications";
+      }
+    } catch {
+      return wantSpeaker ? "default" : "communications";
+    }
+  }, []);
+
   // ── Speaker / earpiece toggle ────────────────────────────────────
   const toggleSpeaker = useCallback(() => {
     setSpeakerOn((prev) => {
       const next = !prev;
-      // setSinkId: 'default' = speaker, 'communications' = earpiece
-      const sinkId = next ? "default" : "communications";
-      remoteAudiosRef.current.forEach((audioEl) => {
-        if (typeof audioEl.setSinkId === "function") {
-          audioEl.setSinkId(sinkId).catch(() => {});
-        }
-      });
+      speakerOnRef.current = next;
+      resolveSinkId(next).then((sinkId) => applySinkIdRef.current(sinkId));
       return next;
     });
-  }, []);
+  }, [resolveSinkId]);
 
   // ── Cleanup ─────────────────────────────────────────────────────
   const cleanup = useCallback(() => {
@@ -534,6 +584,13 @@ export const useAudioCall = () => {
           audioEl.style.display = "none";
           document.body.appendChild(audioEl);
           remoteAudiosRef.current.set(remoteUserId, audioEl);
+          // Route to the correct output device (Bluetooth / earpiece / speaker)
+          // as soon as the element is created, using the current speakerOn state.
+          resolveSinkId(speakerOnRef.current).then((sinkId) => {
+            if (typeof audioEl.setSinkId === "function") {
+              audioEl.setSinkId(sinkId).catch(() => {});
+            }
+          });
         }
         audioEl.srcObject = e.streams[0];
       };
