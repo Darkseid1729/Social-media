@@ -34,6 +34,8 @@ import { useGetUserProfileQuery } from "../../redux/api/api";
 import { useUpdateAvatarMutation } from "../../redux/api/api";
 import { updateUserAvatar } from "../../redux/reducers/updateUserAvatar";
 import Header from "./Header";
+import { useAudioCall } from "../../hooks/useAudioCall";
+import AudioCallDialog from "../dialogs/AudioCallDialog";
 
 const AppLayout = () => (WrappedComponent) => {
   return (props) => {
@@ -48,6 +50,17 @@ const AppLayout = () => (WrappedComponent) => {
 
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [selectedUserId, setSelectedUserId] = useState(null);
+
+    // Audio call hook
+    const {
+      callState,
+      callInfo,
+      remoteAudioRef,
+      startCall,
+      acceptCall,
+      rejectCall,
+      endCall,
+    } = useAudioCall();
 
     const { isMobile } = useSelector((state) => state.misc);
     const { user } = useSelector((state) => state.auth);
@@ -231,7 +244,17 @@ const AppLayout = () => (WrappedComponent) => {
     return (
       <>
         <Title />
-        <Header chatDetails={chatDetailsData?.chat} />
+        <Header chatDetails={chatDetailsData?.chat} onStartCall={startCall} />
+
+        {/* Audio Call Dialog (global - visible on any page) */}
+        <AudioCallDialog
+          callState={callState}
+          callInfo={callInfo}
+          remoteAudioRef={remoteAudioRef}
+          onAccept={acceptCall}
+          onReject={rejectCall}
+          onEnd={endCall}
+        />
 
         <DeleteChatMenu
           dispatch={dispatch}

@@ -34,6 +34,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
+import PhoneIcon from "@mui/icons-material/Phone";
 import { Menu, MenuItem } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -310,6 +311,23 @@ const Header = (props) => {
   const chatId = params.chatId || props.chatId;
   const chatDetails = props.chatDetails;
   const isGroupChat = chatDetails?.groupChat;
+  const onStartCall = props.onStartCall;
+
+  // Get the other member for 1-on-1 audio call
+  const otherMember = !isGroupChat && chatDetails?.members?.find(
+    (m) => m._id?.toString() !== user?._id?.toString()
+  );
+
+  const handleAudioCall = () => {
+    if (!chatId || !otherMember?._id) {
+      toast.error("Please select a chat first");
+      return;
+    }
+    if (onStartCall) {
+      onStartCall({ chatId, to: otherMember._id });
+    }
+    handleMobileMenuClose();
+  };
 
   const handleGroupMembersOpen = () => {
     setShowGroupMembersDialog(true);
@@ -406,6 +424,14 @@ const Header = (props) => {
 
             {/* Desktop header actions */}
             <Box sx={{ display: { xs: "none", sm: "flex" } }}>
+            {/* Audio call button - only for 1-on-1 chats */}
+            {chatId && !isGroupChat && otherMember && (
+              <IconBtn
+                title={"Audio Call"}
+                icon={<PhoneIcon />}
+                onClick={handleAudioCall}
+              />
+            )}
             <IconBtn
               title={"Search Messages"}
               icon={<SearchIcon />}
@@ -467,6 +493,14 @@ const Header = (props) => {
             </Box>
 
             {/* Mobile header icons - always visible */}
+            {/* Audio call button for mobile - only for 1-on-1 chats */}
+            {chatId && !isGroupChat && otherMember && (
+              <Box sx={{ display: { xs: "block", sm: "none" } }}>
+                <IconButton color="inherit" onClick={handleAudioCall}>
+                  <PhoneIcon />
+                </IconButton>
+              </Box>
+            )}
             <Box sx={{ display: { xs: "block", sm: "none" } }}>
               <IconButton color="inherit" onClick={handleSearchMessagesOpen}>
                 <SearchIcon />
@@ -505,6 +539,11 @@ const Header = (props) => {
                 <MenuItem onClick={openProfile}>
                   <AccountCircleIcon sx={{ mr: 1 }} /> Profile
                 </MenuItem>
+                {chatId && !isGroupChat && otherMember && (
+                  <MenuItem onClick={handleAudioCall}>
+                    <PhoneIcon sx={{ mr: 1 }} /> Audio Call
+                  </MenuItem>
+                )}
                 {isGroupChat && (
                   <MenuItem onClick={handleGroupMembersOpen}>
                     <InfoIcon sx={{ mr: 1 }} /> Group Members

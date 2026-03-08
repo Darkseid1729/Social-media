@@ -21,6 +21,13 @@ import {
   EMOJI_COMBO,
   EMOJI_ANIMATION,
   MESSAGE_ANIMATION,
+  CALL_INITIATED,
+  CALL_ACCEPTED,
+  CALL_REJECTED,
+  CALL_ENDED,
+  WEBRTC_OFFER,
+  WEBRTC_ANSWER,
+  WEBRTC_ICE_CANDIDATE,
 } from "./constants/events.js";
 import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
@@ -49,6 +56,7 @@ const envMode = (process.env.NODE_ENV?.trim() || "PRODUCTION");
 const adminSecretKey = process.env.ADMIN_SECRET_KEY;
 const userSocketIDs = new Map();
 const onlineUsers = new Set();
+const activeCalls = new Map(); // callId -> { caller, callee }
 
 // ── Emoji Combo Detection ──────────────────────────────────────────
 // In-memory store: chatId -> { emoji, userId, userName, ts }
@@ -315,6 +323,73 @@ io.on("connection", (socket) => {
     const membersSocket = getSockets(members);
     io.to(membersSocket).emit(ONLINE_USERS, Array.from(onlineUsers));
   });
+
+  // ── Audio Call Signaling ─────────────────────────────────────────
+  socket.on(CALL_INITIATED, ({ to, chatId }) => {
+    const calleeSocketId = userSocketIDs.get(to.toString());
+    if (!calleeSocketId) return;
+
+    const callId = uuid();
+    activeCalls.set(callId, { caller: user._id.toString(), callee: to.toString() });
+
+    io.to(calleeSocketId).emit(CALL_INITIATED, {
+      callId,
+      from: user._id,
+      fromName: user.name,
+      fromAvatar: user.avatar?.url || null,
+      chatId,
+    });
+
+    // Send callId back to caller so they can track it
+    socket.emit("CALL_ID", { callId });
+  });
+
+  socket.on(CALL_ACCEPTED, ({ callId }) => {
+    const call = activeCalls.get(callId);
+    if (!call) return;
+    const callerSocketId = userSocketIDs.get(call.caller);
+    if (callerSocketId) io.to(callerSocketId).emit(CALL_ACCEPTED, { callId });
+  });
+
+  socket.on(CALL_REJECTED, ({ callId }) => {
+    const call = activeCalls.get(callId);
+    if (!call) return;
+    const callerSocketId = userSocketIDs.get(call.caller);
+    if (callerSocketId) io.to(callerSocketId).emit(CALL_REJECTED, { callId });
+    activeCalls.delete(callId);
+  });
+
+  socket.on(CALL_ENDED, ({ callId }) => {
+    const call = activeCalls.get(callId);
+    if (!call) return;
+    const otherId = call.caller === user._id.toString() ? call.callee : call.caller;
+    const otherSocketId = userSocketIDs.get(otherId);
+    if (otherSocketId) io.to(otherSocketId).emit(CALL_ENDED, { callId });
+    activeCalls.delete(callId);
+  });
+
+  socket.on(WEBRTC_OFFER, ({ callId, offer }) => {
+    const call = activeCalls.get(callId);
+    if (!call) return;
+    const calleeSocketId = userSocketIDs.get(call.callee);
+    if (calleeSocketId) io.to(calleeSocketId).emit(WEBRTC_OFFER, { callId, offer });
+  });
+
+  socket.on(WEBRTC_ANSWER, ({ callId, answer }) => {
+    const call = activeCalls.get(callId);
+    if (!call) return;
+    const callerSocketId = userSocketIDs.get(call.caller);
+    if (callerSocketId) io.to(callerSocketId).emit(WEBRTC_ANSWER, { callId, answer });
+  });
+
+  socket.on(WEBRTC_ICE_CANDIDATE, ({ callId, candidate }) => {
+    const call = activeCalls.get(callId);
+    if (!call) return;
+    const otherId = call.caller === user._id.toString() ? call.callee : call.caller;
+    const otherSocketId = userSocketIDs.get(otherId);
+    if (otherSocketId) io.to(otherSocketId).emit(WEBRTC_ICE_CANDIDATE, { callId, candidate });
+  });
+  // ─────────────────────────────────────────────────────────────────
 
   socket.on("disconnect", () => {
     userSocketIDs.delete(user._id.toString());

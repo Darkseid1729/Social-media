@@ -37,6 +37,15 @@ const MESSAGE_DELETED = "MESSAGE_DELETED";
 // Message animation event (used to trigger animations tied to messages)
 const MESSAGE_ANIMATION = "MESSAGE_ANIMATION";
 
+// Audio call signaling events
+const CALL_INITIATED       = "CALL_INITIATED";
+const CALL_ACCEPTED        = "CALL_ACCEPTED";
+const CALL_REJECTED        = "CALL_REJECTED";
+const CALL_ENDED           = "CALL_ENDED";
+const WEBRTC_OFFER         = "WEBRTC_OFFER";
+const WEBRTC_ANSWER        = "WEBRTC_ANSWER";
+const WEBRTC_ICE_CANDIDATE = "WEBRTC_ICE_CANDIDATE";
+
 export {
   ALERT,
   REFETCH_CHATS,
@@ -57,4 +66,11 @@ export {
   EMOJI_ANIMATION,
   MESSAGE_ANIMATION,
   MESSAGE_DELETED,
+  CALL_INITIATED,
+  CALL_ACCEPTED,
+  CALL_REJECTED,
+  CALL_ENDED,
+  WEBRTC_OFFER,
+  WEBRTC_ANSWER,
+  WEBRTC_ICE_CANDIDATE,
 };
