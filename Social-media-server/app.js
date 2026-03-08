@@ -324,70 +324,239 @@ io.on("connection", (socket) => {
     io.to(membersSocket).emit(ONLINE_USERS, Array.from(onlineUsers));
   });
 
-  // ── Audio Call Signaling ─────────────────────────────────────────
-  socket.on(CALL_INITIATED, ({ to, chatId }) => {
-    const calleeSocketId = userSocketIDs.get(to.toString());
-    if (!calleeSocketId) return;
+  // ── Audio Call Signaling (1-on-1 + Group mesh) ────────────────────
+  // activeCalls: callId -> { initiator, chatId, isGroup, participants: Map<userId, { userName, socketId, joined }> }
 
+  socket.on(CALL_INITIATED, ({ to, chatId, members, isGroup }) => {
     const callId = uuid();
-    activeCalls.set(callId, { caller: user._id.toString(), callee: to.toString() });
 
-    io.to(calleeSocketId).emit(CALL_INITIATED, {
-      callId,
-      from: user._id,
-      fromName: user.name,
-      fromAvatar: user.avatar?.url || null,
-      chatId,
-    });
+    if (isGroup && members && members.length > 0) {
+      // ── Group call ──────────────────────────────────────────────
+      const participantsMap = new Map();
+      // Add initiator
+      participantsMap.set(user._id.toString(), {
+        userName: user.name,
+        avatar: user.avatar?.url || null,
+        joined: true,
+      });
 
-    // Send callId back to caller so they can track it
-    socket.emit("CALL_ID", { callId });
+      activeCalls.set(callId, {
+        initiator: user._id.toString(),
+        chatId,
+        isGroup: true,
+        participants: participantsMap,
+      });
+
+      // Ring all other members
+      for (const memberId of members) {
+        const mid = memberId.toString();
+        if (mid === user._id.toString()) continue;
+        const memberSocketId = userSocketIDs.get(mid);
+        if (memberSocketId) {
+          io.to(memberSocketId).emit(CALL_INITIATED, {
+            callId,
+            from: user._id,
+            fromName: user.name,
+            fromAvatar: user.avatar?.url || null,
+            chatId,
+            isGroup: true,
+          });
+        }
+      }
+
+      // Send callId back to initiator
+      socket.emit("CALL_ID", { callId });
+    } else {
+      // ── 1-on-1 call ─────────────────────────────────────────────
+      const calleeSocketId = userSocketIDs.get(to.toString());
+      if (!calleeSocketId) return;
+
+      const participantsMap = new Map();
+      participantsMap.set(user._id.toString(), {
+        userName: user.name,
+        avatar: user.avatar?.url || null,
+        joined: true,
+      });
+
+      activeCalls.set(callId, {
+        initiator: user._id.toString(),
+        chatId,
+        isGroup: false,
+        participants: participantsMap,
+        callee: to.toString(),
+      });
+
+      io.to(calleeSocketId).emit(CALL_INITIATED, {
+        callId,
+        from: user._id,
+        fromName: user.name,
+        fromAvatar: user.avatar?.url || null,
+        chatId,
+        isGroup: false,
+      });
+
+      socket.emit("CALL_ID", { callId });
+    }
   });
 
   socket.on(CALL_ACCEPTED, ({ callId }) => {
     const call = activeCalls.get(callId);
     if (!call) return;
-    const callerSocketId = userSocketIDs.get(call.caller);
-    if (callerSocketId) io.to(callerSocketId).emit(CALL_ACCEPTED, { callId });
+    const myId = user._id.toString();
+
+    // Add this user to participants
+    call.participants.set(myId, {
+      userName: user.name,
+      avatar: user.avatar?.url || null,
+      joined: true,
+    });
+
+    // Get all OTHER joined participants
+    const joinedOthers = [];
+    for (const [uid, info] of call.participants) {
+      if (uid !== myId && info.joined) {
+        joinedOthers.push(uid);
+      }
+    }
+
+    // Tell each existing participant to create an offer to this new user
+    for (const otherUid of joinedOthers) {
+      const otherSocketId = userSocketIDs.get(otherUid);
+      if (otherSocketId) {
+        io.to(otherSocketId).emit(CALL_ACCEPTED, {
+          callId,
+          userId: myId,
+          shouldCreateOffer: true,
+        });
+      }
+    }
+
+    // Tell the new user the call is active (they wait for offers from others)
+    socket.emit(CALL_ACCEPTED, {
+      callId,
+      userId: null,
+      shouldCreateOffer: false,
+    });
+
+    // Broadcast updated participants list
+    const participantsList = [];
+    for (const [uid, info] of call.participants) {
+      if (info.joined) participantsList.push({ userId: uid, userName: info.userName });
+    }
+    for (const [uid, info] of call.participants) {
+      if (info.joined) {
+        const sid = userSocketIDs.get(uid);
+        if (sid) io.to(sid).emit("CALL_PARTICIPANTS", { participants: participantsList });
+      }
+    }
   });
 
   socket.on(CALL_REJECTED, ({ callId }) => {
     const call = activeCalls.get(callId);
     if (!call) return;
-    const callerSocketId = userSocketIDs.get(call.caller);
-    if (callerSocketId) io.to(callerSocketId).emit(CALL_REJECTED, { callId });
-    activeCalls.delete(callId);
+    const myId = user._id.toString();
+
+    if (!call.isGroup) {
+      // 1-on-1: notify caller and delete call
+      const callerSocketId = userSocketIDs.get(call.initiator);
+      if (callerSocketId) io.to(callerSocketId).emit(CALL_REJECTED, { callId });
+      activeCalls.delete(callId);
+    } else {
+      // Group: just notify initiator that this user rejected
+      const initiatorSocket = userSocketIDs.get(call.initiator);
+      if (initiatorSocket) {
+        io.to(initiatorSocket).emit(CALL_REJECTED, { callId, userId: myId });
+      }
+    }
   });
 
   socket.on(CALL_ENDED, ({ callId }) => {
     const call = activeCalls.get(callId);
     if (!call) return;
-    const otherId = call.caller === user._id.toString() ? call.callee : call.caller;
-    const otherSocketId = userSocketIDs.get(otherId);
-    if (otherSocketId) io.to(otherSocketId).emit(CALL_ENDED, { callId });
-    activeCalls.delete(callId);
+    const myId = user._id.toString();
+
+    if (!call.isGroup) {
+      // 1-on-1: notify the other person and delete
+      for (const [uid] of call.participants) {
+        if (uid !== myId) {
+          const sid = userSocketIDs.get(uid);
+          if (sid) io.to(sid).emit(CALL_ENDED, { callId });
+        }
+      }
+      activeCalls.delete(callId);
+    } else {
+      // Group: remove this user, notify everyone remaining
+      call.participants.delete(myId);
+
+      for (const [uid, info] of call.participants) {
+        if (info.joined) {
+          const sid = userSocketIDs.get(uid);
+          if (sid) io.to(sid).emit(CALL_ENDED, { callId, userId: myId });
+        }
+      }
+
+      // Broadcast updated participants
+      const participantsList = [];
+      for (const [uid, info] of call.participants) {
+        if (info.joined) participantsList.push({ userId: uid, userName: info.userName });
+      }
+      for (const [uid, info] of call.participants) {
+        if (info.joined) {
+          const sid = userSocketIDs.get(uid);
+          if (sid) io.to(sid).emit("CALL_PARTICIPANTS", { participants: participantsList });
+        }
+      }
+
+      // If fewer than 2 people left, end the call
+      if (participantsList.length < 2) {
+        for (const [uid, info] of call.participants) {
+          if (info.joined) {
+            const sid = userSocketIDs.get(uid);
+            if (sid) io.to(sid).emit(CALL_ENDED, { callId });
+          }
+        }
+        activeCalls.delete(callId);
+      }
+    }
   });
 
-  socket.on(WEBRTC_OFFER, ({ callId, offer }) => {
+  socket.on(WEBRTC_OFFER, ({ callId, offer, toUserId }) => {
     const call = activeCalls.get(callId);
     if (!call) return;
-    const calleeSocketId = userSocketIDs.get(call.callee);
-    if (calleeSocketId) io.to(calleeSocketId).emit(WEBRTC_OFFER, { callId, offer });
+    const targetSocket = userSocketIDs.get(toUserId);
+    if (targetSocket) {
+      io.to(targetSocket).emit(WEBRTC_OFFER, {
+        callId,
+        offer,
+        fromUserId: user._id.toString(),
+      });
+    }
   });
 
-  socket.on(WEBRTC_ANSWER, ({ callId, answer }) => {
+  socket.on(WEBRTC_ANSWER, ({ callId, answer, toUserId }) => {
     const call = activeCalls.get(callId);
     if (!call) return;
-    const callerSocketId = userSocketIDs.get(call.caller);
-    if (callerSocketId) io.to(callerSocketId).emit(WEBRTC_ANSWER, { callId, answer });
+    const targetSocket = userSocketIDs.get(toUserId);
+    if (targetSocket) {
+      io.to(targetSocket).emit(WEBRTC_ANSWER, {
+        callId,
+        answer,
+        fromUserId: user._id.toString(),
+      });
+    }
   });
 
-  socket.on(WEBRTC_ICE_CANDIDATE, ({ callId, candidate }) => {
+  socket.on(WEBRTC_ICE_CANDIDATE, ({ callId, candidate, toUserId }) => {
     const call = activeCalls.get(callId);
     if (!call) return;
-    const otherId = call.caller === user._id.toString() ? call.callee : call.caller;
-    const otherSocketId = userSocketIDs.get(otherId);
-    if (otherSocketId) io.to(otherSocketId).emit(WEBRTC_ICE_CANDIDATE, { callId, candidate });
+    const targetSocket = userSocketIDs.get(toUserId);
+    if (targetSocket) {
+      io.to(targetSocket).emit(WEBRTC_ICE_CANDIDATE, {
+        callId,
+        candidate,
+        fromUserId: user._id.toString(),
+      });
+    }
   });
   // ─────────────────────────────────────────────────────────────────
 

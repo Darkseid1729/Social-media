@@ -55,7 +55,9 @@ const AppLayout = () => (WrappedComponent) => {
     const {
       callState,
       callInfo,
-      remoteAudioRef,
+      participants,
+      muted,
+      toggleMute,
       startCall,
       acceptCall,
       rejectCall,
@@ -250,7 +252,9 @@ const AppLayout = () => (WrappedComponent) => {
         <AudioCallDialog
           callState={callState}
           callInfo={callInfo}
-          remoteAudioRef={remoteAudioRef}
+          participants={participants}
+          muted={muted}
+          onToggleMute={toggleMute}
           onAccept={acceptCall}
           onReject={rejectCall}
           onEnd={endCall}

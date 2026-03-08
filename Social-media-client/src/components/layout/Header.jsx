@@ -319,11 +319,25 @@ const Header = (props) => {
   );
 
   const handleAudioCall = () => {
-    if (!chatId || !otherMember?._id) {
+    if (!chatId) {
       toast.error("Please select a chat first");
       return;
     }
-    if (onStartCall) {
+    if (!onStartCall) return;
+
+    if (isGroupChat) {
+      const members = chatDetails?.members?.map((m) => m._id) || [];
+      onStartCall({
+        chatId,
+        members,
+        isGroup: true,
+        groupName: chatDetails?.name || "Group Call",
+      });
+    } else {
+      if (!otherMember?._id) {
+        toast.error("No member to call");
+        return;
+      }
       onStartCall({ chatId, to: otherMember._id });
     }
     handleMobileMenuClose();
@@ -424,10 +438,10 @@ const Header = (props) => {
 
             {/* Desktop header actions */}
             <Box sx={{ display: { xs: "none", sm: "flex" } }}>
-            {/* Audio call button - only for 1-on-1 chats */}
-            {chatId && !isGroupChat && otherMember && (
+            {/* Audio call button - 1-on-1 and group chats */}
+            {chatId && (isGroupChat || otherMember) && (
               <IconBtn
-                title={"Audio Call"}
+                title={isGroupChat ? "Group Call" : "Audio Call"}
                 icon={<PhoneIcon />}
                 onClick={handleAudioCall}
               />
@@ -493,8 +507,8 @@ const Header = (props) => {
             </Box>
 
             {/* Mobile header icons - always visible */}
-            {/* Audio call button for mobile - only for 1-on-1 chats */}
-            {chatId && !isGroupChat && otherMember && (
+            {/* Audio call button for mobile - 1-on-1 and group chats */}
+            {chatId && (isGroupChat || otherMember) && (
               <Box sx={{ display: { xs: "block", sm: "none" } }}>
                 <IconButton color="inherit" onClick={handleAudioCall}>
                   <PhoneIcon />
@@ -539,9 +553,9 @@ const Header = (props) => {
                 <MenuItem onClick={openProfile}>
                   <AccountCircleIcon sx={{ mr: 1 }} /> Profile
                 </MenuItem>
-                {chatId && !isGroupChat && otherMember && (
+                {chatId && (isGroupChat || otherMember) && (
                   <MenuItem onClick={handleAudioCall}>
-                    <PhoneIcon sx={{ mr: 1 }} /> Audio Call
+                    <PhoneIcon sx={{ mr: 1 }} /> {isGroupChat ? "Group Call" : "Audio Call"}
                   </MenuItem>
                 )}
                 {isGroupChat && (
