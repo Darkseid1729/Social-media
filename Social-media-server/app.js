@@ -147,9 +147,12 @@ io.on("connection", (socket) => {
       if (!participant) continue;
 
       const otherParticipants = [];
+      let toName = null, toAvatar = null;
       for (const [uid, info] of call.participants) {
         if (uid !== myId && info.joined && !info.disconnected) {
           otherParticipants.push({ userId: uid, userName: info.userName });
+          // For 1:1 calls, capture the other person's name/avatar
+          if (!call.isGroup) { toName = info.userName; toAvatar = info.avatar || null; }
         }
       }
 
@@ -157,7 +160,11 @@ io.on("connection", (socket) => {
         callId,
         chatId: call.chatId,
         isGroup: call.isGroup,
+        groupName: call.groupName || "Group Call",
         participants: otherParticipants,
+        toName,
+        toAvatar,
+        callStartedAt: call.activeAt || null,
       });
 
       // Notify others that this user is back — they should re-create peer
@@ -377,7 +384,7 @@ io.on("connection", (socket) => {
   // ── Audio Call Signaling (1-on-1 + Group mesh) ────────────────────
   // activeCalls: callId -> { initiator, chatId, isGroup, participants: Map<userId, { userName, socketId, joined }> }
 
-  socket.on(CALL_INITIATED, ({ to, chatId, members, isGroup }) => {
+  socket.on(CALL_INITIATED, ({ to, chatId, members, isGroup, groupName }) => {
     const callId = uuid();
 
     if (isGroup && members && members.length > 0) {
@@ -394,6 +401,8 @@ io.on("connection", (socket) => {
         initiator: user._id.toString(),
         chatId,
         isGroup: true,
+        groupName: groupName || "Group Call",
+        activeAt: null,
         participants: participantsMap,
       });
 
@@ -457,6 +466,7 @@ io.on("connection", (socket) => {
         initiator: user._id.toString(),
         chatId,
         isGroup: false,
+        activeAt: null,
         participants: participantsMap,
         callee: to.toString(),
       });
@@ -503,6 +513,8 @@ io.on("connection", (socket) => {
       avatar: user.avatar?.url || null,
       joined: true,
     });
+    // Record the moment the call first became active (for timer restoration on rejoin)
+    if (!call.activeAt) call.activeAt = Date.now();
 
     // Get all OTHER joined (and connected) participants
     const joinedOthers = [];

@@ -341,7 +341,7 @@ const Header = (props) => {
         toast.error("No member to call");
         return;
       }
-      onStartCall({ chatId, to: otherMember._id });
+      onStartCall({ chatId, to: otherMember._id, toName: otherMember.name, toAvatar: otherMember.avatar?.url || null });
     }
     handleMobileMenuClose();
   };

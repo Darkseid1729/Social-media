@@ -67,6 +67,8 @@ const AppLayout = () => (WrappedComponent) => {
       acceptCall,
       rejectCall,
       endCall,
+      voiceEffect,
+      changeVoiceEffect,
     } = useAudioCall();
 
     // Show toast when a call ends with a reason
@@ -304,6 +306,8 @@ const AppLayout = () => (WrappedComponent) => {
           onAccept={acceptCall}
           onReject={rejectCall}
           onEnd={endCall}
+          voiceEffect={voiceEffect}
+          onChangeVoiceEffect={changeVoiceEffect}
         />
 
         <DeleteChatMenu
