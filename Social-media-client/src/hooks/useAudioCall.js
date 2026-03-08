@@ -454,19 +454,6 @@ export const useAudioCall = () => {
     loadIceServers().then((servers) => { iceServersRef.current = servers; });
   }, []);
 
-  // Re-route audio if a Bluetooth device is connected / disconnected mid-call
-  useEffect(() => {
-    const handleDeviceChange = () => {
-      resolveSinkId(speakerOnRef.current).then((sinkId) =>
-        applySinkIdRef.current(sinkId)
-      );
-    };
-    navigator.mediaDevices?.addEventListener("devicechange", handleDeviceChange);
-    return () => {
-      navigator.mediaDevices?.removeEventListener("devicechange", handleDeviceChange);
-    };
-  }, [resolveSinkId]);
-
   // ── Mute toggle ─────────────────────────────────────────────────
   const toggleMute = useCallback(() => {
     setMuted((prev) => {
@@ -528,6 +515,19 @@ export const useAudioCall = () => {
       resolveSinkId(next).then((sinkId) => applySinkIdRef.current(sinkId));
       return next;
     });
+  }, [resolveSinkId]);
+
+  // Re-route audio if a Bluetooth device is connected / disconnected mid-call
+  useEffect(() => {
+    const handleDeviceChange = () => {
+      resolveSinkId(speakerOnRef.current).then((sinkId) =>
+        applySinkIdRef.current(sinkId)
+      );
+    };
+    navigator.mediaDevices?.addEventListener("devicechange", handleDeviceChange);
+    return () => {
+      navigator.mediaDevices?.removeEventListener("devicechange", handleDeviceChange);
+    };
   }, [resolveSinkId]);
 
   // ── Cleanup ─────────────────────────────────────────────────────
