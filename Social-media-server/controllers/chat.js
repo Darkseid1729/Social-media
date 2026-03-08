@@ -1080,6 +1080,24 @@ const getMoreMessages = TryCatch(async (req, res, next) => {
   });
 });
 
+// Proxy TURN credentials from Metered — keeps the API key server-side only
+const getTurnCredentials = TryCatch(async (req, res, next) => {
+  const meteredUrl = process.env.TURN_METERED_URL;
+  if (!meteredUrl) {
+    // No TURN configured — return STUN-only fallback
+    return res.json([
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+    ]);
+  }
+  const response = await fetch(meteredUrl);
+  if (!response.ok) {
+    return next(new ErrorHandler("Failed to fetch TURN credentials", 502));
+  }
+  const iceServers = await response.json();
+  res.json(iceServers);
+});
+
 // Get call history for a chat
 const getCallHistory = TryCatch(async (req, res, next) => {
   const chatId = req.params.id;
@@ -1134,4 +1152,5 @@ export {
   getMessagesAroundMessage,
   getMoreMessages,
   getCallHistory,
+  getTurnCredentials,
 };

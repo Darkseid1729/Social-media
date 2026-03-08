@@ -25,6 +25,7 @@ import {
   getMessagesAroundMessage,
   getMoreMessages,
   getCallHistory,
+  getTurnCredentials,
 } from "../controllers/chat.js";
 import { singleAvatar } from "../middlewares/multer.js";
 import {
@@ -88,6 +89,9 @@ app.get("/media/:id", chatIdValidator(), validateHandler, getChatMedia);
 
 // Get Call History for a chat
 app.get("/calls/:id", chatIdValidator(), validateHandler, getCallHistory);
+
+// Get TURN credentials (proxies Metered API — key stays server-side)
+app.get("/turn-credentials", getTurnCredentials);
 
 // Get Chat Details, rename,delete
 app

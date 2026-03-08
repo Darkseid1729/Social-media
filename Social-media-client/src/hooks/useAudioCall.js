@@ -9,12 +9,31 @@ import {
   WEBRTC_ANSWER,
   WEBRTC_ICE_CANDIDATE,
 } from "../constants/events";
+import { server } from "../constants/config";
 
-const ICE_SERVERS = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-  ],
+// STUN-only fallback used until TURN credentials are loaded
+const STUN_ONLY = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+];
+
+// Module-level cache — fetched once, shared across all hook instances.
+// Fetches from our own backend so the Metered API key never reaches the client.
+let _iceCache = null;
+
+const loadIceServers = async () => {
+  if (_iceCache) return _iceCache;
+  try {
+    const res = await fetch(`${server}/api/v1/chat/turn-credentials`, {
+      credentials: "include", // send auth cookie
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    _iceCache = await res.json();
+  } catch (err) {
+    console.warn("Failed to fetch TURN credentials, falling back to STUN only:", err);
+    _iceCache = STUN_ONLY;
+  }
+  return _iceCache;
 };
 
 export const useAudioCall = () => {
@@ -36,6 +55,12 @@ export const useAudioCall = () => {
   const localStreamRef = useRef(null);
   const remoteAudiosRef = useRef(new Map());
   const callIdRef = useRef(null);
+  const iceServersRef = useRef(STUN_ONLY); // updated once TURN creds load
+
+  // Prefetch ICE / TURN credentials as early as possible
+  useEffect(() => {
+    loadIceServers().then((servers) => { iceServersRef.current = servers; });
+  }, []);
 
   // ── Mute toggle ─────────────────────────────────────────────────
   const toggleMute = useCallback(() => {
@@ -92,7 +117,7 @@ export const useAudioCall = () => {
     (callId, remoteUserId) => {
       if (peersRef.current.has(remoteUserId)) return peersRef.current.get(remoteUserId);
 
-      const peer = new RTCPeerConnection(ICE_SERVERS);
+      const peer = new RTCPeerConnection({ iceServers: iceServersRef.current });
 
       peer.onicecandidate = (e) => {
         if (e.candidate) {
@@ -126,11 +151,18 @@ export const useAudioCall = () => {
     [socket]
   );
 
-  // ── Acquire microphone ──────────────────────────────────────────
+  // ── Acquire microphone + ensure ICE servers are loaded ─────────
   const acquireMic = useCallback(async () => {
-    if (localStreamRef.current) return localStreamRef.current;
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    // Run both in parallel — by the time mic is granted and call starts,
+    // TURN creds will be fetched and iceServersRef will be populated.
+    const [stream, servers] = await Promise.all([
+      localStreamRef.current
+        ? Promise.resolve(localStreamRef.current)
+        : navigator.mediaDevices.getUserMedia({ audio: true, video: false }),
+      loadIceServers(),
+    ]);
     localStreamRef.current = stream;
+    iceServersRef.current = servers;
     return stream;
   }, []);
 
