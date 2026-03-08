@@ -1080,6 +1080,38 @@ const getMoreMessages = TryCatch(async (req, res, next) => {
   });
 });
 
+// Get call history for a chat
+const getCallHistory = TryCatch(async (req, res, next) => {
+  const chatId = req.params.id;
+  const { page = 1 } = req.query;
+  const limit = 20;
+  const skip = (page - 1) * limit;
+
+  const chat = await Chat.findById(chatId);
+  if (!chat) return next(new ErrorHandler("Chat not found", 404));
+  if (!chat.members.map(String).includes(req.user.toString()))
+    return next(new ErrorHandler("You are not allowed to access this chat", 403));
+
+  const { CallRecord } = await import("../models/callRecord.js");
+
+  const [calls, totalCount] = await Promise.all([
+    CallRecord.find({ chat: chatId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("caller", "name avatar")
+      .populate("participants.user", "name avatar")
+      .lean(),
+    CallRecord.countDocuments({ chat: chatId }),
+  ]);
+
+  return res.status(200).json({
+    success: true,
+    calls,
+    totalPages: Math.ceil(totalCount / limit) || 0,
+  });
+});
+
 export {
   newGroupChat,
   getMyChats,
@@ -1101,4 +1133,5 @@ export {
   searchMessages,
   getMessagesAroundMessage,
   getMoreMessages,
+  getCallHistory,
 };

@@ -24,6 +24,7 @@ import {
   searchMessages,
   getMessagesAroundMessage,
   getMoreMessages,
+  getCallHistory,
 } from "../controllers/chat.js";
 import { singleAvatar } from "../middlewares/multer.js";
 import {
@@ -84,6 +85,9 @@ app.get("/search/:id", chatIdValidator(), validateHandler, searchMessages);
 
 // Get Chat Media (photos and videos)
 app.get("/media/:id", chatIdValidator(), validateHandler, getChatMedia);
+
+// Get Call History for a chat
+app.get("/calls/:id", chatIdValidator(), validateHandler, getCallHistory);
 
 // Get Chat Details, rename,delete
 app

@@ -49,6 +49,7 @@ import youtubeRoute from "./routes/youtube.js";
 import gifRoute from "./routes/gif.js";
 import { createBotUser } from "./seeders/bot.js";
 import { initializeFirebase, sendMessageNotification } from "./utils/firebase.js";
+import { CallRecord } from "./models/callRecord.js";
 
 const mongoURI = process.env.MONGO_URI;
 const port = process.env.PORT || 3000;
@@ -57,6 +58,7 @@ const adminSecretKey = process.env.ADMIN_SECRET_KEY;
 const userSocketIDs = new Map();
 const onlineUsers = new Set();
 const activeCalls = new Map(); // callId -> { caller, callee }
+const disconnectTimers = new Map(); // userId -> { timerId, callIds }
 
 // ── Emoji Combo Detection ──────────────────────────────────────────
 // In-memory store: chatId -> { emoji, userId, userName, ts }
@@ -125,6 +127,54 @@ io.use((socket, next) => {
 io.on("connection", (socket) => {
   const user = socket.user;
   userSocketIDs.set(user._id.toString(), socket.id);
+
+  // ── Cancel any pending disconnect timer for this user ──────────
+  const myId = user._id.toString();
+  const pendingDisconnect = disconnectTimers.get(myId);
+  if (pendingDisconnect) {
+    clearTimeout(pendingDisconnect.timerId);
+    disconnectTimers.delete(myId);
+    // Don't clear participant.disconnected here — CALL_ACCEPTED will
+    // clear it when the client actually re-joins the WebRTC mesh.
+    // This prevents duplicate offer storms if CHECK_ACTIVE_CALL
+    // is processed more than once.
+  }
+
+  // ── Client asks "am I in an active call?" after setting up listeners ─
+  socket.on("CHECK_ACTIVE_CALL", () => {
+    for (const [callId, call] of activeCalls) {
+      const participant = call.participants.get(myId);
+      if (!participant) continue;
+
+      const otherParticipants = [];
+      for (const [uid, info] of call.participants) {
+        if (uid !== myId && info.joined && !info.disconnected) {
+          otherParticipants.push({ userId: uid, userName: info.userName });
+        }
+      }
+
+      socket.emit("CALL_REJOIN", {
+        callId,
+        chatId: call.chatId,
+        isGroup: call.isGroup,
+        participants: otherParticipants,
+      });
+
+      // Notify others that this user is back — they should re-create peer
+      for (const [uid, info] of call.participants) {
+        if (uid !== myId && info.joined && !info.disconnected) {
+          const sid = userSocketIDs.get(uid);
+          if (sid) {
+            io.to(sid).emit("CALL_USER_RECONNECTED", {
+              callId,
+              userId: myId,
+              userName: user.name,
+            });
+          }
+        }
+      }
+    }
+  });
 
   socket.on(NEW_MESSAGE, async (payload) => {
     try {
@@ -348,6 +398,7 @@ io.on("connection", (socket) => {
       });
 
       // Ring all other members
+      let rang = 0;
       for (const memberId of members) {
         const mid = memberId.toString();
         if (mid === user._id.toString()) continue;
@@ -361,15 +412,39 @@ io.on("connection", (socket) => {
             chatId,
             isGroup: true,
           });
+          rang++;
         }
+      }
+
+      if (rang === 0) {
+        activeCalls.delete(callId);
+        socket.emit("CALL_FAILED", { reason: "No group members are online" });
+        return;
       }
 
       // Send callId back to initiator
       socket.emit("CALL_ID", { callId });
+
+      // Save call record
+      CallRecord.create({
+        callId,
+        chat: chatId,
+        caller: user._id,
+        isGroup: true,
+        participants: [{ user: user._id, joinedAt: new Date() }],
+        startedAt: new Date(),
+      }).catch((err) => console.error("CallRecord create error:", err));
     } else {
       // ── 1-on-1 call ─────────────────────────────────────────────
+      if (!to) {
+        socket.emit("CALL_FAILED", { reason: "No recipient specified" });
+        return;
+      }
       const calleeSocketId = userSocketIDs.get(to.toString());
-      if (!calleeSocketId) return;
+      if (!calleeSocketId) {
+        socket.emit("CALL_FAILED", { reason: "User is offline" });
+        return;
+      }
 
       const participantsMap = new Map();
       participantsMap.set(user._id.toString(), {
@@ -396,6 +471,16 @@ io.on("connection", (socket) => {
       });
 
       socket.emit("CALL_ID", { callId });
+
+      // Save call record
+      CallRecord.create({
+        callId,
+        chat: chatId,
+        caller: user._id,
+        isGroup: false,
+        participants: [{ user: user._id, joinedAt: new Date() }],
+        startedAt: new Date(),
+      }).catch((err) => console.error("CallRecord create error:", err));
     }
   });
 
@@ -404,17 +489,25 @@ io.on("connection", (socket) => {
     if (!call) return;
     const myId = user._id.toString();
 
-    // Add this user to participants
+    const existing = call.participants.get(myId);
+    // If user is already fully joined and connected, this is a duplicate
+    // CALL_ACCEPTED (e.g. from double CHECK_ACTIVE_CALL). Just acknowledge.
+    if (existing && existing.joined && !existing.disconnected) {
+      socket.emit(CALL_ACCEPTED, { callId, userId: null, shouldCreateOffer: false });
+      return;
+    }
+
+    // Add this user to participants (or update reconnecting participant)
     call.participants.set(myId, {
       userName: user.name,
       avatar: user.avatar?.url || null,
       joined: true,
     });
 
-    // Get all OTHER joined participants
+    // Get all OTHER joined (and connected) participants
     const joinedOthers = [];
     for (const [uid, info] of call.participants) {
-      if (uid !== myId && info.joined) {
+      if (uid !== myId && info.joined && !info.disconnected) {
         joinedOthers.push(uid);
       }
     }
@@ -449,6 +542,16 @@ io.on("connection", (socket) => {
         if (sid) io.to(sid).emit("CALL_PARTICIPANTS", { participants: participantsList });
       }
     }
+
+    // Update call record: mark answered, add participant
+    CallRecord.findOneAndUpdate(
+      { callId },
+      {
+        status: "answered",
+        answeredAt: new Date(),
+        $push: { participants: { user: user._id, joinedAt: new Date() } },
+      }
+    ).catch((err) => console.error("CallRecord accept error:", err));
   });
 
   socket.on(CALL_REJECTED, ({ callId }) => {
@@ -461,6 +564,12 @@ io.on("connection", (socket) => {
       const callerSocketId = userSocketIDs.get(call.initiator);
       if (callerSocketId) io.to(callerSocketId).emit(CALL_REJECTED, { callId });
       activeCalls.delete(callId);
+
+      // Update call record: rejected
+      CallRecord.findOneAndUpdate(
+        { callId },
+        { status: "rejected", endedAt: new Date() }
+      ).catch((err) => console.error("CallRecord reject error:", err));
     } else {
       // Group: just notify initiator that this user rejected
       const initiatorSocket = userSocketIDs.get(call.initiator);
@@ -484,6 +593,17 @@ io.on("connection", (socket) => {
         }
       }
       activeCalls.delete(callId);
+
+      // Finalize call record
+      CallRecord.findOneAndUpdate(
+        { callId },
+        { endedAt: new Date() }
+      ).then((rec) => {
+        if (rec && rec.answeredAt) {
+          const dur = Math.round((Date.now() - rec.answeredAt.getTime()) / 1000);
+          CallRecord.findOneAndUpdate({ callId }, { duration: dur }).catch(() => {});
+        }
+      }).catch((err) => console.error("CallRecord end error:", err));
     } else {
       // Group: remove this user, notify everyone remaining
       call.participants.delete(myId);
@@ -516,6 +636,17 @@ io.on("connection", (socket) => {
           }
         }
         activeCalls.delete(callId);
+
+        // Finalize call record
+        CallRecord.findOneAndUpdate(
+          { callId },
+          { endedAt: new Date() }
+        ).then((rec) => {
+          if (rec && rec.answeredAt) {
+            const dur = Math.round((Date.now() - rec.answeredAt.getTime()) / 1000);
+            CallRecord.findOneAndUpdate({ callId }, { duration: dur }).catch(() => {});
+          }
+        }).catch((err) => console.error("CallRecord end error:", err));
       }
     }
   });
@@ -561,9 +692,116 @@ io.on("connection", (socket) => {
   // ─────────────────────────────────────────────────────────────────
 
   socket.on("disconnect", () => {
-    userSocketIDs.delete(user._id.toString());
-    onlineUsers.delete(user._id.toString());
-    
+    const myId = user._id.toString();
+    userSocketIDs.delete(myId);
+    onlineUsers.delete(myId);
+
+    // ── Check if user is in any active calls ─────────────────────
+    const callIdsInvolved = [];
+    for (const [callId, call] of activeCalls) {
+      if (call.participants.has(myId) && call.participants.get(myId).joined) {
+        callIdsInvolved.push(callId);
+        // Mark as disconnected but don't remove yet
+        call.participants.get(myId).disconnected = true;
+      }
+    }
+
+    // Notify others that this user is temporarily disconnected (reconnecting)
+    for (const callId of callIdsInvolved) {
+      const call = activeCalls.get(callId);
+      if (!call) continue;
+      for (const [uid, info] of call.participants) {
+        if (uid !== myId && info.joined && !info.disconnected) {
+          const sid = userSocketIDs.get(uid);
+          if (sid) {
+            io.to(sid).emit("CALL_USER_DISCONNECTED", {
+              callId,
+              userId: myId,
+            });
+          }
+        }
+      }
+    }
+
+    if (callIdsInvolved.length > 0) {
+      // Give 15 seconds to reconnect before ending the call
+      const timerId = setTimeout(() => {
+        disconnectTimers.delete(myId);
+
+        for (const callId of callIdsInvolved) {
+          const call = activeCalls.get(callId);
+          if (!call) continue;
+          const participant = call.participants.get(myId);
+          if (!participant || !participant.disconnected) continue; // user already reconnected
+
+          if (!call.isGroup) {
+            // 1-on-1: notify the other participant
+            for (const [uid] of call.participants) {
+              if (uid !== myId) {
+                const sid = userSocketIDs.get(uid);
+                if (sid) io.to(sid).emit(CALL_ENDED, { callId, reason: "disconnected" });
+              }
+            }
+            activeCalls.delete(callId);
+
+            CallRecord.findOneAndUpdate(
+              { callId },
+              { endedAt: new Date() }
+            ).then((rec) => {
+              if (rec && rec.answeredAt) {
+                const dur = Math.round((Date.now() - rec.answeredAt.getTime()) / 1000);
+                CallRecord.findOneAndUpdate({ callId }, { duration: dur }).catch(() => {});
+              }
+            }).catch((err) => console.error("CallRecord disconnect error:", err));
+          } else {
+            // Group: remove user and notify remaining
+            call.participants.delete(myId);
+            for (const [uid, info] of call.participants) {
+              if (info.joined && !info.disconnected) {
+                const sid = userSocketIDs.get(uid);
+                if (sid) io.to(sid).emit(CALL_ENDED, { callId, userId: myId });
+              }
+            }
+            const remaining = [...call.participants].filter(([, info]) => info.joined && !info.disconnected);
+            if (remaining.length < 2) {
+              for (const [uid] of remaining) {
+                const sid = userSocketIDs.get(uid);
+                if (sid) io.to(sid).emit(CALL_ENDED, { callId });
+              }
+              activeCalls.delete(callId);
+
+              CallRecord.findOneAndUpdate(
+                { callId },
+                { endedAt: new Date() }
+              ).then((rec) => {
+                if (rec && rec.answeredAt) {
+                  const dur = Math.round((Date.now() - rec.answeredAt.getTime()) / 1000);
+                  CallRecord.findOneAndUpdate({ callId }, { duration: dur }).catch(() => {});
+                }
+              }).catch((err) => console.error("CallRecord disconnect error:", err));
+            }
+          }
+        }
+      }, 15000); // 15-second grace period
+
+      disconnectTimers.set(myId, { timerId, callIds: callIdsInvolved });
+    }
+
+    // Also clean calls where this user is the callee (hasn't joined yet)
+    for (const [callId, call] of activeCalls) {
+      if (call.callee === myId && !call.participants.has(myId)) {
+        const initiatorSid = userSocketIDs.get(call.initiator);
+        if (initiatorSid) io.to(initiatorSid).emit("CALL_FAILED", { reason: "User is offline" });
+        activeCalls.delete(callId);
+
+        // Mark as missed
+        CallRecord.findOneAndUpdate(
+          { callId },
+          { status: "missed", endedAt: new Date() }
+        ).catch((err) => console.error("CallRecord missed error:", err));
+      }
+    }
+
     // Update lastSeen timestamp on disconnect
     User.findByIdAndUpdate(user._id, { lastSeen: new Date() }).catch(err => 
       console.error("Error updating lastSeen:", err)

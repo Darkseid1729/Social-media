@@ -291,6 +291,15 @@ const api = createApi({
       }),
       invalidatesTags: ["Message"],
     }),
+
+    // Get call history for a chat
+    getCallHistory: builder.query({
+      query: ({ chatId, page = 1 }) => ({
+        url: `chat/calls/${chatId}?page=${page}`,
+        credentials: "include",
+      }),
+      keepUnusedDataFor: 0,
+    }),
   }),
 });
 
@@ -321,5 +330,6 @@ export const {
   useCheckFriendStatusQuery,
   useGetChatMediaQuery,
   useDeleteMessageMutation,
+  useGetCallHistoryQuery,
 } = api;
 

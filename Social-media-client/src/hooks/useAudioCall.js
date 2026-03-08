@@ -19,16 +19,22 @@ const ICE_SERVERS = {
 
 export const useAudioCall = () => {
   const socket = getSocket();
-  // "idle" | "calling" | "incoming" | "active"
   const [callState, setCallState] = useState("idle");
   const [callInfo, setCallInfo] = useState(null);
-  const [participants, setParticipants] = useState([]); // list of { userId, userName }
+  const [participants, setParticipants] = useState([]);
   const [muted, setMuted] = useState(false);
+  const [speakerOn, setSpeakerOn] = useState(true);
+  const [callEndReason, setCallEndReason] = useState(null); // "offline" | "rejected" | "ended" | "no_members" | etc.
 
-  // For group calls: one peer per remote participant  { odbc -> RTCPeerConnection }
+  // ── Refs to avoid stale closures inside socket handlers ─────────
+  const callStateRef = useRef(callState);
+  const callInfoRef = useRef(callInfo);
+  useEffect(() => { callStateRef.current = callState; }, [callState]);
+  useEffect(() => { callInfoRef.current = callInfo; }, [callInfo]);
+
   const peersRef = useRef(new Map());
   const localStreamRef = useRef(null);
-  const remoteAudiosRef = useRef(new Map()); // odbc -> <audio> element (created dynamically)
+  const remoteAudiosRef = useRef(new Map());
   const callIdRef = useRef(null);
 
   // ── Mute toggle ─────────────────────────────────────────────────
@@ -40,6 +46,21 @@ export const useAudioCall = () => {
           track.enabled = !next;
         });
       }
+      return next;
+    });
+  }, []);
+
+  // ── Speaker / earpiece toggle ────────────────────────────────────
+  const toggleSpeaker = useCallback(() => {
+    setSpeakerOn((prev) => {
+      const next = !prev;
+      // setSinkId: 'default' = speaker, 'communications' = earpiece
+      const sinkId = next ? "default" : "communications";
+      remoteAudiosRef.current.forEach((audioEl) => {
+        if (typeof audioEl.setSinkId === "function") {
+          audioEl.setSinkId(sinkId).catch(() => {});
+        }
+      });
       return next;
     });
   }, []);
@@ -60,12 +81,15 @@ export const useAudioCall = () => {
     setCallInfo(null);
     setParticipants([]);
     setMuted(false);
+    setSpeakerOn(true);
+    // Don't clear callEndReason here — let consumer read it after cleanup
   }, []);
+  const cleanupRef = useRef(cleanup);
+  cleanupRef.current = cleanup;
 
   // ── Create a peer connection to a specific remote user ──────────
   const createPeerFor = useCallback(
     (callId, remoteUserId) => {
-      // Don't duplicate
       if (peersRef.current.has(remoteUserId)) return peersRef.current.get(remoteUserId);
 
       const peer = new RTCPeerConnection(ICE_SERVERS);
@@ -81,7 +105,6 @@ export const useAudioCall = () => {
       };
 
       peer.ontrack = (e) => {
-        // Create or reuse an audio element for this remote user
         let audioEl = remoteAudiosRef.current.get(remoteUserId);
         if (!audioEl) {
           audioEl = document.createElement("audio");
@@ -93,7 +116,6 @@ export const useAudioCall = () => {
         audioEl.srcObject = e.streams[0];
       };
 
-      // Add local tracks
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((t) => peer.addTrack(t, localStreamRef.current));
       }
@@ -112,7 +134,7 @@ export const useAudioCall = () => {
     return stream;
   }, []);
 
-  // ── Start call (works for 1-on-1 and group) ────────────────────
+  // ── Start call ──────────────────────────────────────────────────
   const startCall = useCallback(
     async ({ chatId, to, members, isGroup, groupName }) => {
       try {
@@ -129,7 +151,7 @@ export const useAudioCall = () => {
           to,
           isGroup: !!isGroup,
           groupName: groupName || "Group Call",
-          toName: null, // will be populated for 1-on-1 via CALL_ID callback
+          toName: null,
         });
       } catch (err) {
         console.error("Microphone access denied:", err);
@@ -171,7 +193,7 @@ export const useAudioCall = () => {
     [socket, cleanup]
   );
 
-  // ── Socket listeners ────────────────────────────────────────────
+  // ── Socket listeners (stable — no callState/callInfo in deps) ───
   useEffect(() => {
     // Server sends back callId to the caller
     const handleCallId = ({ callId, participants: parts }) => {
@@ -182,7 +204,8 @@ export const useAudioCall = () => {
 
     // Incoming call (receiver side)
     const handleIncoming = (data) => {
-      if (callState !== "idle") {
+      // Read from ref — never stale
+      if (callStateRef.current !== "idle") {
         socket.emit(CALL_REJECTED, { callId: data.callId });
         return;
       }
@@ -191,33 +214,53 @@ export const useAudioCall = () => {
       setCallInfo(data);
     };
 
-    // Someone accepted — server tells us to create a peer connection with them
+    // Someone accepted — server tells us to create a peer connection
     const handleAccepted = async ({ callId, userId, shouldCreateOffer }) => {
       callIdRef.current = callId;
 
+      // Ensure mic is available (caller already has it, safety net for edge cases)
+      if (!localStreamRef.current) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          localStreamRef.current = stream;
+        } catch (e) {
+          console.error("Failed to acquire mic in handleAccepted:", e);
+        }
+      }
+
       if (shouldCreateOffer && userId) {
-        // We need to initiate the WebRTC connection to this user
+        // Close any stale peer for this user (e.g. after reconnection)
+        if (peersRef.current.has(userId)) {
+          peersRef.current.get(userId).close();
+          peersRef.current.delete(userId);
+          const oldAudio = remoteAudiosRef.current.get(userId);
+          if (oldAudio) { oldAudio.srcObject = null; oldAudio.remove(); }
+          remoteAudiosRef.current.delete(userId);
+        }
         const peer = createPeerFor(callId, userId);
-        const offer = await peer.createOffer();
-        await peer.setLocalDescription(offer);
-        socket.emit(WEBRTC_OFFER, { callId, offer, toUserId: userId });
+        try {
+          const offer = await peer.createOffer();
+          await peer.setLocalDescription(offer);
+          socket.emit(WEBRTC_OFFER, { callId, offer, toUserId: userId });
+        } catch (e) {
+          console.error("Error creating offer:", e);
+        }
       }
 
       setCallState("active");
       setCallInfo((prev) => (prev ? { ...prev, callId } : prev));
     };
 
-    const handleRejected = ({ userId }) => {
-      // If it's a group call and one person rejected, just remove them
-      if (callInfo?.isGroup && userId) {
+    const handleRejected = ({ callId, userId }) => {
+      if (callInfoRef.current?.isGroup && userId) {
         setParticipants((prev) => prev.filter((p) => p.userId !== userId));
         return;
       }
-      cleanup();
+      setCallEndReason("rejected");
+      cleanupRef.current();
     };
 
-    const handleEnded = ({ userId }) => {
-      // If group call and one person left, just close their peer
+    const handleEnded = ({ callId, userId, reason }) => {
       if (userId && peersRef.current.has(userId)) {
         peersRef.current.get(userId)?.close();
         peersRef.current.delete(userId);
@@ -225,25 +268,57 @@ export const useAudioCall = () => {
         if (audioEl) { audioEl.srcObject = null; audioEl.remove(); }
         remoteAudiosRef.current.delete(userId);
         setParticipants((prev) => prev.filter((p) => p.userId !== userId));
-        // If no peers left, end call
-        if (peersRef.current.size === 0) cleanup();
+        if (peersRef.current.size === 0) {
+          setCallEndReason(reason || "ended");
+          cleanupRef.current();
+        }
         return;
       }
-      cleanup();
+      setCallEndReason(reason || "ended");
+      cleanupRef.current();
     };
 
     const handleOffer = async ({ callId, offer, fromUserId }) => {
+      // Ensure mic is available before creating peer
+      if (!localStreamRef.current) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          localStreamRef.current = stream;
+        } catch (e) {
+          console.error("Failed to acquire mic in handleOffer:", e);
+        }
+      }
+
+      // Close any stale peer before creating a fresh one
+      if (peersRef.current.has(fromUserId)) {
+        peersRef.current.get(fromUserId).close();
+        peersRef.current.delete(fromUserId);
+        const oldAudio = remoteAudiosRef.current.get(fromUserId);
+        if (oldAudio) { oldAudio.srcObject = null; oldAudio.remove(); }
+        remoteAudiosRef.current.delete(fromUserId);
+      }
+
       const peer = createPeerFor(callId, fromUserId);
-      await peer.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await peer.createAnswer();
-      await peer.setLocalDescription(answer);
-      socket.emit(WEBRTC_ANSWER, { callId, answer, toUserId: fromUserId });
+      try {
+        await peer.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peer.createAnswer();
+        await peer.setLocalDescription(answer);
+        socket.emit(WEBRTC_ANSWER, { callId, answer, toUserId: fromUserId });
+      } catch (e) {
+        console.error("Error handling offer:", e);
+      }
     };
 
     const handleAnswer = async ({ answer, fromUserId }) => {
       const peer = peersRef.current.get(fromUserId);
       if (!peer) return;
-      await peer.setRemoteDescription(new RTCSessionDescription(answer));
+      // Only accept answer if we're waiting for one (sent an offer)
+      if (peer.signalingState !== "have-local-offer") return;
+      try {
+        await peer.setRemoteDescription(new RTCSessionDescription(answer));
+      } catch (e) {
+        console.error("Error setting remote description:", e);
+      }
     };
 
     const handleIce = async ({ candidate, fromUserId }) => {
@@ -256,9 +331,66 @@ export const useAudioCall = () => {
       }
     };
 
-    // Participant list update (for group calls)
     const handleParticipantsUpdate = ({ participants: parts }) => {
       if (parts) setParticipants(parts);
+    };
+
+    // Callee is offline or call setup failed
+    const handleCallFailed = ({ reason }) => {
+      console.warn("Call failed:", reason);
+      setCallEndReason(reason || "failed");
+      cleanupRef.current();
+    };
+
+    // Reconnection: server tells us we're still in a call after refresh
+    const handleCallRejoin = async ({ callId, chatId, isGroup, participants: parts }) => {
+      console.log("Rejoining call:", callId);
+      callIdRef.current = callId;
+      setCallInfo({ callId, chatId, isGroup, groupName: "Call" });
+      if (parts) setParticipants(parts);
+
+      // Acquire mic
+      try {
+        if (!localStreamRef.current) {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          localStreamRef.current = stream;
+        }
+      } catch (e) {
+        console.error("Failed to acquire mic on rejoin:", e);
+        setCallEndReason("Microphone unavailable");
+        cleanupRef.current();
+        return;
+      }
+
+      setCallState("active");
+      // Server's CHECK_ACTIVE_CALL handler already notifies others via
+      // CALL_USER_RECONNECTED — others will get shouldCreateOffer from
+      // the CALL_ACCEPTED handler that the server triggers
+      socket.emit(CALL_ACCEPTED, { callId });
+    };
+
+    // Other user temporarily disconnected (reconnecting)
+    const handleUserDisconnected = ({ callId, userId }) => {
+      // Close the stale peer — the connection is dead anyway
+      if (peersRef.current.has(userId)) {
+        peersRef.current.get(userId).close();
+        peersRef.current.delete(userId);
+        const audioEl = remoteAudiosRef.current.get(userId);
+        if (audioEl) { audioEl.srcObject = null; audioEl.remove(); }
+        remoteAudiosRef.current.delete(userId);
+      }
+    };
+
+    // Other user reconnected — clean stale peer (server will trigger
+    // new offer via CALL_ACCEPTED)
+    const handleUserReconnected = ({ callId, userId, userName }) => {
+      if (peersRef.current.has(userId)) {
+        peersRef.current.get(userId).close();
+        peersRef.current.delete(userId);
+        const audioEl = remoteAudiosRef.current.get(userId);
+        if (audioEl) { audioEl.srcObject = null; audioEl.remove(); }
+        remoteAudiosRef.current.delete(userId);
+      }
     };
 
     socket.on("CALL_ID", handleCallId);
@@ -270,6 +402,19 @@ export const useAudioCall = () => {
     socket.on(WEBRTC_ANSWER, handleAnswer);
     socket.on(WEBRTC_ICE_CANDIDATE, handleIce);
     socket.on("CALL_PARTICIPANTS", handleParticipantsUpdate);
+    socket.on("CALL_FAILED", handleCallFailed);
+    socket.on("CALL_REJOIN", handleCallRejoin);
+    socket.on("CALL_USER_DISCONNECTED", handleUserDisconnected);
+    socket.on("CALL_USER_RECONNECTED", handleUserReconnected);
+
+    // Ask server if we're in a call (handles page refresh / reconnect).
+    // Only emit when socket is already connected — otherwise the
+    // "connect" handler below will fire and emit it once.
+    const emitCheckActiveCall = () => socket.emit("CHECK_ACTIVE_CALL");
+    if (socket.connected) {
+      emitCheckActiveCall();
+    }
+    socket.on("connect", emitCheckActiveCall);
 
     return () => {
       socket.off("CALL_ID", handleCallId);
@@ -281,8 +426,13 @@ export const useAudioCall = () => {
       socket.off(WEBRTC_ANSWER, handleAnswer);
       socket.off(WEBRTC_ICE_CANDIDATE, handleIce);
       socket.off("CALL_PARTICIPANTS", handleParticipantsUpdate);
+      socket.off("CALL_FAILED", handleCallFailed);
+      socket.off("CALL_REJOIN", handleCallRejoin);
+      socket.off("CALL_USER_DISCONNECTED", handleUserDisconnected);
+      socket.off("CALL_USER_RECONNECTED", handleUserReconnected);
+      socket.off("connect", emitCheckActiveCall);
     };
-  }, [socket, createPeerFor, cleanup, callState, callInfo?.isGroup]);
+  }, [socket, createPeerFor]);
 
   return {
     callState,
@@ -290,6 +440,10 @@ export const useAudioCall = () => {
     participants,
     muted,
     toggleMute,
+    speakerOn,
+    toggleSpeaker,
+    callEndReason,
+    clearCallEndReason: () => setCallEndReason(null),
     startCall,
     acceptCall,
     rejectCall,

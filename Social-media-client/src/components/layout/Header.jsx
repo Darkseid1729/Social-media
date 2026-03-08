@@ -35,6 +35,8 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import PhoneIcon from "@mui/icons-material/Phone";
+import HistoryIcon from "@mui/icons-material/History";
+import CallHistoryDialog from "../dialogs/CallHistoryDialog";
 import { Menu, MenuItem } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -305,6 +307,7 @@ const Header = (props) => {
   const [showGroupMembersDialog, setShowGroupMembersDialog] = useState(false);
   const [showMediaGallery, setShowMediaGallery] = useState(false);
   const [showSearchMessages, setShowSearchMessages] = useState(false);
+  const [showCallHistory, setShowCallHistory] = useState(false);
   
   // Get chatId from URL params
   const params = useParams();
@@ -363,6 +366,15 @@ const Header = (props) => {
 
   const handleMediaGalleryClose = () => {
     setShowMediaGallery(false);
+  };
+
+  const handleCallHistoryOpen = () => {
+    if (!chatId) {
+      toast.error("Please select a chat first");
+      return;
+    }
+    setShowCallHistory(true);
+    handleMobileMenuClose();
   };
 
   const handleSearchMessagesOpen = () => {
@@ -444,6 +456,13 @@ const Header = (props) => {
                 title={isGroupChat ? "Group Call" : "Audio Call"}
                 icon={<PhoneIcon />}
                 onClick={handleAudioCall}
+              />
+            )}
+            {chatId && (
+              <IconBtn
+                title={"Call History"}
+                icon={<HistoryIcon />}
+                onClick={handleCallHistoryOpen}
               />
             )}
             <IconBtn
@@ -566,6 +585,11 @@ const Header = (props) => {
                 <MenuItem onClick={handleMediaGalleryOpen}>
                   <CollectionsIcon sx={{ mr: 1 }} /> Media Gallery
                 </MenuItem>
+                {chatId && (
+                  <MenuItem onClick={handleCallHistoryOpen}>
+                    <HistoryIcon sx={{ mr: 1 }} /> Call History
+                  </MenuItem>
+                )}
                 <MenuItem onClick={handleSearchMessagesOpen}>
                   <SearchIcon sx={{ mr: 1 }} /> Search Messages
                 </MenuItem>
@@ -679,6 +703,13 @@ const Header = (props) => {
         onClose={handleSearchMessagesClose}
         chatId={chatId}
         onMessageClick={handleMessageClick}
+      />
+
+      {/* Call History Dialog */}
+      <CallHistoryDialog
+        open={showCallHistory}
+        onClose={() => setShowCallHistory(false)}
+        chatId={chatId}
       />
     </>);
 };

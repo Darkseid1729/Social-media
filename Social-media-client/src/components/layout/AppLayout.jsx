@@ -4,6 +4,7 @@ import { useNotificationSound } from "../../context/NotificationSoundContext";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   NEW_MESSAGE_ALERT,
   NEW_REQUEST,
@@ -58,11 +59,54 @@ const AppLayout = () => (WrappedComponent) => {
       participants,
       muted,
       toggleMute,
+      speakerOn,
+      toggleSpeaker,
+      callEndReason,
+      clearCallEndReason,
       startCall,
       acceptCall,
       rejectCall,
       endCall,
     } = useAudioCall();
+
+    // Show toast when a call ends with a reason
+    useEffect(() => {
+      if (!callEndReason) return;
+      const messages = {
+        "User is offline": "User is offline",
+        "No group members are online": "No group members are online",
+        "No recipient specified": "Call failed: no recipient",
+        "rejected": "Call was declined",
+        "ended": "Call ended",
+        "disconnected": "Other user disconnected",
+        "Microphone unavailable": "Could not rejoin: microphone unavailable",
+      };
+      toast(messages[callEndReason] || `Call ended: ${callEndReason}`, { icon: "📞" });
+      clearCallEndReason();
+    }, [callEndReason, clearCallEndReason]);
+
+    // Show toasts for peer disconnect / reconnect during call
+    useEffect(() => {
+      if (!socket) return;
+      const handlePeerDisconnected = ({ userId }) => {
+        toast("Other user disconnected — waiting for reconnect...", {
+          icon: "⏳",
+          duration: 5000,
+        });
+      };
+      const handlePeerReconnected = ({ userId, userName }) => {
+        toast(`${userName || "User"} reconnected!`, {
+          icon: "✅",
+          duration: 3000,
+        });
+      };
+      socket.on("CALL_USER_DISCONNECTED", handlePeerDisconnected);
+      socket.on("CALL_USER_RECONNECTED", handlePeerReconnected);
+      return () => {
+        socket.off("CALL_USER_DISCONNECTED", handlePeerDisconnected);
+        socket.off("CALL_USER_RECONNECTED", handlePeerReconnected);
+      };
+    }, [socket]);
 
     const { isMobile } = useSelector((state) => state.misc);
     const { user } = useSelector((state) => state.auth);
@@ -255,6 +299,8 @@ const AppLayout = () => (WrappedComponent) => {
           participants={participants}
           muted={muted}
           onToggleMute={toggleMute}
+          speakerOn={speakerOn}
+          onToggleSpeaker={toggleSpeaker}
           onAccept={acceptCall}
           onReject={rejectCall}
           onEnd={endCall}
