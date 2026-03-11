@@ -26,6 +26,7 @@ import {
 import { isOnlyEmoji, createEmojiExplosion, injectEmojiAnimationStyles } from "../utils/emojiEffect";
 import ComboAnimationLayer from "../components/comboAnimations/ComboAnimationLayer";
 import EmojiAnimationPicker from "../components/dialogs/EmojiAnimationPicker";
+import AiAnimationDialog from "../components/dialogs/AiAnimationDialog";
 
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 
@@ -50,13 +51,13 @@ import {
   MESSAGE_DELETED,
   MESSAGE_ANIMATION,
 } from "../constants/events";
-import { useChatDetailsQuery, useGetMessagesQuery } from "../redux/api/api";
+import { useChatDetailsQuery, useGetMessagesQuery, useSendAttachmentsMutation } from "../redux/api/api";
 import { useErrors, useSocketEvents } from "../hooks/hook";
 import { useInfiniteScrollTop } from "6pp";
 import moment from "moment";
 import "moment-timezone";
 import { useDispatch, useSelector } from "react-redux";
-import { setIsFileMenu, clearTargetMessage, setTargetMessage } from "../redux/reducers/misc";
+import { setIsFileMenu, clearTargetMessage, setTargetMessage, setUploadingLoader } from "../redux/reducers/misc";
 import { removeNewMessagesAlert } from "../redux/reducers/chat";
 import { TypingLoader } from "../components/layout/Loaders";
 import { useNavigate } from "react-router-dom";
@@ -74,6 +75,7 @@ const Chat = ({ chatId, user }) => {
   const [showWallpaperInput, setShowWallpaperInput] = useState(false);
   const [wallpaperError, setWallpaperError] = useState("");
   const [setWallpaper] = useSetWallpaperMutation();
+  const [sendAttachments] = useSendAttachmentsMutation();
   const { theme } = useTheme();
   const { currentSong } = useMusicPlayer();
   const { playNotificationSound } = useNotificationSound();
@@ -108,6 +110,7 @@ const Chat = ({ chatId, user }) => {
   const [youtubePickerOpen, setYoutubePickerOpen] = useState(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
   const [animationPickerOpen, setAnimationPickerOpen] = useState(false);
+  const [aiAnimationOpen, setAiAnimationOpen] = useState(false);
   const [giftCardOpen, setGiftCardOpen] = useState(() => {
     try { return localStorage.getItem("giftCardOpen") === "true"; } catch { return false; }
   });
@@ -1099,6 +1102,7 @@ const Chat = ({ chatId, user }) => {
         onYouTubeClick={() => setYoutubePickerOpen(true)}
         onAnimationClick={() => setAnimationPickerOpen(true)}
         onGiftCardClick={() => setGiftCardOpenPersist(true)}
+        onAiAnimationClick={() => setAiAnimationOpen(true)}
       />
       {/* Sticker Picker Dialog */}
       <StickerPicker open={stickerPickerOpen} onClose={() => setStickerPickerOpen(false)} onSelect={handleStickerSelect} />
@@ -1111,6 +1115,32 @@ const Chat = ({ chatId, user }) => {
           comboAnimationRef.current?.triggerAnimation(emoji);
           if (socket && chatId && members) {
             socket.emit(EMOJI_ANIMATION, { chatId, members, emoji });
+          }
+        }}
+      />
+
+      {/* AI Animation Creator Dialog */}
+      <AiAnimationDialog
+        open={aiAnimationOpen}
+        onClose={() => setAiAnimationOpen(false)}
+        chatId={chatId}
+        onSend={async (file) => {
+          const toastId = toast.loading("Sending animation...");
+          try {
+            dispatch(setUploadingLoader(true));
+            const myForm = new FormData();
+            myForm.append("chatId", chatId);
+            myForm.append("files", file);
+            const res = await sendAttachments(myForm);
+            if (res.data) {
+              toast.success("Animation sent!", { id: toastId });
+            } else {
+              toast.error(res.error?.data?.message || "Failed to send animation", { id: toastId });
+            }
+          } catch (err) {
+            toast.error("Failed to send animation", { id: toastId });
+          } finally {
+            dispatch(setUploadingLoader(false));
           }
         }}
       />

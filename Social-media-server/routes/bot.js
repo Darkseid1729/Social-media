@@ -1,5 +1,5 @@
 import express from "express";
-import { chatWithBot, getBotStats, getUserChatHistory } from "../controllers/bot.js";
+import { chatWithBot, getBotStats, getUserChatHistory, generateAnimation } from "../controllers/bot.js";
 import { isAuthenticated } from "../middlewares/auth.js";
 
 const router = express.Router();
@@ -9,6 +9,9 @@ router.use(isAuthenticated);
 
 // Chat with bot
 router.post("/chat", chatWithBot);
+
+// Generate HTML animation from AI prompt
+router.post("/generate-animation", generateAnimation);
 
 // Get bot usage statistics (admin panel)
 router.get("/stats", getBotStats);

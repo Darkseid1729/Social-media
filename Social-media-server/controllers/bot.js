@@ -669,6 +669,85 @@ export const getUserChatHistory = TryCatch(async (req, res, next) => {
   });
 });
 
+// Generate HTML animation from a user prompt
+export const generateAnimation = TryCatch(async (req, res, next) => {
+  const { prompt } = req.body;
+
+  if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
+    return next(new ErrorHandler("Please provide an animation prompt", 400));
+  }
+
+  if (prompt.length > 500) {
+    return next(new ErrorHandler("Prompt must be under 500 characters", 400));
+  }
+
+  const groq = getGroqClient();
+
+  const systemPrompt = `You are an HTML animation generator. The user will describe an animation they want.
+You must respond with ONLY valid HTML code — nothing else. No markdown, no explanation, no code fences.
+The HTML must be a complete self-contained page (with <!DOCTYPE html>, <html>, <head>, <style>, <body>).
+Use CSS animations and/or vanilla JavaScript only (no external libraries).
+Make the animation visually appealing with smooth transitions and vibrant colors.
+The animation should fill the entire viewport.
+Keep the code concise but impressive.`;
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: BOT_CONFIG.model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: prompt.trim() },
+      ],
+      max_tokens: 4096,
+      temperature: 0.7,
+    });
+
+    let html = completion.choices?.[0]?.message?.content || "";
+
+    // Strip markdown code fences if the model wrapped the response
+    html = html.replace(/^```html?\s*/i, "").replace(/```\s*$/i, "").trim();
+
+    if (!html.includes("<") || !html.includes(">")) {
+      return next(new ErrorHandler("AI did not return valid HTML. Please try a different prompt.", 400));
+    }
+
+    return res.status(200).json({
+      success: true,
+      html,
+    });
+  } catch (error) {
+    // Rotate API key on rate limit and retry once
+    if (error?.status === 429 || error?.error?.type === "rate_limit_exceeded") {
+      rotateApiKey();
+      try {
+        const retryGroq = getGroqClient();
+        const retryCompletion = await retryGroq.chat.completions.create({
+          model: BOT_CONFIG.model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt.trim() },
+          ],
+          max_tokens: 4096,
+          temperature: 0.7,
+        });
+
+        let retryHtml = retryCompletion.choices?.[0]?.message?.content || "";
+        retryHtml = retryHtml.replace(/^```html?\s*/i, "").replace(/```\s*$/i, "").trim();
+
+        if (!retryHtml.includes("<") || !retryHtml.includes(">")) {
+          return next(new ErrorHandler("AI did not return valid HTML. Please try a different prompt.", 400));
+        }
+
+        return res.status(200).json({ success: true, html: retryHtml });
+      } catch {
+        return next(new ErrorHandler("AI is busy right now. Please try again later.", 503));
+      }
+    }
+    console.error("Animation generation error:", error);
+    return next(new ErrorHandler("Failed to generate animation. Please try again.", 500));
+  }
+});
+
 // Check if a chat contains the bot
 export const isBotChat = async (chatId) => {
   const botUserId = await getBotUserId();
