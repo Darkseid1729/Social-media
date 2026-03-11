@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { v4 as uuid } from "uuid";
 import { v2 as cloudinary } from "cloudinary";
 import { getBase64, getSockets } from "../lib/helper.js";
+import path from "path";
 
 const cookieOptions = {
   maxAge: 15 * 24 * 60 * 60 * 1000,
@@ -57,11 +58,12 @@ const emitEvent = (req, event, users, data) => {
 const uploadFilesToCloudinary = async (files = []) => {
   const uploadPromises = files.map((file) => {
     return new Promise((resolve, reject) => {
+      const ext = file.originalname ? path.extname(file.originalname).toLowerCase() : '';
       cloudinary.uploader.upload(
         getBase64(file),
         {
           resource_type: "auto",
-          public_id: uuid(),
+          public_id: uuid() + ext,
           timeout: 120000, // 2 minutes timeout for mobile uploads
         },
         (error, result) => {

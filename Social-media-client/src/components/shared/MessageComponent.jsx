@@ -10,7 +10,7 @@ import TextWithLinks from "./TextWithLinks";
 import ReactionPicker from "./ReactionPicker";
 import ReactionsDisplay from "./ReactionsDisplay";
 import ReplyDisplay from "./ReplyDisplay";
-import { Reply as ReplyIcon, EmojiEmotions as EmojiIcon, Delete as DeleteIcon, Forward as ForwardIcon } from "@mui/icons-material";
+import { Reply as ReplyIcon, EmojiEmotions as EmojiIcon, Delete as DeleteIcon, Forward as ForwardIcon, OpenInNew as OpenInNewIcon, Download as DownloadIcon, FileOpen as FileOpenIcon } from "@mui/icons-material";
 import { useAddMessageReactionMutation, useRemoveMessageReactionMutation, useDeleteMessageMutation } from "../../redux/api/api";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
@@ -120,6 +120,71 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete,
   const [reactionPickerAnchor, setReactionPickerAnchor] = useState(null);
   const [touchTimer, setTouchTimer] = useState(null);
   const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
+  const [fileActionMenu, setFileActionMenu] = useState({ anchor: null, url: null, name: null });
+
+  // Infer MIME type from filename extension so blob URLs open correctly in browser
+  const getMimeFromName = (filename = '') => {
+    const ext = filename.split('.').pop().toLowerCase();
+    const map = {
+      html: 'text/html', htm: 'text/html',
+      pdf: 'application/pdf',
+      txt: 'text/plain',
+      js: 'text/javascript', mjs: 'text/javascript',
+      css: 'text/css',
+      json: 'application/json',
+      xml: 'application/xml',
+      svg: 'image/svg+xml',
+      csv: 'text/csv',
+    };
+    return map[ext] || null;
+  };
+
+  // Fetch file and return a blob URL with the correct MIME type.
+  // This bypasses Cloudinary's Content-Disposition: attachment header
+  // and cross-origin download restrictions.
+  const fetchBlobUrl = async (url, name) => {
+    const response = await fetch(url);
+    const raw = await response.blob();
+    const mime = getMimeFromName(name) || response.headers.get('content-type')?.split(';')[0] || raw.type || 'application/octet-stream';
+    return URL.createObjectURL(new Blob([raw], { type: mime }));
+  };
+
+  const handleOpenInBrowser = async () => {
+    const { url, name } = fileActionMenu;
+    setFileActionMenu({ anchor: null, url: null, name: null });
+    if (!url) return;
+    try {
+      const blobUrl = await fetchBlobUrl(url, name);
+      const tab = window.open(blobUrl, '_blank');
+      // Revoke after the tab has had time to load the content
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      if (!tab) {
+        // popup was blocked — fall back to direct URL
+        window.location.href = url;
+      }
+    } catch {
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleFileDownload = async () => {
+    const { url, name } = fileActionMenu;
+    setFileActionMenu({ anchor: null, url: null, name: null });
+    if (!url) return;
+    try {
+      const blobUrl = await fetchBlobUrl(url, name);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = name || 'file';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    } catch {
+      window.open(url, '_blank');
+    }
+  };
+
   const [addReaction] = useAddMessageReactionMutation();
   const [removeReaction] = useRemoveMessageReactionMutation();
   const [deleteMessage] = useDeleteMessageMutation();
@@ -363,22 +428,58 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete,
             {otherAttachments.length > 0 && otherAttachments.map((attachment) => {
               const url = attachment.url;
               const file = fileFormat(url);
+              const downloadName = url.split('/').pop().split('?')[0];
+
+              // Audio and video have native controls
+              if (file === 'audio' || file === 'video') {
+                return (
+                  <Box key={attachment.public_id || attachment.url} sx={{ mt: 0.5 }}>
+                    {RenderAttachment(file, url)}
+                  </Box>
+                );
+              }
+
+              // Generic files (PDF, HTML, ZIP, etc.) — show action chip
               return (
                 <Box key={attachment.public_id || attachment.url} sx={{ mt: 0.5 }}>
-                  <a
-                    href={url}
-                    target="_blank"
-                    download
-                    style={{ color: theme.TEXT_PRIMARY, textDecoration: 'none' }}
+                  <Box
+                    onClick={(e) => { e.stopPropagation(); setFileActionMenu({ anchor: e.currentTarget, url, name: downloadName }); }}
+                    sx={{
+                      display: 'inline-flex', alignItems: 'center', gap: 0.8,
+                      cursor: 'pointer', px: 1.2, py: 0.7, borderRadius: 1.5,
+                      bgcolor: 'rgba(0,0,0,0.12)',
+                      '&:hover': { bgcolor: 'rgba(0,0,0,0.22)' },
+                      maxWidth: 220,
+                    }}
                   >
-                    {RenderAttachment(file, url)}
-                  </a>
+                    <FileOpenIcon sx={{ fontSize: 20, color: theme.TEXT_PRIMARY, flexShrink: 0 }} />
+                    <Typography variant="caption" sx={{ color: theme.TEXT_PRIMARY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {downloadName}
+                    </Typography>
+                  </Box>
                 </Box>
               );
             })}
           </React.Fragment>
         );
       })()}
+
+      {/* File action menu */}
+      <Menu
+        anchorEl={fileActionMenu.anchor}
+        open={Boolean(fileActionMenu.anchor)}
+        onClose={() => setFileActionMenu({ anchor: null, url: null, name: null })}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <MenuItem onClick={handleOpenInBrowser}>
+          <ListItemIcon><OpenInNewIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Open in browser</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleFileDownload}>
+          <ListItemIcon><DownloadIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Download</ListItemText>
+        </MenuItem>
+      </Menu>
 
       {/* Reactions Display */}
       <ReactionsDisplay 
