@@ -79,18 +79,21 @@ const WatchPartyDialog = ({
   const { theme } = useTheme();
   const isLandscape = useMediaQuery("(orientation: landscape) and (max-height: 560px)");
   const isDesktop = useMediaQuery("(min-width: 960px)");
-  const isSplitLayout = isLandscape || isDesktop;
+  const isSplitLayout = isDesktop;
 
   const playerContainerRef = useRef(null);
   const playerRef = useRef(null);
   const syncTimerRef = useRef(null);
   const suppressEmitRef = useRef(false);
   const chatEndRef = useRef(null);
+  const overlayHideTimerRef = useRef(null);
 
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playerReady, setPlayerReady] = useState(false);
   const [chatInput, setChatInput] = useState("");
+  const [showOverlayUi, setShowOverlayUi] = useState(true);
+  const [showLandscapeChat, setShowLandscapeChat] = useState(false);
 
   const playerElementId = useMemo(
     () => `watch-party-player-${Math.random().toString(36).slice(2)}`,
@@ -116,6 +119,33 @@ const WatchPartyDialog = ({
   }, [open]);
 
   useEffect(() => {
+    if (!open || !playerRef.current) return;
+    try {
+      playerRef.current.destroy?.();
+    } catch {
+      // noop
+    }
+    playerRef.current = null;
+    setPlayerReady(false);
+  }, [open, isLandscape]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (isLandscape) {
+      setShowOverlayUi(false);
+      setShowLandscapeChat(false);
+    } else {
+      setShowOverlayUi(true);
+      setShowLandscapeChat(false);
+    }
+
+    return () => {
+      clearTimeout(overlayHideTimerRef.current);
+    };
+  }, [open, isLandscape]);
+
+  useEffect(() => {
     if (!open || !partyState?.videoId) return;
     let cancelled = false;
     const setupPlayer = async () => {
@@ -123,6 +153,7 @@ const WatchPartyDialog = ({
       if (cancelled || !playerContainerRef.current) return;
       if (!playerRef.current) {
         playerRef.current = new window.YT.Player(playerElementId, {
+          host: "https://www.youtube-nocookie.com",
           width: "100%",
           height: "100%",
           videoId: partyState.videoId,
@@ -206,6 +237,42 @@ const WatchPartyDialog = ({
     [chatMessages]
   );
 
+  const showOverlayTemporarily = useCallback(() => {
+    if (!isLandscape) return;
+    setShowOverlayUi(true);
+    clearTimeout(overlayHideTimerRef.current);
+
+    if (!showLandscapeChat) {
+      overlayHideTimerRef.current = setTimeout(() => {
+        setShowOverlayUi(false);
+      }, 2600);
+    }
+  }, [isLandscape, showLandscapeChat]);
+
+  useEffect(() => {
+    if (!isLandscape) return;
+    clearTimeout(overlayHideTimerRef.current);
+
+    if (!showLandscapeChat && showOverlayUi) {
+      overlayHideTimerRef.current = setTimeout(() => {
+        setShowOverlayUi(false);
+      }, 2600);
+    }
+
+    return () => clearTimeout(overlayHideTimerRef.current);
+  }, [isLandscape, showLandscapeChat, showOverlayUi]);
+
+  const handleLandscapeTap = () => {
+    if (!isLandscape) return;
+    if (!showOverlayUi) {
+      showOverlayTemporarily();
+      return;
+    }
+    if (!showLandscapeChat) {
+      setShowOverlayUi(false);
+    }
+  };
+
   const ControlsStrip = (
     <Box sx={{ px: 1.5, pt: 0.25, pb: isLandscape ? 0.5 : 1, flexShrink: 0 }}>
       <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.25 }}>
@@ -267,7 +334,12 @@ const WatchPartyDialog = ({
     >
       <Stack direction="row" alignItems="center" sx={{ px: 1.5, py: 0.6, flexShrink: 0 }}>
         <ChatIcon sx={{ fontSize: 14, mr: 0.5, opacity: 0.6 }} />
-        <Typography variant="caption" fontWeight="bold" sx={{ opacity: 0.8 }}>Live Chat</Typography>
+        <Typography variant="caption" fontWeight="bold" sx={{ opacity: 0.8, flex: 1 }}>Live Chat</Typography>
+        {isLandscape && (
+          <IconButton size="small" sx={{ color: "#fff" }} onClick={() => setShowLandscapeChat(false)}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        )}
       </Stack>
 
       <Box
@@ -360,20 +432,111 @@ const WatchPartyDialog = ({
     </Box>
   );
 
+  if (isLandscape) {
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth={false}
+        fullScreen
+        PaperProps={{
+          sx: {
+            m: 0,
+            borderRadius: 0,
+            width: "100vw",
+            height: "100dvh",
+            overflow: "hidden",
+            bgcolor: "#000",
+          },
+        }}
+      >
+        <Box sx={{ position: "relative", width: "100%", height: "100%", bgcolor: "#000" }} onClick={handleLandscapeTap}>
+          <Box ref={playerContainerRef} id={playerElementId} sx={{ width: "100%", height: "100%" }} />
+
+          {showOverlayUi && (
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                zIndex: 7,
+                p: 0.5,
+                borderRadius: 999,
+                bgcolor: "rgba(0,0,0,0.45)",
+                backdropFilter: "blur(4px)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <IconButton
+                size="small"
+                sx={{ color: "#fff" }}
+                onClick={() => setShowLandscapeChat((prev) => !prev)}
+              >
+                <ChatIcon fontSize="small" />
+              </IconButton>
+              <IconButton size="small" sx={{ color: "#fff" }} onClick={onClose}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Stack>
+          )}
+
+          {showOverlayUi && (
+            <Box
+              sx={{
+                position: "absolute",
+                left: 8,
+                right: showLandscapeChat ? { xs: "42vw", sm: 310 } : 8,
+                bottom: 8,
+                zIndex: 4,
+                borderRadius: 2,
+                bgcolor: "rgba(0,0,0,0.42)",
+                backdropFilter: "blur(5px)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {ControlsStrip}
+            </Box>
+          )}
+
+          {showLandscapeChat && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                width: { xs: "42vw", sm: 310 },
+                height: "100%",
+                zIndex: 5,
+                bgcolor: "rgba(10,10,10,0.82)",
+                backdropFilter: "blur(8px)",
+                borderLeft: "1px solid rgba(255,255,255,0.12)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {ChatPanel}
+            </Box>
+          )}
+        </Box>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
       maxWidth={false}
-      fullScreen={isLandscape}
+      fullScreen={false}
       sx={{ "& .MuiDialog-container": { alignItems: "flex-start" } }}
       PaperProps={{
         sx: {
           m: 0,
-          borderRadius: isLandscape ? 0 : "0 0 12px 12px",
+          borderRadius: "0 0 12px 12px",
           width: "100%",
-          maxWidth: isLandscape ? "100vw" : { xs: "100vw", sm: "min(900px, 96vw)" },
-          maxHeight: isLandscape ? "100dvh" : "85dvh",
+          maxWidth: { xs: "100vw", sm: "min(900px, 96vw)" },
+          maxHeight: "85dvh",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
