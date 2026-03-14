@@ -2,6 +2,17 @@ import { TryCatch } from "../middlewares/error.js";
 import { ErrorHandler } from "../utils/utility.js";
 import axios from "axios";
 
+const pickThumbnail = (thumbs = {}) => {
+  return (
+    thumbs.high?.url ||
+    thumbs.standard?.url ||
+    thumbs.maxres?.url ||
+    thumbs.medium?.url ||
+    thumbs.default?.url ||
+    ""
+  );
+};
+
 // Helper function to convert ISO 8601 duration to seconds
 const parseDuration = (duration) => {
   const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
@@ -43,7 +54,7 @@ const getTrendingVideos = TryCatch(async (req, res, next) => {
   let videos = data.items.map(video => ({
     id: video.id,
     title: video.snippet.title,
-    thumbnail: video.snippet.thumbnails.medium.url,
+    thumbnail: pickThumbnail(video.snippet.thumbnails),
     channelTitle: video.snippet.channelTitle,
     duration: video.contentDetails.duration,
     views: video.statistics.viewCount,
@@ -128,7 +139,7 @@ const searchVideos = TryCatch(async (req, res, next) => {
   let videos = searchData.items.map(video => ({
     id: video.id.videoId,
     title: video.snippet.title,
-    thumbnail: video.snippet.thumbnails.medium.url,
+    thumbnail: pickThumbnail(video.snippet.thumbnails),
     channelTitle: video.snippet.channelTitle,
     duration: detailsMap[video.id.videoId]?.duration || 'N/A',
     views: detailsMap[video.id.videoId]?.views || 'N/A',

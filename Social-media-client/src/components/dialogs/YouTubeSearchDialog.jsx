@@ -213,6 +213,7 @@ const YouTubeSearchDialog = ({ open, onClose, onSelect }) => {
   const memoizedVideos = useMemo(() => 
     videos.map(video => ({
       ...video,
+      thumbnail: (video.thumbnail || '').replace('/mqdefault.jpg', '/hqdefault.jpg'),
       duration: formatDuration(video.duration),
       views: formatViews(video.views)
     }))
@@ -294,8 +295,8 @@ const YouTubeSearchDialog = ({ open, onClose, onSelect }) => {
           </div>
         ) : (
           <Grid container spacing={1.5}>
-            {memoizedVideos.map((video) => (
-              <Grid item xs={6} sm={4} key={video.id}>
+            {memoizedVideos.map((video, idx) => (
+              <Grid item xs={6} sm={4} key={video.id || String(idx)}>
                 <Box
                   onClick={() => {
                     onSelect(video.url);
@@ -315,17 +316,7 @@ const YouTubeSearchDialog = ({ open, onClose, onSelect }) => {
                 >
                   {/* Thumbnail with play icon and duration */}
                   <Box sx={{ position: 'relative' }}>
-                    <img
-                      src={video.thumbnail}
-                      alt={video.title}
-                      loading="lazy"
-                      style={{
-                        width: '100%',
-                        height: '100px',
-                        objectFit: 'cover',
-                        display: 'block'
-                      }}
-                    />
+                      <img src={video.thumbnail} alt={video.title} loading="lazy" onError={(e) => { const s = e.target.src; if (s.includes('maxresdefault')) { e.target.src = s.replace('maxresdefault','hqdefault'); } else if (s.includes('mqdefault')) { e.target.src = s.replace('mqdefault','hqdefault'); } else if (s.includes('hqdefault')) { e.target.src = s.replace('hqdefault','sddefault'); } else if (s.includes('sddefault')) { e.target.src = s.replace('sddefault','default'); } else { e.target.onerror = null; } }} style={{ width: '100%', height: '100px', objectFit: 'cover', display: 'block' }} />
                     {/* Play icon overlay */}
                     <Box
                       sx={{

@@ -1,5 +1,5 @@
 // Export a version with Header and Chat for direct use in routing
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import Header from "../components/layout/Header";
 import StickerPicker from "../components/dialogs/StickerPicker";
 import React, {
@@ -13,6 +13,7 @@ import React, {
 import AppLayout from "../components/layout/AppLayout";
 import GifPicker from "../components/dialogs/GifPicker";
 import YouTubeSearchDialog from "../components/dialogs/YouTubeSearchDialog";
+import WatchPartyDialog from "../components/dialogs/WatchPartyDialog";
 import GiftCardDialog from "../components/dialogs/GiftCardDialog";
 import { IconButton, Skeleton, Stack, Box, useMediaQuery } from "@mui/material";
 import { useTheme } from "../context/ThemeContext";
@@ -24,6 +25,7 @@ import {
   EmojiEmotions as EmojiEmotionsIcon,
 } from "@mui/icons-material";
 import { isOnlyEmoji, createEmojiExplosion, injectEmojiAnimationStyles } from "../utils/emojiEffect";
+import { parseYouTubeUrl } from "../utils/linkUtils";
 import ComboAnimationLayer from "../components/comboAnimations/ComboAnimationLayer";
 import EmojiAnimationPicker from "../components/dialogs/EmojiAnimationPicker";
 import AiAnimationDialog from "../components/dialogs/AiAnimationDialog";
@@ -53,6 +55,7 @@ import {
 } from "../constants/events";
 import { useChatDetailsQuery, useGetMessagesQuery, useSendAttachmentsMutation } from "../redux/api/api";
 import { useErrors, useSocketEvents } from "../hooks/hook";
+import { useWatchParty } from "../hooks/useWatchParty";
 import { useInfiniteScrollTop } from "6pp";
 import moment from "moment";
 import "moment-timezone";
@@ -83,6 +86,7 @@ const Chat = ({ chatId, user }) => {
   const socket = getSocket();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Get target message from Redux (for jump-to-message feature)
   const { targetMessage } = useSelector((state) => state.misc);
@@ -108,6 +112,7 @@ const Chat = ({ chatId, user }) => {
   const [fileMenuAnchor, setFileMenuAnchor] = useState(null);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [youtubePickerOpen, setYoutubePickerOpen] = useState(false);
+  const [watchPartyPickerOpen, setWatchPartyPickerOpen] = useState(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
   const [animationPickerOpen, setAnimationPickerOpen] = useState(false);
   const [aiAnimationOpen, setAiAnimationOpen] = useState(false);
@@ -122,6 +127,20 @@ const Chat = ({ chatId, user }) => {
   const [replyToMessage, setReplyToMessage] = useState(null);
   const [selectedYouTubeVideo, setSelectedYouTubeVideo] = useState(null);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+
+  const {
+    partyState,
+    isDialogOpen: isWatchPartyDialogOpen,
+    setIsDialogOpen: setIsWatchPartyDialogOpen,
+    errorMessage: watchPartyError,
+    clearError: clearWatchPartyError,
+    createParty,
+    joinParty,
+    endParty,
+    sendControl,
+  } = useWatchParty(chatId);
+
+  const isWatchPartyHost = partyState?.hostId === user?._id;
   
   // Send gift card as a special message
   const handleGiftCardSend = (payload) => {
@@ -145,10 +164,40 @@ const Chat = ({ chatId, user }) => {
     setSelectedYouTubeVideo(videoUrl);
   };
 
+  const handleWatchPartySelect = (videoUrl) => {
+    const { isYoutube, videoId } = parseYouTubeUrl(videoUrl || "");
+    if (!isYoutube || !videoId) {
+      toast.error("Invalid YouTube video link");
+      return;
+    }
+    createParty({ videoId });
+  };
+
   // Handle clearing YouTube video selection
   const handleClearYouTubeVideo = () => {
     setSelectedYouTubeVideo(null);
   };
+
+  useEffect(() => {
+    if (!watchPartyError) return;
+    toast.error(watchPartyError);
+    clearWatchPartyError();
+  }, [watchPartyError, clearWatchPartyError]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("watchParty") !== "1") return;
+    joinParty();
+    if (partyState?.videoId) {
+      setIsWatchPartyDialogOpen(true);
+      params.delete("watchParty");
+      const nextSearch = params.toString();
+      navigate(
+        { pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : "" },
+        { replace: true }
+      );
+    }
+  }, [location.search, location.pathname, partyState?.videoId, joinParty, navigate, setIsWatchPartyDialogOpen]);
 
   // Reply handlers
   const handleReply = (message) => {
@@ -1100,6 +1149,7 @@ const Chat = ({ chatId, user }) => {
         chatId={chatId} 
         onGifClick={() => setGifPickerOpen(true)}
         onYouTubeClick={() => setYoutubePickerOpen(true)}
+        onWatchPartyClick={() => setWatchPartyPickerOpen(true)}
         onAnimationClick={() => setAnimationPickerOpen(true)}
         onGiftCardClick={() => setGiftCardOpenPersist(true)}
         onAiAnimationClick={() => setAiAnimationOpen(true)}
@@ -1108,6 +1158,31 @@ const Chat = ({ chatId, user }) => {
       <StickerPicker open={stickerPickerOpen} onClose={() => setStickerPickerOpen(false)} onSelect={handleStickerSelect} />
       <GifPicker open={gifPickerOpen} onClose={() => setGifPickerOpen(false)} onSelect={handleGifSelect} />
       <YouTubeSearchDialog open={youtubePickerOpen} onClose={() => setYoutubePickerOpen(false)} onSelect={handleYouTubeSelect} />
+      <YouTubeSearchDialog
+        open={watchPartyPickerOpen}
+        onClose={() => setWatchPartyPickerOpen(false)}
+        onSelect={(url) => {
+          handleWatchPartySelect(url);
+          setWatchPartyPickerOpen(false);
+          setIsWatchPartyDialogOpen(true);
+        }}
+      />
+      <WatchPartyDialog
+        open={isWatchPartyDialogOpen}
+        onClose={() => setIsWatchPartyDialogOpen(false)}
+        partyState={partyState}
+        isHost={isWatchPartyHost}
+        onPlay={(time) => sendControl({ action: "play", currentTime: time })}
+        onPause={(time) => sendControl({ action: "pause", currentTime: time })}
+        onSeek={(time) => sendControl({ action: "seek", currentTime: time })}
+        onEnd={endParty}
+        chatMessages={allMessages}
+        onSendMessage={(text) => {
+          if (text?.trim() && socket && chatId && members)
+            socket.emit(NEW_MESSAGE, { chatId, members, message: text.trim() });
+        }}
+        currentUserId={user?._id}
+      />
       <EmojiAnimationPicker
         open={animationPickerOpen}
         onClose={() => setAnimationPickerOpen(false)}

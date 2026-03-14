@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import OpenAI from "openai";
 import { TryCatch } from "../middlewares/error.js";
 import { ErrorHandler } from "../utils/utility.js";
 import { Chat } from "../models/chat.js";
@@ -670,6 +671,54 @@ export const getUserChatHistory = TryCatch(async (req, res, next) => {
 });
 
 // Generate HTML animation from a user prompt
+const ANIMATION_SYSTEM_PROMPT = `You are a world-class creative coder — think three.js demo artist, CodePen award winner, demoscene developer.
+
+The user will give you a description of an animation. Your job is to build EXACTLY what they describe, not a generic substitute.
+
+OUTPUT RULES (strictly enforced):
+- Respond with ONE complete self-contained HTML file, nothing else.
+- No markdown, no code fences, no explanation, no comments outside the code.
+- The very first character of your response must be "<" (start of <!DOCTYPE html>).
+- All HTML, CSS, and JavaScript go in a single file.
+
+CREATIVE RULES (strictly enforced):
+- READ the user's prompt carefully. Build THAT specific thing — their scene, their concept, their subject matter.
+- NEVER substitute the user's idea with generic colorful floating particles just because it is easy. That is forbidden.
+- The animation must be an artistic interpretation of the EXACT subject described by the user.
+- If the user says "galaxy", build a galaxy with spiraling arms, star clusters, nebula colors — not random dots.
+- If the user says "fire", build realistic fire with heat distortion and embers — not red bouncing circles.
+- If the user says "ocean waves", build a fluid wave simulation — not blue particles.
+- Be literal AND creative. Honor the subject. Make it breathtaking.
+
+TECHNICAL REQUIREMENTS:
+- Fill exactly 100vw × 100vh, no overflow, no scrollbars.
+- Use <canvas> with requestAnimationFrame for 60fps smoothness.
+- Apply real math: trigonometry, noise functions (Perlin/simplex inline), physics, bezier curves, or vector fields.
+- Dynamic lighting: glows (shadowBlur, radial gradients), bloom simulation, color temperature shifts.
+- Depth: parallax layers, perspective projection, or z-based scaling.
+- Mouse/touch interactivity where it enriches the experience.
+- Zero external libraries — pure vanilla HTML5 + CSS3 + JavaScript only.
+
+Write dense, complete, production-quality code. Do not cut corners.`;
+
+
+// Helper: generate animation HTML via Groq (fallback)
+const generateWithGroq = async (prompt) => {
+  const groq = getGroqClient();
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    messages: [
+      { role: "system", content: ANIMATION_SYSTEM_PROMPT },
+      { role: "user", content: prompt },
+    ],
+    max_tokens: 4096,
+    temperature: 0.9,
+  });
+  let html = completion.choices?.[0]?.message?.content || "";
+  html = html.replace(/^```html?\s*/i, "").replace(/```\s*$/i, "").trim();
+  return html;
+};
+
 export const generateAnimation = TryCatch(async (req, res, next) => {
   const { prompt } = req.body;
 
@@ -681,69 +730,61 @@ export const generateAnimation = TryCatch(async (req, res, next) => {
     return next(new ErrorHandler("Prompt must be under 500 characters", 400));
   }
 
-  const groq = getGroqClient();
+  const cleanPrompt = prompt.trim();
+  const messages = [
+    { role: "system", content: ANIMATION_SYSTEM_PROMPT },
+    { role: "user", content: cleanPrompt },
+  ];
 
-  const systemPrompt = `You are an HTML animation generator. The user will describe an animation they want.
-You must respond with ONLY valid HTML code — nothing else. No markdown, no explanation, no code fences.
-The HTML must be a complete self-contained page (with <!DOCTYPE html>, <html>, <head>, <style>, <body>).
-Use CSS animations and/or vanilla JavaScript only (no external libraries).
-Make the animation visually appealing with smooth transitions and vibrant colors.
-The animation should fill the entire viewport.
-Keep the code concise but impressive.`;
+  // Try OpenAI GPT-4o first, fall back to Groq on quota/billing errors
+  const gptKey = process.env.GPT_API_KEY;
+  if (gptKey) {
+    try {
+      const openai = new OpenAI({ apiKey: gptKey });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages,
+        max_tokens: 4096,
+        temperature: 0.9,
+      });
+      let html = completion.choices?.[0]?.message?.content || "";
+      html = html.replace(/^```html?\s*/i, "").replace(/```\s*$/i, "").trim();
+      if (html.includes("<") && html.includes(">")) {
+        return res.status(200).json({ success: true, html, model: "gpt-4o" });
+      }
+    } catch (gptError) {
+      const status = gptError?.status;
+      const code = gptError?.error?.code;
+      // Fall through to Groq on quota exhausted, rate limit, or auth errors
+      if (status === 401 || (status !== 429 && code !== "insufficient_quota" && code !== "rate_limit_exceeded")) {
+        console.error("OpenAI animation error (not falling back):", gptError.message);
+        return next(new ErrorHandler("Failed to generate animation. Please try again.", 500));
+      }
+      console.warn(`OpenAI unavailable (${code || status}), falling back to Groq...`);
+    }
+  }
 
+  // Groq fallback
   try {
-    const completion = await groq.chat.completions.create({
-      model: BOT_CONFIG.model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: prompt.trim() },
-      ],
-      max_tokens: 4096,
-      temperature: 0.7,
-    });
-
-    let html = completion.choices?.[0]?.message?.content || "";
-
-    // Strip markdown code fences if the model wrapped the response
-    html = html.replace(/^```html?\s*/i, "").replace(/```\s*$/i, "").trim();
-
+    const html = await generateWithGroq(cleanPrompt);
     if (!html.includes("<") || !html.includes(">")) {
       return next(new ErrorHandler("AI did not return valid HTML. Please try a different prompt.", 400));
     }
-
-    return res.status(200).json({
-      success: true,
-      html,
-    });
-  } catch (error) {
-    // Rotate API key on rate limit and retry once
-    if (error?.status === 429 || error?.error?.type === "rate_limit_exceeded") {
+    return res.status(200).json({ success: true, html, model: "groq-llama" });
+  } catch (groqError) {
+    if (groqError?.status === 429 || groqError?.error?.type === "rate_limit_exceeded") {
       rotateApiKey();
       try {
-        const retryGroq = getGroqClient();
-        const retryCompletion = await retryGroq.chat.completions.create({
-          model: BOT_CONFIG.model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt.trim() },
-          ],
-          max_tokens: 4096,
-          temperature: 0.7,
-        });
-
-        let retryHtml = retryCompletion.choices?.[0]?.message?.content || "";
-        retryHtml = retryHtml.replace(/^```html?\s*/i, "").replace(/```\s*$/i, "").trim();
-
-        if (!retryHtml.includes("<") || !retryHtml.includes(">")) {
+        const html = await generateWithGroq(cleanPrompt);
+        if (!html.includes("<") || !html.includes(">")) {
           return next(new ErrorHandler("AI did not return valid HTML. Please try a different prompt.", 400));
         }
-
-        return res.status(200).json({ success: true, html: retryHtml });
+        return res.status(200).json({ success: true, html, model: "groq-llama" });
       } catch {
-        return next(new ErrorHandler("AI is busy right now. Please try again later.", 503));
+        return next(new ErrorHandler("All AI providers are busy. Please try again shortly.", 503));
       }
     }
-    console.error("Animation generation error:", error);
+    console.error("Groq animation error:", groqError);
     return next(new ErrorHandler("Failed to generate animation. Please try again.", 500));
   }
 });

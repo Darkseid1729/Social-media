@@ -28,10 +28,19 @@ import {
   WEBRTC_OFFER,
   WEBRTC_ANSWER,
   WEBRTC_ICE_CANDIDATE,
+  WATCH_PARTY_CREATE,
+  WATCH_PARTY_JOIN,
+  WATCH_PARTY_CONTROL,
+  WATCH_PARTY_STATE_REQUEST,
+  WATCH_PARTY_STATE_UPDATE,
+  WATCH_PARTY_END,
+  WATCH_PARTY_ENDED,
+  WATCH_PARTY_ERROR,
 } from "./constants/events.js";
 import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
 import { User } from "./models/user.js";
+import { Chat } from "./models/chat.js";
 import { corsOptions } from "./constants/config.js";
 import { socketAuthenticator } from "./middlewares/auth.js";
 
@@ -59,6 +68,7 @@ const userSocketIDs = new Map();
 const onlineUsers = new Set();
 const activeCalls = new Map(); // callId -> { caller, callee }
 const disconnectTimers = new Map(); // userId -> { timerId, callIds }
+const watchParties = new Map(); // chatId -> watch party state
 
 // ── Emoji Combo Detection ──────────────────────────────────────────
 // In-memory store: chatId -> { emoji, userId, userName, ts }
@@ -79,6 +89,29 @@ const isSingleEmoji = (text) => {
 const isValidObjectId = (id) => {
   return id && mongoose.Types.ObjectId.isValid(id);
 };
+
+const computeWatchPartyPosition = (party, now = Date.now()) => {
+  if (!party.isPlaying) return Math.max(0, party.position || 0);
+  const deltaSec = Math.max(0, (now - (party.updatedAt || now)) / 1000);
+  return Math.max(0, (party.position || 0) + deltaSec * (party.playbackRate || 1));
+};
+
+const snapshotWatchParty = (party) => {
+  const now = Date.now();
+  return {
+    chatId: party.chatId,
+    hostId: party.hostId,
+    videoId: party.videoId,
+    isPlaying: party.isPlaying,
+    position: computeWatchPartyPosition(party, now),
+    playbackRate: party.playbackRate,
+    updatedAt: now,
+    seq: party.seq,
+    participants: Array.from(party.participants || []),
+  };
+};
+
+const sanitizeSockets = (ids = []) => ids.filter(Boolean);
 
 connectDB(mongoURI);
 
@@ -380,6 +413,160 @@ io.on("connection", (socket) => {
     const membersSocket = getSockets(members);
     io.to(membersSocket).emit(ONLINE_USERS, Array.from(onlineUsers));
   });
+
+  // ── Watch Party Sync (Phase 1) ───────────────────────────────────
+  socket.on(WATCH_PARTY_CREATE, async ({ chatId, videoId }) => {
+    try {
+      const myId = user._id.toString();
+      if (!isValidObjectId(chatId)) {
+        socket.emit(WATCH_PARTY_ERROR, { chatId, message: "Invalid chat" });
+        return;
+      }
+      if (!videoId || typeof videoId !== "string" || videoId.length !== 11) {
+        socket.emit(WATCH_PARTY_ERROR, { chatId, message: "Invalid YouTube video" });
+        return;
+      }
+
+      const chat = await Chat.findById(chatId).select("members").lean();
+      if (!chat) {
+        socket.emit(WATCH_PARTY_ERROR, { chatId, message: "Chat not found" });
+        return;
+      }
+
+      const memberIds = chat.members.map((m) => m.toString());
+      if (!memberIds.includes(myId)) {
+        socket.emit(WATCH_PARTY_ERROR, { chatId, message: "Not allowed" });
+        return;
+      }
+
+      const now = Date.now();
+      const party = {
+        chatId: chatId.toString(),
+        hostId: myId,
+        memberIds,
+        participants: new Set([myId]),
+        videoId,
+        isPlaying: true,
+        position: 0,
+        playbackRate: 1,
+        updatedAt: now,
+        seq: 1,
+      };
+
+      watchParties.set(chatId.toString(), party);
+
+      const memberSockets = sanitizeSockets(getSockets(memberIds));
+      if (memberSockets.length) {
+        io.to(memberSockets).emit(WATCH_PARTY_STATE_UPDATE, {
+          chatId: chatId.toString(),
+          state: snapshotWatchParty(party),
+          action: "create",
+          byUserId: myId,
+        });
+      }
+    } catch (error) {
+      console.error("WATCH_PARTY_CREATE error:", error);
+      socket.emit(WATCH_PARTY_ERROR, { chatId, message: "Failed to start watch party" });
+    }
+  });
+
+  socket.on(WATCH_PARTY_JOIN, ({ chatId }) => {
+    const party = watchParties.get(chatId?.toString());
+    const myId = user._id.toString();
+    if (!party) return;
+    if (!party.memberIds.includes(myId)) return;
+    party.participants.add(myId);
+    socket.emit(WATCH_PARTY_STATE_UPDATE, {
+      chatId: party.chatId,
+      state: snapshotWatchParty(party),
+      action: "join-sync",
+      byUserId: myId,
+    });
+  });
+
+  socket.on(WATCH_PARTY_STATE_REQUEST, ({ chatId }) => {
+    const party = watchParties.get(chatId?.toString());
+    const myId = user._id.toString();
+    if (!party) return;
+    if (!party.memberIds.includes(myId)) return;
+    socket.emit(WATCH_PARTY_STATE_UPDATE, {
+      chatId: party.chatId,
+      state: snapshotWatchParty(party),
+      action: "snapshot",
+      byUserId: myId,
+    });
+  });
+
+  socket.on(WATCH_PARTY_CONTROL, ({ chatId, action, currentTime, playbackRate, videoId }) => {
+    const party = watchParties.get(chatId?.toString());
+    const myId = user._id.toString();
+    if (!party) return;
+    if (!party.memberIds.includes(myId)) return;
+
+    const now = Date.now();
+    const computedNow = computeWatchPartyPosition(party, now);
+
+    if (action === "play") {
+      party.position = typeof currentTime === "number" ? Math.max(0, currentTime) : computedNow;
+      party.isPlaying = true;
+      party.updatedAt = now;
+    } else if (action === "pause") {
+      party.position = typeof currentTime === "number" ? Math.max(0, currentTime) : computedNow;
+      party.isPlaying = false;
+      party.updatedAt = now;
+    } else if (action === "seek") {
+      if (typeof currentTime !== "number") return;
+      party.position = Math.max(0, currentTime);
+      party.updatedAt = now;
+    } else if (action === "rate") {
+      const rate = Number(playbackRate);
+      if (!Number.isFinite(rate) || rate <= 0) return;
+      party.position = typeof currentTime === "number" ? Math.max(0, currentTime) : computedNow;
+      party.playbackRate = rate;
+      party.updatedAt = now;
+    } else if (action === "change-video") {
+      if (!videoId || typeof videoId !== "string" || videoId.length !== 11) return;
+      party.videoId = videoId;
+      party.position = 0;
+      party.isPlaying = true;
+      party.updatedAt = now;
+    } else {
+      return;
+    }
+
+    party.seq += 1;
+
+    const memberSockets = sanitizeSockets(getSockets(party.memberIds));
+    if (memberSockets.length) {
+      io.to(memberSockets).emit(WATCH_PARTY_STATE_UPDATE, {
+        chatId: party.chatId,
+        state: snapshotWatchParty(party),
+        action,
+        byUserId: myId,
+      });
+    }
+  });
+
+  socket.on(WATCH_PARTY_END, ({ chatId }) => {
+    const party = watchParties.get(chatId?.toString());
+    const myId = user._id.toString();
+    if (!party) return;
+    if (party.hostId !== myId) {
+      socket.emit(WATCH_PARTY_ERROR, { chatId, message: "Only host can end watch party" });
+      return;
+    }
+
+    const memberSockets = sanitizeSockets(getSockets(party.memberIds));
+    watchParties.delete(party.chatId);
+
+    if (memberSockets.length) {
+      io.to(memberSockets).emit(WATCH_PARTY_ENDED, {
+        chatId: party.chatId,
+        endedBy: myId,
+      });
+    }
+  });
+  // ─────────────────────────────────────────────────────────────────
 
   // ── Audio Call Signaling (1-on-1 + Group mesh) ────────────────────
   // activeCalls: callId -> { initiator, chatId, isGroup, participants: Map<userId, { userName, socketId, joined }> }
@@ -707,6 +894,25 @@ io.on("connection", (socket) => {
     const myId = user._id.toString();
     userSocketIDs.delete(myId);
     onlineUsers.delete(myId);
+
+    // ── Watch party disconnect handling ───────────────────────────
+    for (const [chatId, party] of watchParties) {
+      if (!party.memberIds.includes(myId)) continue;
+
+      if (party.hostId === myId) {
+        const memberSockets = sanitizeSockets(getSockets(party.memberIds));
+        watchParties.delete(chatId);
+        if (memberSockets.length) {
+          io.to(memberSockets).emit(WATCH_PARTY_ENDED, {
+            chatId,
+            endedBy: myId,
+            reason: "host_disconnected",
+          });
+        }
+      } else {
+        party.participants.delete(myId);
+      }
+    }
 
     // ── Check if user is in any active calls ─────────────────────
     const callIdsInvolved = [];

@@ -19,6 +19,9 @@ const ChatList = ({
   ],
   handleDeleteChat,
   onUserClick,
+  watchPartyByChat = {},
+  currentUserId,
+  onRejoinParty,
 }) => {
   return (
     <Stack width={w} direction={"column"} overflow={"auto"} height={"100%"}>
@@ -56,6 +59,9 @@ const ChatList = ({
                 handleDeleteChat={handleDeleteChat}
                 lastSeen={lastSeen}
                 members={memberDetails || []}
+                watchPartyState={watchPartyByChat[_id]}
+                currentUserId={currentUserId}
+                onRejoinParty={onRejoinParty}
               />
             </div>
           </div>

@@ -10,6 +10,8 @@ import {
   NEW_REQUEST,
   ONLINE_USERS,
   REFETCH_CHATS,
+  WATCH_PARTY_STATE_UPDATE,
+  WATCH_PARTY_ENDED,
 } from "../../constants/events";
 import { useErrors, useSocketEvents } from "../../hooks/hook";
 import { usePageVisibility } from "../../hooks/usePageVisibility";
@@ -51,6 +53,7 @@ const AppLayout = () => (WrappedComponent) => {
 
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [selectedUserId, setSelectedUserId] = useState(null);
+    const [watchPartyByChat, setWatchPartyByChat] = useState({});
 
     // Audio call hook
     const {
@@ -189,11 +192,37 @@ const AppLayout = () => (WrappedComponent) => {
       setOnlineUsers(data);
     }, []);
 
+    const watchPartyStateUpdateListener = useCallback(({ chatId: updateChatId, state }) => {
+      if (!updateChatId || !state) return;
+      setWatchPartyByChat((prev) => ({ ...prev, [updateChatId]: state }));
+    }, []);
+
+    const watchPartyEndedListener = useCallback(({ chatId: endedChatId }) => {
+      if (!endedChatId) return;
+      setWatchPartyByChat((prev) => {
+        if (!prev[endedChatId]) return prev;
+        const next = { ...prev };
+        delete next[endedChatId];
+        return next;
+      });
+    }, []);
+
+    const handleRejoinParty = useCallback(
+      (targetChatId) => {
+        if (!targetChatId) return;
+        navigate(`/chat/${targetChatId}?watchParty=1`);
+        if (isMobile) dispatch(setIsMobile(false));
+      },
+      [navigate, isMobile, dispatch]
+    );
+
     const eventHandlers = {
       [NEW_MESSAGE_ALERT]: newMessageAlertListener,
       [NEW_REQUEST]: newRequestListener,
       [REFETCH_CHATS]: refetchListener,
       [ONLINE_USERS]: onlineUsersListener,
+      [WATCH_PARTY_STATE_UPDATE]: watchPartyStateUpdateListener,
+      [WATCH_PARTY_ENDED]: watchPartyEndedListener,
     };
 
     useSocketEvents(socket, eventHandlers);
@@ -347,6 +376,9 @@ const AppLayout = () => (WrappedComponent) => {
               newMessagesAlert={newMessagesAlert}
               onlineUsers={onlineUsers}
               onUserClick={handleChatListUserClick}
+              watchPartyByChat={watchPartyByChat}
+              currentUserId={user?._id}
+              onRejoinParty={handleRejoinParty}
             />
           </Drawer>
         )}
@@ -384,6 +416,9 @@ const AppLayout = () => (WrappedComponent) => {
                 newMessagesAlert={newMessagesAlert}
                 onlineUsers={onlineUsers}
                 onUserClick={handleChatListUserClick}
+                watchPartyByChat={watchPartyByChat}
+                currentUserId={user?._id}
+                onRejoinParty={handleRejoinParty}
               />
             )}
           </Grid>

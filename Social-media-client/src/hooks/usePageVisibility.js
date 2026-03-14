@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * Hook to handle page visibility changes on mobile
@@ -6,33 +6,43 @@ import { useEffect } from 'react';
  * This hook helps reconnect socket/refresh data when user returns
  */
 export const usePageVisibility = (onVisible, onHidden) => {
+  // Use refs so the event listeners always call the latest callbacks
+  // without needing to re-register on every render
+  const onVisibleRef = useRef(onVisible);
+  const onHiddenRef = useRef(onHidden);
+
+  // Keep refs up to date on every render
+  useEffect(() => {
+    onVisibleRef.current = onVisible;
+    onHiddenRef.current = onHidden;
+  });
+
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Page is hidden (backgrounded on mobile)
-        if (onHidden) onHidden();
+        if (onHiddenRef.current) onHiddenRef.current();
       } else {
-        // Page is visible (user returned to tab)
-        if (onVisible) onVisible();
+        if (onVisibleRef.current) onVisibleRef.current();
       }
     };
 
-    // Listen for visibility changes
+    const handleFocus = () => {
+      if (!document.hidden && onVisibleRef.current) onVisibleRef.current();
+    };
+
+    const handleBlur = () => {
+      if (onHiddenRef.current) onHiddenRef.current();
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Also listen for focus/blur events (additional mobile support)
-    window.addEventListener('focus', () => {
-      if (!document.hidden && onVisible) onVisible();
-    });
-
-    window.addEventListener('blur', () => {
-      if (onHidden) onHidden();
-    });
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', onVisible);
-      window.removeEventListener('blur', onHidden);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
     };
-  }, [onVisible, onHidden]);
+  }, []); // registers once — refs ensure latest callbacks are always used
 };
+

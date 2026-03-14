@@ -1,6 +1,6 @@
 import React, { memo, useState } from "react";
 import { Link } from "../styles/StyledComponents";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import AvatarCard from "./AvatarCard";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
@@ -19,6 +19,9 @@ const ChatItem = ({
   handleDeleteChat,
   lastSeen,
   members = [], // Array of member objects with user info
+  watchPartyState,
+  currentUserId,
+  onRejoinParty,
 }) => {
   const { theme } = useTheme();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
@@ -41,6 +44,14 @@ const ChatItem = ({
 
   // Get user info for 1-on-1 chats (the other person in the chat)
   const otherUser = !groupChat && members.length > 0 ? members[0] : null;
+
+  const activeHostId = watchPartyState?.hostId;
+  const activeParticipants = watchPartyState?.participants?.length || 0;
+  const hostName =
+    activeHostId === currentUserId
+      ? "You"
+      : members.find((m) => m?._id === activeHostId)?.name || "Someone";
+  const hasActiveWatchParty = Boolean(watchPartyState?.videoId);
 
   const handleAvatarClick = (e) => {
     // Only handle avatar clicks for 1-on-1 chats
@@ -91,6 +102,25 @@ const ChatItem = ({
               <Typography sx={{ fontSize: "0.75rem", color: theme.TEXT_SECONDARY || "#888" }}>
                 Last seen {lastSeenText}
               </Typography>
+            )}
+            {hasActiveWatchParty && (
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.35 }}>
+                <Typography sx={{ fontSize: "0.7rem", color: sameSender ? "#ddd" : (theme.TEXT_SECONDARY || "#777") }}>
+                  Watch party by {hostName} • {activeParticipants} in room
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onRejoinParty?.(_id);
+                  }}
+                  sx={{ minWidth: "auto", px: 1, py: 0, fontSize: "0.65rem", lineHeight: 1.4 }}
+                >
+                  Join
+                </Button>
+              </Stack>
             )}
           </Stack>
 

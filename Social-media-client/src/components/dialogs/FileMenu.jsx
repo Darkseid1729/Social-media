@@ -8,6 +8,7 @@ import {
   UploadFile as UploadFileIcon,
   VideoFile as VideoFileIcon,
   YouTube as YouTubeIcon,
+  LiveTv as LiveTvIcon,
   AutoAwesome as AutoAwesomeIcon,
   CardGiftcard as GiftCardIcon,
   AutoFixHigh as AiAnimationIcon,
@@ -17,7 +18,16 @@ import toast from "react-hot-toast";
 import { useSendAttachmentsMutation } from "../../redux/api/api";
 
 const FileMenu = (props) => {
-  const { anchorE1, chatId, onGifClick, onYouTubeClick, onAnimationClick, onGiftCardClick, onAiAnimationClick } = props;
+  const {
+    anchorE1,
+    chatId,
+    onGifClick,
+    onYouTubeClick,
+    onWatchPartyClick,
+    onAnimationClick,
+    onGiftCardClick,
+    onAiAnimationClick,
+  } = props;
   const { isFileMenu } = useSelector((state) => state.misc);
 
   const dispatch = useDispatch();
@@ -187,6 +197,14 @@ const FileMenu = (props) => {
               <YouTubeIcon />
             </Tooltip>
             <ListItemText style={{ marginLeft: "0.5rem" }}>YouTube</ListItemText>
+          </MenuItem>
+
+          {/* Watch Party Option */}
+          <MenuItem onClick={() => { closeFileMenu(); if (onWatchPartyClick) onWatchPartyClick(); }}>
+            <Tooltip title="Watch Party">
+              <LiveTvIcon />
+            </Tooltip>
+            <ListItemText style={{ marginLeft: "0.5rem" }}>Watch Party</ListItemText>
           </MenuItem>
 
           {/* Emoji Animations Option */}
