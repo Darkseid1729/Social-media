@@ -11,6 +11,8 @@ import ReactionPicker from "./ReactionPicker";
 import ReactionsDisplay from "./ReactionsDisplay";
 import ReplyDisplay from "./ReplyDisplay";
 import { Reply as ReplyIcon, EmojiEmotions as EmojiIcon, Delete as DeleteIcon, Forward as ForwardIcon, OpenInNew as OpenInNewIcon, Download as DownloadIcon, FileOpen as FileOpenIcon } from "@mui/icons-material";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
+import CheckIcon from "@mui/icons-material/Check";
 import { useAddMessageReactionMutation, useRemoveMessageReactionMutation, useDeleteMessageMutation } from "../../redux/api/api";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
@@ -112,7 +114,7 @@ const getUserColorShade = (userId, baseColor) => {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };
 
-const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete, onGiftCardReveal }) => {
+const MessageComponent = ({ message, user, deliveryState = "sent", onReply, onScrollToMessage, onDelete, onGiftCardReveal }) => {
   // console.log('MessageComponent message:', message); // Debug line
   const { sender, content, attachments = [], createdAt, reactions = [], _id: messageId, replyTo, isForwarded, animationRevealed } = message;
   const { theme } = useTheme();
@@ -488,10 +490,35 @@ const MessageComponent = ({ message, user, onReply, onScrollToMessage, onDelete,
         currentUserId={user?._id}
       />
 
-      {/* Actual Indian time at the bottom */}
-      <Typography variant="caption" style={{ color: theme.TIMEAGO_COLOR, marginTop: 8, display: 'block', textAlign: sameSender ? 'right' : 'left' }}>
-        {indianTime}
-      </Typography>
+      {/* Message meta row: time + delivery state for outgoing messages */}
+      <Box
+        sx={{
+          mt: 0.75,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: sameSender ? "flex-end" : "flex-start",
+          gap: 0.6,
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{ color: theme.TIMEAGO_COLOR, lineHeight: 1 }}
+        >
+          {indianTime}
+        </Typography>
+        {sameSender && (
+          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.3, color: deliveryState === "seen" ? "#59b7ff" : theme.TIMEAGO_COLOR }}>
+            {deliveryState === "seen" ? (
+              <DoneAllIcon sx={{ fontSize: 14 }} />
+            ) : (
+              <CheckIcon sx={{ fontSize: 14 }} />
+            )}
+            <Typography variant="caption" sx={{ lineHeight: 1 }}>
+              {deliveryState === "seen" ? "Seen" : "Sent"}
+            </Typography>
+          </Box>
+        )}
+      </Box>
 
       {/* Context Menu */}
       <Menu

@@ -21,6 +21,8 @@ import {
   EMOJI_COMBO,
   EMOJI_ANIMATION,
   MESSAGE_ANIMATION,
+  MESSAGE_READ,
+  MESSAGE_READ_UPDATE,
   CALL_INITIATED,
   CALL_ACCEPTED,
   CALL_REJECTED,
@@ -41,6 +43,7 @@ import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
 import { User } from "./models/user.js";
 import { Chat } from "./models/chat.js";
+import { ChatReadState } from "./models/chatReadState.js";
 import { corsOptions } from "./constants/config.js";
 import { socketAuthenticator } from "./middlewares/auth.js";
 
@@ -398,6 +401,49 @@ io.on("connection", (socket) => {
   socket.on(MESSAGE_ANIMATION, ({ members, chatId, messageId, animation }) => {
     const membersSockets = getSockets(members);
     io.to(membersSockets).emit(MESSAGE_ANIMATION, { chatId, messageId, animation });
+  });
+
+  socket.on(MESSAGE_READ, async ({ chatId, messageId }) => {
+    try {
+      if (!isValidObjectId(chatId) || !isValidObjectId(messageId)) return;
+
+      const [chat, message] = await Promise.all([
+        Chat.findById(chatId).select("members").lean(),
+        Message.findById(messageId).select("_id chat createdAt").lean(),
+      ]);
+
+      if (!chat || !message) return;
+      if (message.chat.toString() !== chatId.toString()) return;
+
+      const myId = user._id.toString();
+      const memberIds = chat.members.map((m) => m.toString());
+      if (!memberIds.includes(myId)) return;
+
+      const now = new Date();
+      await ChatReadState.findOneAndUpdate(
+        { chat: chatId, user: myId },
+        {
+          $set: {
+            lastReadMessageId: message._id,
+            lastReadMessageAt: message.createdAt || now,
+            lastReadAt: now,
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+
+      const others = memberIds.filter((id) => id !== myId);
+      const membersSockets = getSockets(others);
+      io.to(membersSockets).emit(MESSAGE_READ_UPDATE, {
+        chatId,
+        userId: myId,
+        messageId: message._id,
+        messageCreatedAt: message.createdAt || now,
+        readAt: now,
+      });
+    } catch (error) {
+      console.error("MESSAGE_READ error:", error);
+    }
   });
 
   socket.on(CHAT_JOINED, ({ userId, members }) => {
@@ -892,6 +938,13 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     const myId = user._id.toString();
+
+    // Ignore disconnects from stale sockets (e.g., reconnect races / tab swaps).
+    // Only the currently mapped socket should affect presence and lastSeen.
+    if (userSocketIDs.get(myId) !== socket.id) {
+      return;
+    }
+
     userSocketIDs.delete(myId);
     onlineUsers.delete(myId);
 

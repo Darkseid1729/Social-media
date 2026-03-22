@@ -52,6 +52,8 @@ import {
   EMOJI_ANIMATION,
   MESSAGE_DELETED,
   MESSAGE_ANIMATION,
+  MESSAGE_READ,
+  MESSAGE_READ_UPDATE,
 } from "../constants/events";
 import { useChatDetailsQuery, useGetMessagesQuery, useSendAttachmentsMutation } from "../redux/api/api";
 import { useErrors, useSocketEvents } from "../hooks/hook";
@@ -73,6 +75,7 @@ const Chat = ({ chatId, user }) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [page, setPage] = useState(1);
+  const [readPointers, setReadPointers] = useState({});
   const [wallpaperFile, setWallpaperFile] = useState(null);
   const [isWallpaperUploading, setIsWallpaperUploading] = useState(false);
   const [showWallpaperInput, setShowWallpaperInput] = useState(false);
@@ -102,6 +105,7 @@ const Chat = ({ chatId, user }) => {
 
   const containerRef = useRef(null);
   const bottomRef = useRef(null);
+  const lastReadEmitRef = useRef({ messageId: null, at: 0 });
 
   // Inject emoji animation styles on mount
   useEffect(() => {
@@ -561,8 +565,16 @@ const Chat = ({ chatId, user }) => {
     setMessages([]);
     setOldMessages([]);
     setPage(1);
+    setReadPointers({});
+    lastReadEmitRef.current = { messageId: null, at: 0 };
     setHasScrolledToBottom(false);
   }, [chatId]);
+
+  useEffect(() => {
+    const pointers = oldMessagesChunk.data?.readPointers;
+    if (!pointers || typeof pointers !== "object") return;
+    setReadPointers(pointers);
+  }, [oldMessagesChunk.data?.readPointers]);
 
   // Synchronize oldMessages with query data when page 1 loads for new chat
   useEffect(() => {
@@ -887,6 +899,17 @@ const Chat = ({ chatId, user }) => {
     [EMOJI_EFFECT]: emojiEffectListener,
     [MESSAGE_DELETED]: messageDeletedListener,
     [MESSAGE_ANIMATION]: messageAnimationListener,
+    [MESSAGE_READ_UPDATE]: (data) => {
+      if (!data || data.chatId !== chatId || !data.userId) return;
+      setReadPointers((prev) => ({
+        ...prev,
+        [data.userId]: {
+          lastReadMessageId: data.messageId,
+          lastReadMessageAt: data.messageCreatedAt || data.readAt,
+          lastReadAt: data.readAt,
+        },
+      }));
+    },
   };
 
   useSocketEvents(socket, eventHandler);
@@ -896,6 +919,42 @@ const Chat = ({ chatId, user }) => {
   const allMessages = useMemo(() => {
     return [...oldMessages, ...messages];
   }, [oldMessages, messages]);
+
+  const otherMemberId = useMemo(() => {
+    if (!Array.isArray(members)) return null;
+    const member = members.find((m) => {
+      const id = typeof m === "object" ? m?._id : m;
+      return id && id.toString() !== user?._id?.toString();
+    });
+    const id = typeof member === "object" ? member?._id : member;
+    return id ? id.toString() : null;
+  }, [members, user?._id]);
+
+  const emitLatestReadReceipt = useCallback(() => {
+    if (!chatId || !socket?.connected || document.hidden) return;
+
+    const latestIncoming = [...allMessages]
+      .reverse()
+      .find((msg) => msg?._id && msg?.sender?._id?.toString() !== user?._id?.toString());
+
+    if (!latestIncoming?._id) return;
+
+    const now = Date.now();
+    const last = lastReadEmitRef.current;
+    if (last.messageId === latestIncoming._id && now - last.at < 2000) return;
+
+    socket.emit(MESSAGE_READ, { chatId, messageId: latestIncoming._id });
+    lastReadEmitRef.current = { messageId: latestIncoming._id, at: now };
+  }, [allMessages, chatId, socket, user?._id]);
+
+  useEffect(() => {
+    emitLatestReadReceipt();
+  }, [emitLatestReadReceipt]);
+
+  useEffect(() => {
+    socket.on("connect", emitLatestReadReceipt);
+    return () => socket.off("connect", emitLatestReadReceipt);
+  }, [socket, emitLatestReadReceipt]);
 
   // Additional scroll logic: directly scroll container when messages load
   useEffect(() => {
@@ -981,10 +1040,27 @@ const Chat = ({ chatId, user }) => {
           </div>
         )}
         {allMessages.map((i) => (
+          (() => {
+            const pointer = otherMemberId ? readPointers?.[otherMemberId] : null;
+            const pointerTime = pointer?.lastReadMessageAt
+              ? new Date(pointer.lastReadMessageAt).getTime()
+              : null;
+            const messageTime = i?.createdAt ? new Date(i.createdAt).getTime() : null;
+            const sameSender = i?.sender?._id?.toString() === user?._id?.toString();
+            const isSeenByOther = Boolean(
+              !chatDetails?.data?.chat?.groupChat &&
+              sameSender &&
+              pointerTime &&
+              messageTime &&
+              messageTime <= pointerTime
+            );
+
+            return (
           <MessageComponent 
             key={i._id} 
             message={i} 
             user={user} 
+            deliveryState={isSeenByOther ? "seen" : "sent"}
             onReply={handleReply}
             onScrollToMessage={handleScrollToMessage}
             onDelete={handleDeleteMessage}
@@ -1002,6 +1078,8 @@ const Chat = ({ chatId, user }) => {
                 socket.emit(MESSAGE_ANIMATION, { chatId, members, messageId, animation });
               }}
           />
+            );
+          })()
         ))}
 
         {userTyping && <TypingLoader />}

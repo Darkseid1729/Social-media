@@ -190,7 +190,12 @@ const AppLayout = () => (WrappedComponent) => {
 
     const onlineUsersListener = useCallback((data) => {
       setOnlineUsers(data);
-    }, []);
+
+      // Keep lastSeen timestamps fresh when presence updates arrive.
+      if (!isLoading && !isUninitialized) {
+        refetch();
+      }
+    }, [isLoading, isUninitialized, refetch]);
 
     const watchPartyStateUpdateListener = useCallback(({ chatId: updateChatId, state }) => {
       if (!updateChatId || !state) return;
@@ -321,7 +326,7 @@ const AppLayout = () => (WrappedComponent) => {
     return (
       <>
         <Title />
-        <Header chatDetails={chatDetailsData?.chat} onStartCall={startCall} />
+        <Header chatDetails={chatDetailsData?.chat} onlineUsers={onlineUsers} onStartCall={startCall} />
 
         {/* Audio Call Dialog (global - visible on any page) */}
         <AudioCallDialog

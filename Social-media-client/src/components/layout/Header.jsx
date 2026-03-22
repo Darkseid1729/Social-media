@@ -56,6 +56,7 @@ import {
 } from "../../redux/reducers/misc";
 import { resetNotificationCount } from "../../redux/reducers/chat";
 import { AddBox } from "@mui/icons-material";
+import { formatLastSeen } from "../../utils/timeUtils";
 
 
 
@@ -313,6 +314,7 @@ const Header = (props) => {
   const params = useParams();
   const chatId = params.chatId || props.chatId;
   const chatDetails = props.chatDetails;
+  const onlineUsers = props.onlineUsers || [];
   const isGroupChat = chatDetails?.groupChat;
   const onStartCall = props.onStartCall;
 
@@ -320,6 +322,13 @@ const Header = (props) => {
   const otherMember = !isGroupChat && chatDetails?.members?.find(
     (m) => m._id?.toString() !== user?._id?.toString()
   );
+  const otherMemberId = otherMember?._id?.toString?.() || otherMember?._id;
+  const isOtherMemberOnline = Boolean(otherMemberId && onlineUsers.includes(otherMemberId));
+  const otherMemberStatusText = !isGroupChat && otherMember
+    ? (isOtherMemberOnline
+      ? "Online"
+      : (otherMember?.lastSeen ? `Last seen ${formatLastSeen(otherMember.lastSeen)}` : "Offline"))
+    : null;
 
   const handleAudioCall = () => {
     if (!chatId) {
@@ -410,14 +419,14 @@ const Header = (props) => {
         >
           <FloatingHearts color={getHeartColor(themeName)} count={30} />
           <Toolbar sx={{ position: 'relative', zIndex: 1 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                display: { xs: "none", sm: "block" },
-              }}
-            >
-              My Social Media
-            </Typography>
+            <Box sx={{ display: { xs: "none", sm: "block" } }}>
+              <Typography variant="h6">My Social Media</Typography>
+              {otherMemberStatusText && (
+                <Typography sx={{ fontSize: "0.75rem", opacity: 0.9, lineHeight: 1.1 }}>
+                  {otherMember?.name} • {otherMemberStatusText}
+                </Typography>
+              )}
+            </Box>
 
             {/* Friend list drawer trigger for mobile */}
             <Box

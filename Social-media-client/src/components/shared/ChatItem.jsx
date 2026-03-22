@@ -29,17 +29,10 @@ const ChatItem = ({
   // Only show lastSeen for 1-on-1 chats where user is offline
   const shouldShowLastSeen = !groupChat && !isOnline && lastSeen;
   
-  // Calculate time difference - only show if more than 2 minutes ago
+  // Calculate text for offline users
   let lastSeenText = null;
   if (shouldShowLastSeen) {
-    const now = new Date();
-    const lastSeenDate = new Date(lastSeen);
-    const diffMinutes = Math.floor((now - lastSeenDate) / 1000 / 60);
-    
-    // Only show if user was last seen more than 2 minutes ago
-    if (diffMinutes >= 2) {
-      lastSeenText = formatLastSeen(lastSeen);
-    }
+    lastSeenText = formatLastSeen(lastSeen);
   }
 
   // Get user info for 1-on-1 chats (the other person in the chat)

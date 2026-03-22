@@ -19,6 +19,7 @@ import {
 import { getOtherMember } from "../lib/helper.js";
 import { User } from "../models/user.js";
 import { Message } from "../models/message.js";
+import { ChatReadState } from "../models/chatReadState.js";
 import mongoose from "mongoose";
 
 const newGroupChat = TryCatch(async (req, res, next) => {
@@ -374,16 +375,17 @@ const sendAttachments = TryCatch(async (req, res, next) => {
 const getChatDetails = TryCatch(async (req, res, next) => {
   if (req.query.populate === "true") {
     const chat = await Chat.findById(req.params.id)
-      .populate("members", "name username avatar")
+      .populate("members", "name username avatar lastSeen")
       .lean();
 
     if (!chat) return next(new ErrorHandler("Chat not found", 404));
 
-    chat.members = chat.members.map(({ _id, name, username, avatar }) => ({
+    chat.members = chat.members.map(({ _id, name, username, avatar, lastSeen }) => ({
       _id,
       name,
       username,
       avatar: avatar || { url: "" },
+      lastSeen,
     }));
 
     return res.status(200).json({
@@ -492,7 +494,7 @@ const getMessages = TryCatch(async (req, res, next) => {
       new ErrorHandler("You are not allowed to access this chat", 403)
     );
 
-  const [messages, totalMessagesCount] = await Promise.all([
+  const [messages, totalMessagesCount, readStates] = await Promise.all([
     Message.find({ chat: chatId, deletedAt: null })
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -507,7 +509,19 @@ const getMessages = TryCatch(async (req, res, next) => {
       })
       .lean(),
     Message.countDocuments({ chat: chatId, deletedAt: null }),
+    ChatReadState.find({ chat: chatId, user: { $ne: req.user } })
+      .select("user lastReadMessageId lastReadMessageAt lastReadAt")
+      .lean(),
   ]);
+
+  const readPointers = readStates.reduce((acc, state) => {
+    acc[state.user.toString()] = {
+      lastReadMessageId: state.lastReadMessageId,
+      lastReadMessageAt: state.lastReadMessageAt,
+      lastReadAt: state.lastReadAt,
+    };
+    return acc;
+  }, {});
 
   const totalPages = Math.ceil(totalMessagesCount / resultPerPage) || 0;
 
@@ -515,6 +529,7 @@ const getMessages = TryCatch(async (req, res, next) => {
     success: true,
     messages: messages.reverse(),
     totalPages,
+    readPointers,
   });
 });
 

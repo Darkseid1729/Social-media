@@ -6,7 +6,15 @@ export const formatLastSeen = (lastSeenDate) => {
   
   const now = new Date();
   const lastSeen = new Date(lastSeenDate);
+  if (Number.isNaN(lastSeen.getTime())) return null;
+
   const diffMs = now - lastSeen;
+
+  // If timestamp is in the future (clock skew / bad data), avoid false "Just now".
+  if (diffMs < 0) {
+    return "Recently";
+  }
+
   const diffSeconds = Math.floor(diffMs / 1000);
   const diffMinutes = Math.floor(diffSeconds / 60);
   const diffHours = Math.floor(diffMinutes / 60);
