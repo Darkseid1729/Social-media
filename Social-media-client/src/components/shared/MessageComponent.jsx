@@ -10,13 +10,15 @@ import TextWithLinks from "./TextWithLinks";
 import ReactionPicker from "./ReactionPicker";
 import ReactionsDisplay from "./ReactionsDisplay";
 import ReplyDisplay from "./ReplyDisplay";
-import { Reply as ReplyIcon, EmojiEmotions as EmojiIcon, Delete as DeleteIcon, Forward as ForwardIcon, OpenInNew as OpenInNewIcon, Download as DownloadIcon, FileOpen as FileOpenIcon } from "@mui/icons-material";
+import { Reply as ReplyIcon, EmojiEmotions as EmojiIcon, Delete as DeleteIcon, Forward as ForwardIcon, OpenInNew as OpenInNewIcon, Download as DownloadIcon, FileOpen as FileOpenIcon, Translate as TranslateIcon } from "@mui/icons-material";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import CheckIcon from "@mui/icons-material/Check";
 import { useAddMessageReactionMutation, useRemoveMessageReactionMutation, useDeleteMessageMutation } from "../../redux/api/api";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import ForwardDialog from "../dialogs/ForwardDialog";
+import TranslateMessageDialog from "../dialogs/TranslateMessageDialog";
+import { translateText } from "../../utils/translation";
 import "./GiftCardMessage.css";
 
 // ── Gift Card theme map (mirrors GiftCardDialog THEMES) ──────────────
@@ -123,6 +125,10 @@ const MessageComponent = ({ message, user, deliveryState = "sent", onReply, onSc
   const [touchTimer, setTouchTimer] = useState(null);
   const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
   const [fileActionMenu, setFileActionMenu] = useState({ anchor: null, url: null, name: null });
+  const [translateDialogOpen, setTranslateDialogOpen] = useState(false);
+  const [translateTargetLanguage, setTranslateTargetLanguage] = useState("en");
+  const [translatedText, setTranslatedText] = useState("");
+  const [isTranslatingMessage, setIsTranslatingMessage] = useState(false);
 
   // Infer MIME type from filename extension so blob URLs open correctly in browser
   const getMimeFromName = (filename = '') => {
@@ -190,6 +196,12 @@ const MessageComponent = ({ message, user, deliveryState = "sent", onReply, onSc
   const [addReaction] = useAddMessageReactionMutation();
   const [removeReaction] = useRemoveMessageReactionMutation();
   const [deleteMessage] = useDeleteMessageMutation();
+
+  const isGiftCardMessage = content && content.startsWith("__GIFT_CARD__:");
+  const isStickerOrImageContent = content && ((/^\/StickersGenshin\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content)) ||
+    /^https?:\/\/res\.cloudinary\.com\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content));
+  const isGifContent = content && content.endsWith('.gif');
+  const canTranslateMessage = Boolean(content && !isGiftCardMessage && !isStickerOrImageContent && !isGifContent);
 
   const sameSender = sender?._id === user?._id;
   
@@ -266,6 +278,37 @@ const MessageComponent = ({ message, user, deliveryState = "sent", onReply, onSc
   const handleForward = () => {
     handleCloseContextMenu();
     setForwardDialogOpen(true);
+  };
+
+  const handleOpenTranslateDialog = () => {
+    handleCloseContextMenu();
+    if (!canTranslateMessage) {
+      toast.error("This message cannot be translated");
+      return;
+    }
+    setTranslateDialogOpen(true);
+  };
+
+  const handleTranslateMessage = async () => {
+    if (!canTranslateMessage) {
+      toast.error("This message cannot be translated");
+      return;
+    }
+
+    try {
+      setIsTranslatingMessage(true);
+      const translated = await translateText({
+        text: content,
+        targetLanguage: translateTargetLanguage,
+      });
+      setTranslatedText(translated);
+      setTranslateDialogOpen(false);
+      toast.success("Message translated");
+    } catch (error) {
+      toast.error(error?.message || "Failed to translate message");
+    } finally {
+      setIsTranslatingMessage(false);
+    }
   };
 
   const handleReplyClick = () => {
@@ -362,7 +405,7 @@ const MessageComponent = ({ message, user, deliveryState = "sent", onReply, onSc
         </Typography>
       )}
       {/* ── Gift Card ── */}
-      {content && content.startsWith("__GIFT_CARD__:") ? (() => {
+      {isGiftCardMessage && (() => {
         let cardData = null;
         try { cardData = JSON.parse(content.slice("__GIFT_CARD__:".length)); } catch {}
         return cardData ? (
@@ -372,48 +415,70 @@ const MessageComponent = ({ message, user, deliveryState = "sent", onReply, onSc
             onReveal={(anim) => onGiftCardReveal?.(messageId, anim)}
           />
         ) : null;
-      })() : (
-      /* Render sticker or GIF/image if content is a sticker path or image URL */
-      content &&
-        ((/^\/StickersGenshin\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content)) ||
-         /^https?:\/\/res\.cloudinary\.com\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(content)) ? (
-          <Box sx={{ display: 'flex', justifyContent: sameSender ? 'flex-end' : 'flex-start', mb: 1 }}>
-            {/* Use MUI responsive sx for consistent sizing (mobile vs desktop) */}
-            <Box
-              component="img"
-              src={content}
-              alt="Sticker"
-              sx={{
-                width: 'auto',
-                height: { xs: 120, sm: 220 }, // smaller on phones, fixed taller on desktop
-                maxWidth: { xs: 160, sm: 260 },
-                objectFit: 'contain',
-                borderRadius: 1,
-                boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
-                display: 'block',
-              }}
-            />
-          </Box>
-        ) : content && content.endsWith('.gif') ? (
-          <Box sx={{ display: 'flex', justifyContent: sameSender ? 'flex-end' : 'flex-start', mb: 1 }}>
-            <Box
-              component="img"
-              src={content}
-              alt="GIF"
-              sx={{
-                width: '100%',
-                maxWidth: { xs: 240, sm: 360 },
-                maxHeight: { xs: 180, sm: 260 },
-                borderRadius: 1,
-                objectFit: 'cover',
-                boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
-                display: 'block',
-              }}
-            />
-          </Box>
-        ) : content && (
-          <TextWithLinks text={content} showPreviews={true} />
-        ))}
+      })()}
+
+      {!isGiftCardMessage && isStickerOrImageContent && (
+        <Box sx={{ display: 'flex', justifyContent: sameSender ? 'flex-end' : 'flex-start', mb: 1 }}>
+          {/* Use MUI responsive sx for consistent sizing (mobile vs desktop) */}
+          <Box
+            component="img"
+            src={content}
+            alt="Sticker"
+            sx={{
+              width: 'auto',
+              height: { xs: 120, sm: 220 }, // smaller on phones, fixed taller on desktop
+              maxWidth: { xs: 160, sm: 260 },
+              objectFit: 'contain',
+              borderRadius: 1,
+              boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
+              display: 'block',
+            }}
+          />
+        </Box>
+      )}
+
+      {!isGiftCardMessage && !isStickerOrImageContent && isGifContent && (
+        <Box sx={{ display: 'flex', justifyContent: sameSender ? 'flex-end' : 'flex-start', mb: 1 }}>
+          <Box
+            component="img"
+            src={content}
+            alt="GIF"
+            sx={{
+              width: '100%',
+              maxWidth: { xs: 240, sm: 360 },
+              maxHeight: { xs: 180, sm: 260 },
+              borderRadius: 1,
+              objectFit: 'cover',
+              boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
+              display: 'block',
+            }}
+          />
+        </Box>
+      )}
+
+      {!isGiftCardMessage && !isStickerOrImageContent && !isGifContent && content && (
+        <TextWithLinks text={content} showPreviews={true} />
+      )}
+
+      {translatedText && translatedText !== content && (
+        <Box
+          sx={{
+            mt: 0.8,
+            px: 1,
+            py: 0.75,
+            borderRadius: 1.5,
+            border: `1px solid ${theme.SUBTLE_BG_20}`,
+            backgroundColor: "rgba(0,0,0,0.06)",
+          }}
+        >
+          <Typography variant="caption" sx={{ color: theme.TEXT_SECONDARY, display: "block", mb: 0.35 }}>
+            Translated
+          </Typography>
+          <Typography variant="body2" sx={{ color: sameSender ? theme.CHAT_TEXT_COLOR : theme.TEXT_PRIMARY, whiteSpace: "pre-wrap" }}>
+            {translatedText}
+          </Typography>
+        </Box>
+      )}
 
       {attachments.length > 0 && (() => {
         const imageAttachments = attachments.filter(a => fileFormat(a.url) === 'image');
@@ -557,6 +622,12 @@ const MessageComponent = ({ message, user, deliveryState = "sent", onReply, onSc
           </ListItemIcon>
           <ListItemText primary="Forward" />
         </MenuItem>
+        <MenuItem onClick={handleOpenTranslateDialog}>
+          <ListItemIcon>
+            <TranslateIcon fontSize="small" sx={{ color: theme.TEXT_SECONDARY }} />
+          </ListItemIcon>
+          <ListItemText primary="Translate" />
+        </MenuItem>
         {canDelete && (
           <MenuItem onClick={handleDelete}>
             <ListItemIcon>
@@ -580,6 +651,15 @@ const MessageComponent = ({ message, user, deliveryState = "sent", onReply, onSc
         open={forwardDialogOpen}
         onClose={() => setForwardDialogOpen(false)}
         messageId={messageId}
+      />
+
+      <TranslateMessageDialog
+        open={translateDialogOpen}
+        onClose={() => setTranslateDialogOpen(false)}
+        language={translateTargetLanguage}
+        onLanguageChange={setTranslateTargetLanguage}
+        onTranslate={handleTranslateMessage}
+        disabled={isTranslatingMessage}
       />
     </motion.div>
   );

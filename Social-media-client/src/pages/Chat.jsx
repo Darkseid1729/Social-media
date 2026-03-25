@@ -29,6 +29,7 @@ import { parseYouTubeUrl } from "../utils/linkUtils";
 import ComboAnimationLayer from "../components/comboAnimations/ComboAnimationLayer";
 import EmojiAnimationPicker from "../components/dialogs/EmojiAnimationPicker";
 import AiAnimationDialog from "../components/dialogs/AiAnimationDialog";
+import TranslateMessageDialog from "../components/dialogs/TranslateMessageDialog";
 
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 
@@ -70,6 +71,7 @@ import { useSetWallpaperMutation } from "../redux/api/api";
 import { server } from "../constants/config";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { translateText } from "../utils/translation";
 
 const Chat = ({ chatId, user }) => {
   const [message, setMessage] = useState("");
@@ -120,6 +122,9 @@ const Chat = ({ chatId, user }) => {
   const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
   const [animationPickerOpen, setAnimationPickerOpen] = useState(false);
   const [aiAnimationOpen, setAiAnimationOpen] = useState(false);
+  const [translateDialogOpen, setTranslateDialogOpen] = useState(false);
+  const [translateTargetLanguage, setTranslateTargetLanguage] = useState("hi");
+  const [isTranslatingInput, setIsTranslatingInput] = useState(false);
   const [giftCardOpen, setGiftCardOpen] = useState(() => {
     try { return localStorage.getItem("giftCardOpen") === "true"; } catch { return false; }
   });
@@ -180,6 +185,30 @@ const Chat = ({ chatId, user }) => {
   // Handle clearing YouTube video selection
   const handleClearYouTubeVideo = () => {
     setSelectedYouTubeVideo(null);
+  };
+
+  const handleTranslateInput = async () => {
+    const text = message.trim();
+
+    if (!text) {
+      toast.error("Type a message first to translate");
+      return;
+    }
+
+    try {
+      setIsTranslatingInput(true);
+      const translated = await translateText({
+        text,
+        targetLanguage: translateTargetLanguage,
+      });
+      setMessage(translated);
+      setTranslateDialogOpen(false);
+      toast.success("Message translated");
+    } catch (error) {
+      toast.error(error?.message || "Failed to translate message");
+    } finally {
+      setIsTranslatingInput(false);
+    }
   };
 
   useEffect(() => {
@@ -1231,6 +1260,7 @@ const Chat = ({ chatId, user }) => {
         onAnimationClick={() => setAnimationPickerOpen(true)}
         onGiftCardClick={() => setGiftCardOpenPersist(true)}
         onAiAnimationClick={() => setAiAnimationOpen(true)}
+        onTranslateClick={() => setTranslateDialogOpen(true)}
       />
       {/* Sticker Picker Dialog */}
       <StickerPicker open={stickerPickerOpen} onClose={() => setStickerPickerOpen(false)} onSelect={handleStickerSelect} />
@@ -1304,6 +1334,15 @@ const Chat = ({ chatId, user }) => {
         onClose={() => setGiftCardOpenPersist(false)}
         onSend={handleGiftCardSend}
         senderName={user?.name}
+      />
+
+      <TranslateMessageDialog
+        open={translateDialogOpen}
+        onClose={() => setTranslateDialogOpen(false)}
+        language={translateTargetLanguage}
+        onLanguageChange={setTranslateTargetLanguage}
+        onTranslate={handleTranslateInput}
+        disabled={isTranslatingInput}
       />
 
       {/* ── Emoji Combo Animations (fires only when both users send same emoji) ── */}

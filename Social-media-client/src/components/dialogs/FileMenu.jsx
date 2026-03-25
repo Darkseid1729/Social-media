@@ -12,6 +12,7 @@ import {
   AutoAwesome as AutoAwesomeIcon,
   CardGiftcard as GiftCardIcon,
   AutoFixHigh as AiAnimationIcon,
+  Translate as TranslateIcon,
 } from "@mui/icons-material";
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import toast from "react-hot-toast";
@@ -27,6 +28,7 @@ const FileMenu = (props) => {
     onAnimationClick,
     onGiftCardClick,
     onAiAnimationClick,
+    onTranslateClick,
   } = props;
   const { isFileMenu } = useSelector((state) => state.misc);
 
@@ -229,6 +231,14 @@ const FileMenu = (props) => {
               <AiAnimationIcon sx={{ color: "#a855f7" }} />
             </Tooltip>
             <ListItemText style={{ marginLeft: "0.5rem" }}>AI Animation</ListItemText>
+          </MenuItem>
+
+          {/* Translate Input Option */}
+          <MenuItem onClick={() => { closeFileMenu(); if (onTranslateClick) onTranslateClick(); }}>
+            <Tooltip title="Translate Message">
+              <TranslateIcon sx={{ color: "#1976d2" }} />
+            </Tooltip>
+            <ListItemText style={{ marginLeft: "0.5rem" }}>Translate</ListItemText>
           </MenuItem>
 
           <MenuItem onClick={selectAudio}>
