@@ -255,6 +255,39 @@ const AiAnimationDialog = ({ open, onClose, onSend, chatId }) => {
             />
           )}
         </DialogContent>
+        <DialogActions sx={{ px: 2, py: 1.5, gap: 1.5 }}>
+          <TextField
+            fullWidth
+            multiline
+            minRows={1}
+            maxRows={3}
+            placeholder="Rewrite prompt and generate again..."
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            disabled={loading}
+            inputProps={{ maxLength: 500 }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+              },
+            }}
+          />
+          <Button
+            startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <AiIcon />}
+            onClick={handleGenerate}
+            disabled={loading || !prompt.trim()}
+            variant="contained"
+            sx={{
+              minWidth: 130,
+              borderRadius: "10px",
+              textTransform: "none",
+              bgcolor: "#a855f7",
+              "&:hover": { bgcolor: "#9333ea" },
+            }}
+          >
+            {loading ? "Generating..." : "Regenerate"}
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

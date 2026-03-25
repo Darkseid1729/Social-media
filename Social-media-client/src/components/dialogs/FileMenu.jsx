@@ -1,4 +1,4 @@
-import { ListItemText, Menu, MenuItem, MenuList, Tooltip } from "@mui/material";
+import { Box, Menu, MenuItem, Tooltip } from "@mui/material";
 import React, { useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setIsFileMenu, setUploadingLoader } from "../../redux/reducers/misc";
@@ -167,126 +167,166 @@ const FileMenu = (props) => {
 
 
   return (
-    <Menu anchorEl={anchorE1} open={isFileMenu} onClose={closeFileMenu}>
-      <div style={{ width: "10rem" }}>
-        <MenuList>
-          <MenuItem onClick={selectImage}>
-            <Tooltip title="Image">
-              <ImageIcon />
-            </Tooltip>
-            <ListItemText style={{ marginLeft: "0.5rem" }}>Image</ListItemText>
-            <input
-              type="file"
-              multiple
-              accept="image/png, image/jpeg, image/gif"
-              style={{ display: "none" }}
-              onChange={(e) => fileChangeHandler(e, "Images")}
-              ref={imageRef}
-            />
+    <Menu
+      anchorEl={anchorE1}
+      open={isFileMenu}
+      onClose={closeFileMenu}
+      anchorOrigin={{ vertical: "top", horizontal: "left" }}
+      transformOrigin={{ vertical: "bottom", horizontal: "left" }}
+      PaperProps={{ sx: { mt: -1, borderRadius: 2 } }}
+    >
+      <Box
+        sx={{
+          width: 280,
+          p: 1.25,
+          display: "grid",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gap: 1,
+        }}
+      >
+        <Tooltip title="Image">
+          <MenuItem
+            aria-label="Image"
+            onClick={selectImage}
+            sx={{ justifyContent: "center", borderRadius: 1.5, minHeight: 56 }}
+          >
+            <ImageIcon sx={{ fontSize: 28 }} />
           </MenuItem>
+        </Tooltip>
 
-          {/* GIF Option */}
-          <MenuItem onClick={() => { closeFileMenu(); if (onGifClick) onGifClick(); }}>
-            <Tooltip title="GIF">
-              <PhotoLibraryIcon />
-            </Tooltip>
-            <ListItemText style={{ marginLeft: "0.5rem" }}>GIF</ListItemText>
+        <Tooltip title="GIF">
+          <MenuItem
+            aria-label="GIF"
+            onClick={() => { closeFileMenu(); if (onGifClick) onGifClick(); }}
+            sx={{ justifyContent: "center", borderRadius: 1.5, minHeight: 56 }}
+          >
+            <PhotoLibraryIcon sx={{ fontSize: 28 }} />
           </MenuItem>
+        </Tooltip>
 
-          {/* YouTube Option */}
-          <MenuItem onClick={() => { closeFileMenu(); if (onYouTubeClick) onYouTubeClick(); }}>
-            <Tooltip title="YouTube">
-              <YouTubeIcon />
-            </Tooltip>
-            <ListItemText style={{ marginLeft: "0.5rem" }}>YouTube</ListItemText>
+        <Tooltip title="YouTube">
+          <MenuItem
+            aria-label="YouTube"
+            onClick={() => { closeFileMenu(); if (onYouTubeClick) onYouTubeClick(); }}
+            sx={{ justifyContent: "center", borderRadius: 1.5, minHeight: 56 }}
+          >
+            <YouTubeIcon sx={{ fontSize: 28 }} />
           </MenuItem>
+        </Tooltip>
 
-          {/* Watch Party Option */}
-          <MenuItem onClick={() => { closeFileMenu(); if (onWatchPartyClick) onWatchPartyClick(); }}>
-            <Tooltip title="Watch Party">
-              <LiveTvIcon />
-            </Tooltip>
-            <ListItemText style={{ marginLeft: "0.5rem" }}>Watch Party</ListItemText>
+        <Tooltip title="Watch Party">
+          <MenuItem
+            aria-label="Watch Party"
+            onClick={() => { closeFileMenu(); if (onWatchPartyClick) onWatchPartyClick(); }}
+            sx={{ justifyContent: "center", borderRadius: 1.5, minHeight: 56 }}
+          >
+            <LiveTvIcon sx={{ fontSize: 28 }} />
           </MenuItem>
+        </Tooltip>
 
-          {/* Emoji Animations Option */}
-          <MenuItem onClick={() => { closeFileMenu(); if (onAnimationClick) onAnimationClick(); }}>
-            <Tooltip title="Animations">
-              <AutoAwesomeIcon />
-            </Tooltip>
-            <ListItemText style={{ marginLeft: "0.5rem" }}>Animations</ListItemText>
+        <Tooltip title="Animations">
+          <MenuItem
+            aria-label="Animations"
+            onClick={() => { closeFileMenu(); if (onAnimationClick) onAnimationClick(); }}
+            sx={{ justifyContent: "center", borderRadius: 1.5, minHeight: 56 }}
+          >
+            <AutoAwesomeIcon sx={{ fontSize: 28 }} />
           </MenuItem>
+        </Tooltip>
 
-          {/* Gift Card Option */}
-          <MenuItem onClick={() => { closeFileMenu(); if (onGiftCardClick) onGiftCardClick(); }}>
-            <Tooltip title="Gift Card">
-              <GiftCardIcon sx={{ color: "#f7c948" }} />
-            </Tooltip>
-            <ListItemText style={{ marginLeft: "0.5rem" }}>Gift Card</ListItemText>
+        <Tooltip title="Gift Card">
+          <MenuItem
+            aria-label="Gift Card"
+            onClick={() => { closeFileMenu(); if (onGiftCardClick) onGiftCardClick(); }}
+            sx={{ justifyContent: "center", borderRadius: 1.5, minHeight: 56 }}
+          >
+            <GiftCardIcon sx={{ color: "#f7c948", fontSize: 28 }} />
           </MenuItem>
+        </Tooltip>
 
-          {/* AI Animation Option */}
-          <MenuItem onClick={() => { closeFileMenu(); if (onAiAnimationClick) onAiAnimationClick(); }}>
-            <Tooltip title="AI Animation">
-              <AiAnimationIcon sx={{ color: "#a855f7" }} />
-            </Tooltip>
-            <ListItemText style={{ marginLeft: "0.5rem" }}>AI Animation</ListItemText>
+        <Tooltip title="AI Animation">
+          <MenuItem
+            aria-label="AI Animation"
+            onClick={() => { closeFileMenu(); if (onAiAnimationClick) onAiAnimationClick(); }}
+            sx={{ justifyContent: "center", borderRadius: 1.5, minHeight: 56 }}
+          >
+            <AiAnimationIcon sx={{ color: "#a855f7", fontSize: 28 }} />
           </MenuItem>
+        </Tooltip>
 
-          {/* Translate Input Option */}
-          <MenuItem onClick={() => { closeFileMenu(); if (onTranslateClick) onTranslateClick(); }}>
-            <Tooltip title="Translate Message">
-              <TranslateIcon sx={{ color: "#1976d2" }} />
-            </Tooltip>
-            <ListItemText style={{ marginLeft: "0.5rem" }}>Translate</ListItemText>
+        <Tooltip title="Translate Message">
+          <MenuItem
+            aria-label="Translate"
+            onClick={() => { closeFileMenu(); if (onTranslateClick) onTranslateClick(); }}
+            sx={{ justifyContent: "center", borderRadius: 1.5, minHeight: 56 }}
+          >
+            <TranslateIcon sx={{ color: "#1976d2", fontSize: 28 }} />
           </MenuItem>
+        </Tooltip>
 
-          <MenuItem onClick={selectAudio}>
-            <Tooltip title="Audio">
-              <AudioFileIcon />
-            </Tooltip>
-            <ListItemText style={{ marginLeft: "0.5rem" }}>Audio</ListItemText>
-            <input
-              type="file"
-              multiple
-              accept="audio/mpeg, audio/wav"
-              style={{ display: "none" }}
-              onChange={(e) => fileChangeHandler(e, "Audios")}
-              ref={audioRef}
-            />
+        <Tooltip title="Audio">
+          <MenuItem
+            aria-label="Audio"
+            onClick={selectAudio}
+            sx={{ justifyContent: "center", borderRadius: 1.5, minHeight: 56 }}
+          >
+            <AudioFileIcon sx={{ fontSize: 28 }} />
           </MenuItem>
+        </Tooltip>
 
-          <MenuItem onClick={selectVideo}>
-            <Tooltip title="Video">
-              <VideoFileIcon />
-            </Tooltip>
-            <ListItemText style={{ marginLeft: "0.5rem" }}>Video</ListItemText>
-            <input
-              type="file"
-              multiple
-              accept="video/mp4, video/webm, video/ogg"
-              style={{ display: "none" }}
-              onChange={(e) => fileChangeHandler(e, "Videos")}
-              ref={videoRef}
-            />
+        <Tooltip title="Video">
+          <MenuItem
+            aria-label="Video"
+            onClick={selectVideo}
+            sx={{ justifyContent: "center", borderRadius: 1.5, minHeight: 56 }}
+          >
+            <VideoFileIcon sx={{ fontSize: 28 }} />
           </MenuItem>
+        </Tooltip>
 
-          <MenuItem onClick={selectFile}>
-            <Tooltip title="File">
-              <UploadFileIcon />
-            </Tooltip>
-            <ListItemText style={{ marginLeft: "0.5rem" }}>File</ListItemText>
-            <input
-              type="file"
-              multiple
-              accept="*"
-              style={{ display: "none" }}
-              onChange={(e) => fileChangeHandler(e, "Files")}
-              ref={fileRef}
-            />
+        <Tooltip title="File">
+          <MenuItem
+            aria-label="File"
+            onClick={selectFile}
+            sx={{ justifyContent: "center", borderRadius: 1.5, minHeight: 56 }}
+          >
+            <UploadFileIcon sx={{ fontSize: 28 }} />
           </MenuItem>
-        </MenuList>
-      </div>
+        </Tooltip>
+
+        <input
+          type="file"
+          multiple
+          accept="image/png, image/jpeg, image/gif"
+          style={{ display: "none" }}
+          onChange={(e) => fileChangeHandler(e, "Images")}
+          ref={imageRef}
+        />
+        <input
+          type="file"
+          multiple
+          accept="audio/mpeg, audio/wav"
+          style={{ display: "none" }}
+          onChange={(e) => fileChangeHandler(e, "Audios")}
+          ref={audioRef}
+        />
+        <input
+          type="file"
+          multiple
+          accept="video/mp4, video/webm, video/ogg"
+          style={{ display: "none" }}
+          onChange={(e) => fileChangeHandler(e, "Videos")}
+          ref={videoRef}
+        />
+        <input
+          type="file"
+          multiple
+          accept="*"
+          style={{ display: "none" }}
+          onChange={(e) => fileChangeHandler(e, "Files")}
+          ref={fileRef}
+        />
+      </Box>
     </Menu>
   );
 };
