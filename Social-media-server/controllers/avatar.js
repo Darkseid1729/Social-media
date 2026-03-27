@@ -24,15 +24,16 @@ const updateAvatar = TryCatch(async (req, res, next) => {
     return next(new ErrorHandler("User not found", 404));
   }
 
-  // Delete old avatar from cloudinary
+  // Upload new avatar
+  const result = await uploadFilesToCloudinary([file]);
+  console.log("[Avatar] Cloudinary upload result:", result);
+
+  // Delete old avatar only after successful upload
   if (user.avatar && user.avatar.public_id) {
     console.log("[Avatar] Deleting old avatar from Cloudinary:", user.avatar.public_id);
     await deletFilesFromCloudinary([user.avatar.public_id]);
   }
 
-  // Upload new avatar
-  const result = await uploadFilesToCloudinary([file]);
-  console.log("[Avatar] Cloudinary upload result:", result);
   user.avatar = {
     public_id: result[0].public_id,
     url: result[0].url,

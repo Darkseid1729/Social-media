@@ -48,6 +48,8 @@ import DialogContent from "@mui/material/DialogContent";
 import CloseIcon from "@mui/icons-material/Close";
 import Profile from "../specific/Profile";
 import { userNotExists } from "../../redux/reducers/auth";
+import { useUpdateAvatarMutation } from "../../redux/api/api";
+import { updateUserAvatar } from "../../redux/reducers/updateUserAvatar";
 import {
   setIsMobile,
   setIsNewGroup,
@@ -249,6 +251,7 @@ const Header = (props) => {
   );
   const { notificationCount } = useSelector((state) => state.chat);
   const { user } = useSelector((state) => state.auth);
+  const [updateAvatar] = useUpdateAvatarMutation();
   const [showProfile, setShowProfile] = useState(false);
 
   const handleMobile = () => dispatch(setIsMobile(true));
@@ -300,7 +303,25 @@ const Header = (props) => {
 
   // Avatar change handler for header profile dialog
   const handleAvatarChange = async (file) => {
-    alert('Avatar change triggered from header! Implement logic as needed.');
+    try {
+      const response = await updateAvatar(file).unwrap();
+
+      if (response?.user?.avatar?.url) {
+        dispatch(updateUserAvatar(response.user.avatar.url));
+      } else if (response?.avatar?.url) {
+        dispatch(updateUserAvatar(response.avatar.url));
+      } else if (response?.url) {
+        dispatch(updateUserAvatar(response.url));
+      } else {
+        toast.success("Avatar updated");
+        window.location.reload();
+        return;
+      }
+
+      toast.success("Avatar updated successfully");
+    } catch (error) {
+      toast.error(error?.data?.message || "Failed to update avatar");
+    }
   };
 
 

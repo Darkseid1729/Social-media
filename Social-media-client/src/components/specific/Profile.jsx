@@ -57,6 +57,13 @@ const Profile = ({ user, onAvatarChange }) => {
     setShowAvatarModal(false);
   };
 
+  const handleChangeAvatarFromModal = () => {
+    setShowAvatarModal(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   const handleAvatarContextMenu = (e) => {
     e.preventDefault();
     if (onAvatarChange) {
@@ -130,6 +137,8 @@ const Profile = ({ user, onAvatarChange }) => {
           onClose={handleCloseAvatarModal}
           imageUrl={user?.avatar?.url}
           alt="Avatar Preview"
+          actionLabel={onAvatarChange ? "Change DP" : undefined}
+          onAction={onAvatarChange ? handleChangeAvatarFromModal : undefined}
         />
         {onAvatarChange && (
           <ConfirmDialog

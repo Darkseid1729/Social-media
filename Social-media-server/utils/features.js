@@ -4,6 +4,7 @@ import { v4 as uuid } from "uuid";
 import { v2 as cloudinary } from "cloudinary";
 import { getBase64, getSockets } from "../lib/helper.js";
 import path from "path";
+import https from "https";
 
 const cookieOptions = {
   maxAge: 15 * 24 * 60 * 60 * 1000,
@@ -55,7 +56,35 @@ const emitEvent = (req, event, users, data) => {
   io.to(usersSocket).emit(event, data);
 };
 
+const getNetworkUnixTimestamp = async () => {
+  return new Promise((resolve) => {
+    const req = https.request(
+      "https://api.cloudinary.com",
+      { method: "HEAD", timeout: 4000 },
+      (res) => {
+        const dateHeader = res.headers.date;
+        const parsed = dateHeader ? Math.floor(new Date(dateHeader).getTime() / 1000) : NaN;
+
+        if (Number.isFinite(parsed) && parsed > 0) {
+          resolve(parsed);
+        } else {
+          resolve(Math.floor(Date.now() / 1000));
+        }
+      }
+    );
+
+    req.on("error", () => resolve(Math.floor(Date.now() / 1000)));
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(Math.floor(Date.now() / 1000));
+    });
+    req.end();
+  });
+};
+
 const uploadFilesToCloudinary = async (files = []) => {
+  const uploadTimestamp = await getNetworkUnixTimestamp();
+
   const uploadPromises = files.map((file) => {
     return new Promise((resolve, reject) => {
       const ext = file.originalname ? path.extname(file.originalname).toLowerCase() : '';
@@ -64,6 +93,7 @@ const uploadFilesToCloudinary = async (files = []) => {
         {
           resource_type: "auto",
           public_id: uuid() + ext,
+          timestamp: uploadTimestamp,
           timeout: 120000, // 2 minutes timeout for mobile uploads
         },
         (error, result) => {
