@@ -1,12 +1,20 @@
 import moment from "moment";
 
 const fileFormat = (url = "") => {
-  const fileExt = url.split(".").pop();
+  const fileExt = url.split(".").pop().toLowerCase();
+
+  // Cloudinary audio uploads use /video/upload/ path but are audio files.
+  // Detect audio first by checking for audio-specific extensions or
+  // Cloudinary raw/video upload paths with audio-only containers.
+  const isCloudinaryAudio = url.includes("/video/upload/") && 
+    (fileExt === "webm" || fileExt === "ogg" || fileExt === "mp3" || fileExt === "wav" || fileExt === "m4a");
+
+  if (fileExt === "mp3" || fileExt === "wav" || fileExt === "m4a") return "audio";
+  if (isCloudinaryAudio) return "audio";
 
   if (fileExt === "mp4" || fileExt === "webm" || fileExt === "ogg")
     return "video";
 
-  if (fileExt === "mp3" || fileExt === "wav") return "audio";
   if (
     fileExt === "png" ||
     fileExt === "jpg" ||

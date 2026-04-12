@@ -23,6 +23,7 @@ import {
   AttachFile as AttachFileIcon,
   Send as SendIcon,
   EmojiEmotions as EmojiEmotionsIcon,
+  Mic as MicIcon,
 } from "@mui/icons-material";
 import { isOnlyEmoji, createEmojiExplosion, injectEmojiAnimationStyles } from "../utils/emojiEffect";
 import { parseYouTubeUrl } from "../utils/linkUtils";
@@ -108,6 +109,13 @@ const Chat = ({ chatId, user }) => {
   const containerRef = useRef(null);
   const bottomRef = useRef(null);
   const lastReadEmitRef = useRef({ messageId: null, at: 0 });
+
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
 
   // Inject emoji animation styles on mount
   useEffect(() => {
@@ -463,6 +471,101 @@ const Chat = ({ chatId, user }) => {
   const handleFileOpen = (e) => {
     dispatch(setIsFileMenu(true));
     setFileMenuAnchor(e.currentTarget);
+  };
+
+  const recordStreamRef = useRef(null);
+  const recordStartTimeRef = useRef(0);
+
+  const startRecording = async () => {
+    if (isRecording) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordStreamRef.current = stream;
+
+      // Prefer opus in webm for best browser + Cloudinary compatibility
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        // Stop all tracks to release microphone
+        if (recordStreamRef.current) {
+          recordStreamRef.current.getTracks().forEach((t) => t.stop());
+          recordStreamRef.current = null;
+        }
+
+        clearInterval(recordingTimerRef.current);
+        const finalDuration = (Date.now() - recordStartTimeRef.current) / 1000;
+        setIsRecording(false);
+        setRecordingDuration(0);
+
+        // Guard: ignore recordings under 1 second (accidental tap)
+        if (finalDuration < 1 || audioChunksRef.current.length === 0) {
+          return;
+        }
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const file = new File([audioBlob], "voice_message.webm", {
+          type: mimeType,
+        });
+
+        const toastId = toast.loading("Sending voice message...");
+        try {
+          dispatch(setUploadingLoader(true));
+          const myForm = new FormData();
+          myForm.append("chatId", chatId);
+          myForm.append("files", file);
+
+          const res = await sendAttachments(myForm);
+          if (res.data) {
+            toast.success("Voice message sent!", { id: toastId });
+          } else {
+            toast.error(
+              res.error?.data?.message || "Failed to send voice message",
+              { id: toastId }
+            );
+          }
+        } catch (err) {
+          toast.error("Failed to send voice message", { id: toastId });
+        } finally {
+          dispatch(setUploadingLoader(false));
+        }
+      };
+
+      // Use 250ms timeslice so data arrives in small chunks
+      mediaRecorder.start(250);
+      recordStartTimeRef.current = Date.now();
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      // Setup visible timer
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      toast.error("Microphone access denied or not available");
+      setIsRecording(false);
+    }
+  };
+
+  const stopRecording = () => {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state === "recording"
+    ) {
+      mediaRecorderRef.current.stop();
+    }
   };
 
   const submitHandler = async (e) => {
@@ -1068,8 +1171,7 @@ const Chat = ({ chatId, user }) => {
             {floatingDate}
           </div>
         )}
-        {allMessages.map((i) => (
-          (() => {
+        {allMessages.map((i, index) => {
             const pointer = otherMemberId ? readPointers?.[otherMemberId] : null;
             const pointerTime = pointer?.lastReadMessageAt
               ? new Date(pointer.lastReadMessageAt).getTime()
@@ -1086,7 +1188,7 @@ const Chat = ({ chatId, user }) => {
 
             return (
           <MessageComponent 
-            key={i._id} 
+            key={i._id || `msg-${index}`} 
             message={i} 
             user={user} 
             deliveryState={isSeenByOther ? "seen" : "sent"}
@@ -1108,8 +1210,7 @@ const Chat = ({ chatId, user }) => {
               }}
           />
             );
-          })()
-        ))}
+        })}
 
         {userTyping && <TypingLoader />}
 
@@ -1162,50 +1263,104 @@ const Chat = ({ chatId, user }) => {
 
           {/* Input Container with scrollable input and sticker icon stacked on right */}
           <div style={{ flex: 1, display: 'flex', gap: '0.8rem', alignItems: 'flex-end' }}>
-            <textarea
-              placeholder="Type Message Here..."
-              value={message}
-              onChange={messageOnChange}
-              rows={2}
-              className="custom-scrollbar"
-              style={{
-                flex: 1,
-                maxHeight: '8rem',
-                minHeight: '5rem',
-                fontSize: '1.15rem',
-                padding: '0.8rem 1rem',
-                paddingLeft: '3rem',
-                borderRadius: '1.5rem',
-                border: `1.5px solid ${theme.SUBTLE_BG_20}`,
-                background: theme.LIGHT_BG,
-                color: theme.TEXT_PRIMARY,
-                boxShadow: '0 2px 8px 0 rgba(0,0,0,0.04)',
-                transition: 'all 0.2s ease-in-out',
-                overflowY: 'auto',
-                resize: 'none',
-                outline: 'none',
-                fontFamily: 'inherit',
-                lineHeight: '1.5',
-                scrollbarWidth: 'thin',
-                scrollbarColor: `${theme.SUBTLE_BG_30} transparent`,
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  submitHandler(e);
-                }
-              }}
-              onFocus={e => {
-                e.target.style.border = `2px solid ${theme.PRIMARY_COLOR}`;
-                e.target.style.minHeight = '6rem';
-                e.target.style.maxHeight = '10rem';
-              }}
-              onBlur={e => {
-                e.target.style.border = `1.5px solid ${theme.SUBTLE_BG_20}`;
-                e.target.style.minHeight = '5rem';
-                e.target.style.maxHeight = '8rem';
-              }}
-            />
+            {isRecording ? (
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: theme.LIGHT_BG,
+                  borderRadius: '1.5rem',
+                  border: `2px solid #ef5350`,
+                  height: '5rem',
+                  padding: '0 1.2rem',
+                  boxShadow: '0 0 16px rgba(239,83,80,0.15)',
+                  animation: 'recSlideIn 0.25s ease-out',
+                }}
+              >
+                <div style={{
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  backgroundColor: '#ef5350',
+                  flexShrink: 0,
+                  animation: 'recPulse 1.2s ease-in-out infinite',
+                }} />
+                <span style={{
+                  fontFamily: 'monospace',
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  color: theme.TEXT_PRIMARY,
+                  minWidth: '42px',
+                }}>
+                  {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
+                </span>
+                <span style={{
+                  flex: 1,
+                  fontSize: '0.82rem',
+                  color: theme.TEXT_SECONDARY || 'rgba(255,255,255,0.5)',
+                  textAlign: 'center',
+                }}>
+                  Release to send
+                </span>
+                <style>{`
+                  @keyframes recPulse {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.3; transform: scale(0.7); }
+                  }
+                  @keyframes recSlideIn {
+                    from { opacity: 0; transform: translateX(20px); }
+                    to { opacity: 1; transform: translateX(0); }
+                  }
+                `}</style>
+              </div>
+            ) : (
+              <textarea
+                placeholder="Type Message Here..."
+                value={message}
+                onChange={messageOnChange}
+                rows={2}
+                className="custom-scrollbar"
+                style={{
+                  flex: 1,
+                  maxHeight: '8rem',
+                  minHeight: '5rem',
+                  fontSize: '1.15rem',
+                  padding: '0.8rem 1rem',
+                  paddingLeft: '3rem',
+                  borderRadius: '1.5rem',
+                  border: `1.5px solid ${theme.SUBTLE_BG_20}`,
+                  background: theme.LIGHT_BG,
+                  color: theme.TEXT_PRIMARY,
+                  boxShadow: '0 2px 8px 0 rgba(0,0,0,0.04)',
+                  transition: 'all 0.2s ease-in-out',
+                  overflowY: 'auto',
+                  resize: 'none',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  lineHeight: '1.5',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: `${theme.SUBTLE_BG_30} transparent`,
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitHandler(e);
+                  }
+                }}
+                onFocus={e => {
+                  e.target.style.border = `2px solid ${theme.PRIMARY_COLOR}`;
+                  e.target.style.minHeight = '6rem';
+                  e.target.style.maxHeight = '10rem';
+                }}
+                onBlur={e => {
+                  e.target.style.border = `1.5px solid ${theme.SUBTLE_BG_20}`;
+                  e.target.style.minHeight = '5rem';
+                  e.target.style.maxHeight = '8rem';
+                }}
+              />
+            )}
 
             {/* Right side - Sticker and Send buttons stacked vertically */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -1229,22 +1384,47 @@ const Chat = ({ chatId, user }) => {
                 <EmojiEmotionsIcon />
               </IconButton>
 
-              <IconButton
-                type="submit"
-                sx={{
-                  rotate: "-30deg",
-                  bgcolor: theme.BUTTON_ACCENT,
-                  color: "white",
-                  width: '2.5rem',
-                  height: '2.5rem',
-                  padding: "0.5rem",
-                  "&:hover": {
-                    bgcolor: "error.dark",
-                  },
-                }}
-              >
-                <SendIcon />
-              </IconButton>
+              {!message.trim() && !selectedYouTubeVideo ? (
+                <IconButton
+                  sx={{
+                    rotate: "0deg",
+                    bgcolor: isRecording ? "error.main" : theme.BUTTON_ACCENT,
+                    color: "white",
+                    width: '2.5rem',
+                    height: '2.5rem',
+                    padding: "0.5rem",
+                    transition: "all 0.2s",
+                    transform: isRecording ? "scale(1.2)" : "scale(1)",
+                    "&:hover": {
+                      bgcolor: isRecording ? "error.dark" : "primary.dark",
+                    },
+                  }}
+                  onMouseDown={(e) => { e.preventDefault(); startRecording(); }}
+                  onMouseUp={(e) => { e.preventDefault(); stopRecording(); }}
+                  onMouseLeave={stopRecording}
+                  onTouchStart={startRecording}
+                  onTouchEnd={stopRecording}
+                >
+                  <MicIcon />
+                </IconButton>
+              ) : (
+                <IconButton
+                  type="submit"
+                  sx={{
+                    rotate: "-30deg",
+                    bgcolor: theme.BUTTON_ACCENT,
+                    color: "white",
+                    width: '2.5rem',
+                    height: '2.5rem',
+                    padding: "0.5rem",
+                    "&:hover": {
+                      bgcolor: "error.dark",
+                    },
+                  }}
+                >
+                  <SendIcon />
+                </IconButton>
+              )}
             </div>
           </div>
         </Stack>

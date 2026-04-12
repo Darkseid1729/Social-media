@@ -5,6 +5,7 @@ import moment from "moment";
 import "moment-timezone";
 import { fileFormat } from "../../lib/features";
 import RenderAttachment from "./RenderAttachment";
+import VoiceMessagePlayer from "./VoiceMessagePlayer";
 import ImageGrid from "./ImageGrid";
 import TextWithLinks from "./TextWithLinks";
 import ReactionPicker from "./ReactionPicker";
@@ -497,8 +498,17 @@ const MessageComponent = ({ message, user, deliveryState = "sent", onReply, onSc
               const file = fileFormat(url);
               const downloadName = url.split('/').pop().split('?')[0];
 
-              // Audio and video have native controls
-              if (file === 'audio' || file === 'video') {
+              // Audio — WhatsApp-style voice player
+              if (file === 'audio') {
+                return (
+                  <Box key={attachment.public_id || attachment.url} sx={{ mt: 0.5 }}>
+                    <VoiceMessagePlayer url={url} />
+                  </Box>
+                );
+              }
+
+              // Video — native controls
+              if (file === 'video') {
                 return (
                   <Box key={attachment.public_id || attachment.url} sx={{ mt: 0.5 }}>
                     {RenderAttachment(file, url)}
