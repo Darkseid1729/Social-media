@@ -51,7 +51,7 @@ const DeleteChatMenu = ({ dispatch, deleteMenuAnchor }) => {
 
   return (
     <Menu
-      open={isDeleteMenu}
+      open={isDeleteMenu && isGroup}
       onClose={closeHandler}
       anchorEl={deleteMenuAnchor.current}
       anchorOrigin={{
@@ -72,19 +72,10 @@ const DeleteChatMenu = ({ dispatch, deleteMenuAnchor }) => {
         direction={"row"}
         alignItems={"center"}
         spacing={"0.5rem"}
-        onClick={isGroup ? leaveGroupHandler : deleteChatHandler}
+        onClick={leaveGroupHandler}
       >
-        {isGroup ? (
-          <>
-            <ExitToAppIcon />
-            <Typography>Leave Group</Typography>
-          </>
-        ) : (
-          <>
-            <DeleteIcon />
-            <Typography>Delete Chat</Typography>
-          </>
-        )}
+        <ExitToAppIcon />
+        <Typography>Leave Group</Typography>
       </Stack>
     </Menu>
   );

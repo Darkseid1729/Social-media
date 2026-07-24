@@ -25,10 +25,10 @@ const ChatItem = ({
 }) => {
   const { theme } = useTheme();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
-  
+
   // Only show lastSeen for 1-on-1 chats where user is offline
   const shouldShowLastSeen = !groupChat && !isOnline && lastSeen;
-  
+
   // Calculate text for offline users
   let lastSeenText = null;
   if (shouldShowLastSeen) {
@@ -58,7 +58,7 @@ const ChatItem = ({
   const handleCloseProfile = () => {
     setProfileDialogOpen(false);
   };
-  
+
   return (
     <>
       <Link
