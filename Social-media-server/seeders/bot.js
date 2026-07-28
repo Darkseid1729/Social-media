@@ -4,7 +4,7 @@ import { hash } from "bcrypt";
 export const createBotUser = async () => {
   try {
     const botExists = await User.findOne({ username: "joon" });
-    
+
     if (botExists) {
       console.log("✅ Bot user 'Joon' already exists");
       return botExists;
@@ -13,9 +13,9 @@ export const createBotUser = async () => {
     const hashedPassword = await hash("joon_secure_password_2024", 10);
 
     const botUser = await User.create({
-      name: "Joon",
+      name: "Jimmy Carr",
       username: "joon",
-      bio: "Your fun, witty companion who's always up for a chat 😏✨",
+      bio: "Earth is basically an audition for heaven or hell, I prefer later✨",
       password: hashedPassword,
       avatar: {
         public_id: "bot_joon_avatar",
