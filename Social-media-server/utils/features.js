@@ -86,23 +86,51 @@ const uploadFilesToCloudinary = async (files = []) => {
 
   const uploadPromises = files.map((file) => {
     return new Promise((resolve, reject) => {
-      // Do NOT include the file extension in public_id.
-      // Cloudinary automatically appends its own extension to secure_url;
-      // if public_id already contains one (e.g. uuid + ".webm") the URL
-      // becomes "…uuid.webm.webm" (double-extension) which can corrupt the
-      // download and breaks the client-side audio-type detection.
+      /**
+       * Cloudinary extension behaviour:
+       *  - resource_type "auto" + no ext in public_id  → treated as "raw", URL has NO extension
+       *  - resource_type "auto" + ".webm" in public_id → treated as "video", URL becomes ".webm.webm"
+       *  - resource_type "video" + no ext in public_id + format:"webm" → URL ends with exactly ".webm" ✅
+       *
+       * So: derive the format from the MIME type, force resource_type to "video" for
+       * audio/video content, and keep public_id extension-free. Cloudinary then appends
+       * exactly one correct extension.
+       */
+      const mime = file.mimetype || "";
+
+      // Map MIME type → Cloudinary format string + resource_type
+      let format;
+      let resource_type;
+
+      if (mime.startsWith("audio/") || mime.startsWith("video/")) {
+        // All audio & video go into Cloudinary's "video" bucket
+        resource_type = "video";
+        // Extract the base format: "audio/webm;codecs=opus" → "webm"
+        const baseMime = mime.split(";")[0].trim();          // "audio/webm"
+        format = baseMime.split("/")[1];                      // "webm"
+        if (!format || format === "mpeg") format = "mp3";    // normalise mp3
+        if (format === "x-wav") format = "wav";
+      } else if (mime.startsWith("image/")) {
+        resource_type = "image";
+        format = undefined; // let Cloudinary keep the original image format
+      } else {
+        resource_type = "auto";
+        format = undefined;
+      }
+
       cloudinary.uploader.upload(
         getBase64(file),
         {
-          resource_type: "auto",
-          public_id: uuid(),          // extension-free UUID — Cloudinary adds one
+          resource_type,
+          public_id: uuid(),   // always extension-free — Cloudinary appends `format`
+          ...(format ? { format } : {}),
           timestamp: uploadTimestamp,
-          timeout: 120000, // 2 minutes timeout for mobile uploads
+          timeout: 120000,
         },
         (error, result) => {
           if (error) {
-            console.error('Cloudinary upload error:', error);
-            return reject(new Error(`Failed to upload ${file.originalname || 'file'}: ${error.message || error}`));
+            console.error("Cloudinary upload error:", error);
+            return reject(new Error(`Failed to upload ${file.originalname || "file"}: ${error.message || error}`));
           }
           resolve(result);
         }
