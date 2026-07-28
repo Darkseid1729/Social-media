@@ -3,7 +3,6 @@ import jwt from "jsonwebtoken";
 import { v4 as uuid } from "uuid";
 import { v2 as cloudinary } from "cloudinary";
 import { getBase64, getSockets } from "../lib/helper.js";
-import path from "path";
 import https from "https";
 
 const cookieOptions = {
@@ -87,12 +86,16 @@ const uploadFilesToCloudinary = async (files = []) => {
 
   const uploadPromises = files.map((file) => {
     return new Promise((resolve, reject) => {
-      const ext = file.originalname ? path.extname(file.originalname).toLowerCase() : '';
+      // Do NOT include the file extension in public_id.
+      // Cloudinary automatically appends its own extension to secure_url;
+      // if public_id already contains one (e.g. uuid + ".webm") the URL
+      // becomes "…uuid.webm.webm" (double-extension) which can corrupt the
+      // download and breaks the client-side audio-type detection.
       cloudinary.uploader.upload(
         getBase64(file),
         {
           resource_type: "auto",
-          public_id: uuid() + ext,
+          public_id: uuid(),          // extension-free UUID — Cloudinary adds one
           timestamp: uploadTimestamp,
           timeout: 120000, // 2 minutes timeout for mobile uploads
         },
