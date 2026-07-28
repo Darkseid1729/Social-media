@@ -7,7 +7,7 @@ import { Message } from "../models/message.js";
 import { User } from "../models/user.js";
 import { emitEvent } from "../utils/features.js";
 import { NEW_MESSAGE, NEW_MESSAGE_ALERT, START_TYPING, STOP_TYPING } from "../constants/events.js";
-import { getBotUserId } from "../seeders/bot.js";
+import { getBotUserId, getJimmeyBotUserId } from "../seeders/bot.js";
 import { getSockets } from "../lib/helper.js";
 import fs from "fs";
 import path from "path";
@@ -42,15 +42,28 @@ const rotateApiKey = () => {
   console.log(`🔄 Rotated to API key ${(currentApiKeyIndex % apiKeys.length) + 1}`);
 };
 
-// Load bot personality from file
-let BOT_PERSONALITY = "";
+// Load Joon personality (botpersonality2.txt)
+let JOON_PERSONALITY = "";
 try {
-  const personalityPath = path.join(__dirname, "../../botpersonality.txt");
-  BOT_PERSONALITY = fs.readFileSync(personalityPath, "utf-8");
+  const joonPath = path.join(__dirname, "../../botpersonality2.txt");
+  JOON_PERSONALITY = fs.readFileSync(joonPath, "utf-8");
 } catch (error) {
-  console.error("⚠️ Could not load bot personality file, using default");
-  BOT_PERSONALITY = "You are a fun, witty, and playful chatbot. Be friendly and engaging!";
+  console.error("⚠️ Could not load Joon personality file, using default");
+  JOON_PERSONALITY = "You are Joon, a warm and playful Korean friend. Be friendly and engaging!";
 }
+
+// Load Jimmy Carr personality (botpersonality.txt)
+let JIMMEY_PERSONALITY = "";
+try {
+  const jimmeyPath = path.join(__dirname, "../../botpersonality.txt");
+  JIMMEY_PERSONALITY = fs.readFileSync(jimmeyPath, "utf-8");
+} catch (error) {
+  console.error("⚠️ Could not load Jimmy Carr personality file, using default");
+  JIMMEY_PERSONALITY = "You are Jimmy Carr, a witty and sharp British comedian. Be darkly funny and clever!";
+}
+
+// Keep BOT_PERSONALITY as alias for Joon (backward compat)
+const BOT_PERSONALITY = JOON_PERSONALITY;
 
 // Bot configuration
 const BOT_CONFIG = {
@@ -291,7 +304,8 @@ const getGifMetadata = async (gifUrl) => {
 };
 
 // Process buffered messages and generate intelligent response
-const processBufferedMessages = async (chatId, req, io) => {
+// botType: 'joon' | 'jimmey'
+const processBufferedMessages = async (chatId, req, io, botType = 'joon') => {
   const buffer = messageBuffer.get(chatId);
   if (!buffer || buffer.messages.length === 0) return;
   
@@ -301,8 +315,14 @@ const processBufferedMessages = async (chatId, req, io) => {
     const chat = await Chat.findById(chatId);
     if (!chat) return;
     
-    const botUserId = await getBotUserId();
+    // Resolve correct bot user ID and personality based on botType
+    const botUserId = botType === 'jimmey'
+      ? await getJimmeyBotUserId()
+      : await getBotUserId();
     if (!botUserId) return;
+
+    const activeBotPersonality = botType === 'jimmey' ? JIMMEY_PERSONALITY : JOON_PERSONALITY;
+    const botDisplayName = botType === 'jimmey' ? 'Jimmy Carr' : 'Joon';
     
     const currentUser = await User.findById(userId, "name");
     if (!currentUser) return;
@@ -345,12 +365,12 @@ const processBufferedMessages = async (chatId, req, io) => {
     const bufferedContent = bufferedParts.join('\n');
     
     // Build enhanced system prompt
-    const systemPrompt = `${BOT_PERSONALITY}
+    const systemPrompt = `${activeBotPersonality}
 
 Chatting with ${currentUser.name} (Indian timezone/audience).
 
 IMPORTANT INSTRUCTIONS:
-- NEVER write "Joon:" or your name before your messages. Respond directly without any prefix.
+- NEVER write "${botDisplayName}:" or your name before your messages. Respond directly without any prefix.
 - When you see [GIF: description], react to the actual GIF content, not just "nice gif"
   Example: "[GIF: are you alive meme]" → "barely lol, been studying all day 💀" (NOT "that gif tho 😂")
 - If user sent multiple messages, you can respond with 1-3 separate messages to feel natural
@@ -359,7 +379,7 @@ IMPORTANT INSTRUCTIONS:
 - NO *actions*, avoid repeating their name
 - GIFs: Format [GIF:term] for big reactions only. Examples: "[GIF:shocked]" "[GIF:laughing]"
 
-WRONG: "Joon: hey what's up"
+WRONG: "${botDisplayName}: hey what's up"
 RIGHT: "hey what's up"`;
 
     // Show typing indicator
@@ -408,8 +428,8 @@ RIGHT: "hey what's up"`;
     const tokensUsed = completion.usage?.total_tokens || 
       Math.ceil((systemPrompt.length + bufferedContent.length + botResponse.length) / 4);
     
-    // CRITICAL: Remove "Joon:" or any name prefix from response
-    botResponse = botResponse.replace(/^(Joon|joon):\s*/gm, '').trim();
+    // CRITICAL: Remove bot name prefix from response (covers both bots)
+    botResponse = botResponse.replace(/^(Joon|joon|Jimmy Carr|jimmy carr|Jimmy|jimmy|Jimmey|jimmey):\s*/gm, '').trim();
     
     // Calculate realistic typing delay
     const baseDelay = 1000 + Math.random() * 1000;
@@ -435,8 +455,8 @@ RIGHT: "hey what's up"`;
       let messageContent = replies[i];
       let gifUrl = null;
       
-      // Clean any remaining "Joon:" prefix from individual messages
-      messageContent = messageContent.replace(/^(Joon|joon):\s*/gm, '').trim();
+      // Clean any remaining bot name prefix from individual messages
+      messageContent = messageContent.replace(/^(Joon|joon|Jimmy Carr|jimmy carr|Jimmy|jimmy|Jimmey|jimmey):\s*/gm, '').trim();
       
       // Check for GIF request
       const gifMatch = messageContent.match(/\[GIF:([^\]]+)\]/);
@@ -517,12 +537,6 @@ RIGHT: "hey what's up"`;
 export const chatWithBot = TryCatch(async (req, res, next) => {
   const { message, chatId } = req.body;
   
-  // console.log("🤖 Bot received message request:", { 
-  //   message, 
-  //   chatId, 
-  //   userId: req.user 
-  // });
-  
   // Check if Groq API key is configured
   if (!process.env.GROQ_API_KEY) {
     return next(new ErrorHandler("Bot service is not available. GROQ_API_KEY not configured.", 503));
@@ -540,19 +554,30 @@ export const chatWithBot = TryCatch(async (req, res, next) => {
     return next(new ErrorHandler("You are not a member of this chat", 403));
   }
 
-  // Get bot user ID
-  const botUserId = await getBotUserId();
+  // Resolve which bot is in this chat (Joon or Jimmy Carr)
+  const joonId = await getBotUserId();
+  const jimmeyId = await getJimmeyBotUserId();
+
+  let botUserId = null;
+  let botType = null;
+
+  if (joonId && chat.members.some(m => m.toString() === joonId.toString())) {
+    botUserId = joonId;
+    botType = 'joon';
+  } else if (jimmeyId && chat.members.some(m => m.toString() === jimmeyId.toString())) {
+    botUserId = jimmeyId;
+    botType = 'jimmey';
+  }
+
   if (!botUserId) {
-    return next(new ErrorHandler("Bot user not found", 500));
+    return next(new ErrorHandler("No bot found in this chat", 403));
   }
 
-  // Verify bot is in this chat
-  if (!chat.members.includes(botUserId.toString())) {
-    return next(new ErrorHandler("Bot is not in this chat", 403));
-  }
-
-  // IMPORTANT: If the user IS the bot (logged in as Joon), don't generate a response
-  if (req.user.toString() === botUserId.toString()) {
+  // IMPORTANT: If the user IS a bot, don't generate a response
+  if (
+    req.user.toString() === (joonId?.toString() || '') ||
+    req.user.toString() === (jimmeyId?.toString() || '')
+  ) {
     return res.status(200).json({
       success: true,
       message: "Message sent as bot, no auto-response needed"
@@ -565,7 +590,8 @@ export const chatWithBot = TryCatch(async (req, res, next) => {
       messages: [],
       timeoutId: null,
       userId: req.user,
-      lastActivity: Date.now()
+      lastActivity: Date.now(),
+      botType, // track which bot this buffer belongs to
     });
   }
   
@@ -575,6 +601,7 @@ export const chatWithBot = TryCatch(async (req, res, next) => {
     timestamp: Date.now()
   });
   buffer.lastActivity = Date.now();
+  buffer.botType = botType; // always keep up-to-date
   
   // Clear existing timeout
   if (buffer.timeoutId) {
@@ -587,7 +614,7 @@ export const chatWithBot = TryCatch(async (req, res, next) => {
   // Set new timeout to process messages
   const io = req.app.get("io");
   buffer.timeoutId = setTimeout(() => {
-    processBufferedMessages(chatId, req, io);
+    processBufferedMessages(chatId, req, io, buffer.botType);
   }, bufferTime);
   
   // Return success immediately (bot will respond via buffer processing)
@@ -789,13 +816,19 @@ export const generateAnimation = TryCatch(async (req, res, next) => {
   }
 });
 
-// Check if a chat contains the bot
+// Check if a chat contains any bot (Joon or Jimmy Carr)
 export const isBotChat = async (chatId) => {
-  const botUserId = await getBotUserId();
-  if (!botUserId) return false;
-
   const chat = await Chat.findById(chatId);
   if (!chat) return false;
 
-  return chat.members.some(member => member.toString() === botUserId.toString());
+  const joonId = await getBotUserId();
+  const jimmeyId = await getJimmeyBotUserId();
+
+  return chat.members.some(member => {
+    const mStr = member.toString();
+    return (
+      (joonId && mStr === joonId.toString()) ||
+      (jimmeyId && mStr === jimmeyId.toString())
+    );
+  });
 };

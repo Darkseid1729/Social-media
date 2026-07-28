@@ -624,9 +624,9 @@ const Chat = ({ chatId, user }) => {
     const replyToId = replyToSend?._id;
     const validReplyTo = isValidObjectId(replyToId) ? replyToId : null;
 
-    // Check if this is a bot chat (chat name contains "Joon")
+    // Check if this is a bot chat (chat name contains "Joon" or "Jimmy")
     const chatName = chatDetails?.data?.chat?.name || "";
-    const isBotChat = chatName.toLowerCase().includes('joon');
+    const isBotChat = chatName.toLowerCase().includes('joon') || chatName.toLowerCase().includes('jimmy');
 
     // console.log("🔍 Bot check:", { 
     //   isBotChat, 

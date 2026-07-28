@@ -59,7 +59,7 @@ import adminRoute from "./routes/admin.js";
 import botRoute from "./routes/bot.js";
 import youtubeRoute from "./routes/youtube.js";
 import gifRoute from "./routes/gif.js";
-import { createBotUser } from "./seeders/bot.js";
+import { createBotUser, createJimmeyBotUser } from "./seeders/bot.js";
 import { initializeFirebase, sendMessageNotification } from "./utils/firebase.js";
 import { CallRecord } from "./models/callRecord.js";
 
@@ -1090,11 +1090,12 @@ server.listen(port, async () => {
   // Initialize Firebase for push notifications
   initializeFirebase();
   
-  // Initialize bot user on server start
+  // Initialize bot users on server start
   try {
-    await createBotUser();
+    await createBotUser();       // Joon
+    await createJimmeyBotUser(); // Jimmy Carr
   } catch (error) {
-    console.error("Failed to initialize bot user:", error);
+    console.error("Failed to initialize bot users:", error);
   }
 });
 
