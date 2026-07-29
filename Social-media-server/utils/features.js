@@ -87,50 +87,70 @@ const uploadFilesToCloudinary = async (files = []) => {
   const uploadPromises = files.map((file) => {
     return new Promise((resolve, reject) => {
       /**
-       * Cloudinary extension behaviour:
-       *  - resource_type "auto" + no ext in public_id  → treated as "raw", URL has NO extension
-       *  - resource_type "auto" + ".webm" in public_id → treated as "video", URL becomes ".webm.webm"
-       *  - resource_type "video" + no ext in public_id + format:"webm" → URL ends with exactly ".webm" ✅
+       * Cloudinary resource_type strategy:
        *
-       * So: derive the format from the MIME type, force resource_type to "video" for
-       * audio/video content, and keep public_id extension-free. Cloudinary then appends
-       * exactly one correct extension.
+       *  "video"  → real video files (mp4, mov, avi…). Cloudinary transcodes them.
+       *             audio/webm MUST NOT go here — Cloudinary rejects it with
+       *             "unsupported video format".
+       *
+       *  "raw"    → audio files (webm, ogg, wav, mp3, m4a) and unknown blobs.
+       *             Cloudinary stores them as-is with NO processing.
+       *             With "raw", the public_id is used verbatim in the URL so we
+       *             include the extension here — Cloudinary does NOT append a second one.
+       *             Result: …/raw/upload/<uuid>.webm  ✅  (single extension, playable)
+       *
+       *  "image"  → images (jpeg, png, gif, webp…). public_id extension-free;
+       *             Cloudinary appends the correct extension automatically.
        */
-      const mime = file.mimetype || "";
+      const mime = (file.mimetype || "").split(";")[0].trim().toLowerCase();
+      const originalExt = file.originalname
+        ? "." + file.originalname.split(".").pop().toLowerCase()
+        : "";
 
-      // Map MIME type → Cloudinary format string + resource_type
-      let format;
       let resource_type;
+      let public_id;
+      let extraOpts = {};
 
-      if (mime.startsWith("audio/") || mime.startsWith("video/")) {
-        // All audio & video go into Cloudinary's "video" bucket
+      if (mime.startsWith("audio/")) {
+        // Audio: store raw so Cloudinary never tries to transcode it.
+        // Include the extension in public_id — raw storage doesn't add one.
+        resource_type = "raw";
+        const ext = originalExt || (mime === "audio/mpeg" ? ".mp3"
+                                  : mime === "audio/ogg"  ? ".ogg"
+                                  : mime === "audio/wav"  ? ".wav"
+                                  : ".webm");
+        public_id = uuid() + ext;
+
+      } else if (mime.startsWith("video/")) {
+        // Real video: let Cloudinary handle transcoding.
         resource_type = "video";
-        // Extract the base format: "audio/webm;codecs=opus" → "webm"
-        const baseMime = mime.split(";")[0].trim();          // "audio/webm"
-        format = baseMime.split("/")[1];                      // "webm"
-        if (!format || format === "mpeg") format = "mp3";    // normalise mp3
-        if (format === "x-wav") format = "wav";
+        public_id = uuid(); // Cloudinary appends the right ext automatically
+
       } else if (mime.startsWith("image/")) {
         resource_type = "image";
-        format = undefined; // let Cloudinary keep the original image format
+        public_id = uuid(); // Cloudinary appends the right ext automatically
+
       } else {
-        resource_type = "auto";
-        format = undefined;
+        // Unknown / binary: store raw with original extension preserved
+        resource_type = "raw";
+        public_id = uuid() + originalExt;
       }
 
       cloudinary.uploader.upload(
         getBase64(file),
         {
           resource_type,
-          public_id: uuid(),   // always extension-free — Cloudinary appends `format`
-          ...(format ? { format } : {}),
+          public_id,
           timestamp: uploadTimestamp,
           timeout: 120000,
+          ...extraOpts,
         },
         (error, result) => {
           if (error) {
             console.error("Cloudinary upload error:", error);
-            return reject(new Error(`Failed to upload ${file.originalname || "file"}: ${error.message || error}`));
+            return reject(
+              new Error(`Failed to upload ${file.originalname || "file"}: ${error.message || error}`)
+            );
           }
           resolve(result);
         }
